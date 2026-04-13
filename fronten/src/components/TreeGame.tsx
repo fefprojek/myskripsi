@@ -792,11 +792,11 @@ const TreeGame: React.FC = () => {
                     >
                       <div className="absolute inset-0 bg-[#8b4513]/5" />
                       {React.createElement(
-                        plantingStep === 2 ? selectedSeedling.icon : plantingSteps[plantingStep].icon, 
+                        plantingStep === 2 ? selectedSeedling.icon : currentSteps[plantingStep].icon, 
                         { size: 40, className: "relative z-10" }
                       )}
                       <div className="text-[7px] font-black uppercase mt-1 relative z-10 opacity-60">
-                        {plantingSteps[plantingStep].id}
+                        {currentSteps[plantingStep].id}
                       </div>
                     </motion.div>
                   </div>
@@ -807,8 +807,8 @@ const TreeGame: React.FC = () => {
                   <div className="bg-[#f4e4bc] p-6 rounded-[2rem] border-4 border-[#d4a373] shadow-md flex-1 flex flex-col text-left relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-16 h-16 bg-[#d4a373] rotate-45 translate-x-8 -translate-y-8" />
                     <h3 className="text-xs font-black text-[#8b4513] uppercase mb-1 tracking-widest opacity-60">Langkah {plantingStep + 1}</h3>
-                    <h4 className="text-xl font-black text-[#5d4037] mb-3 uppercase border-b-2 border-[#d4a373] pb-2">{plantingSteps[plantingStep].title}</h4>
-                    <p className="text-[#5d4037] text-xs leading-relaxed mb-6 font-medium italic">"{plantingSteps[plantingStep].text}"</p>
+                    <h4 className="text-xl font-black text-[#5d4037] mb-3 uppercase border-b-2 border-[#d4a373] pb-2">{currentSteps[plantingStep].title}</h4>
+                    <p className="text-[#5d4037] text-xs leading-relaxed mb-6 font-medium italic">"{currentSteps[plantingStep].text}"</p>
                     
                     <div className="mt-auto p-4 bg-[#fff9eb] rounded-xl border-2 border-[#d4a373]">
                       <div className="flex items-center gap-3 text-[#2e7d32] font-black text-[10px]">
