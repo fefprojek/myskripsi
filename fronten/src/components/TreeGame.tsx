@@ -5,7 +5,9 @@ import { useNavigate } from 'react-router-dom';
 
 // --- Realistic Visual Components ---
 
-const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon }: { size: number, color: string, stage: number, actionProgress: number, icon?: React.ElementType }) => {
+const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health, moisture }: { size: number, color: string, stage: number, actionProgress: number, icon?: React.ElementType, health: number, moisture: number }) => {
+  const health01 = Math.max(0, Math.min(1, health / 100));
+  const moisture01 = Math.max(0, Math.min(1, moisture / 100));
   return (
     <div className="relative flex flex-col items-center justify-end" style={{ width: size, height: size }}>
       {/* Hole / Soil Base */}
@@ -18,6 +20,18 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon }: { siz
         }}
         className="absolute bottom-0 w-3/4 rounded-[100%] blur-[1px] shadow-inner z-0"
       >
+        <div
+          className="absolute inset-0 rounded-[100%]"
+          style={{
+            opacity: 0.85,
+            backgroundImage:
+              moisture01 < 0.28
+                ? 'repeating-linear-gradient(135deg, rgba(0,0,0,0.22) 0 2px, rgba(0,0,0,0) 2px 10px), radial-gradient(circle at 30% 40%, rgba(255,255,255,0.08) 0 18px, transparent 38px)'
+                : moisture01 > 0.78
+                  ? 'radial-gradient(circle at 40% 35%, rgba(255,255,255,0.18) 0 26px, transparent 52px), radial-gradient(circle at 65% 55%, rgba(59,130,246,0.12) 0 22px, transparent 44px)'
+                  : 'radial-gradient(circle at 40% 35%, rgba(255,255,255,0.10) 0 22px, transparent 44px)',
+          }}
+        />
         {/* Fertilizer bits */}
         {stage >= 1 && stage < 3 && (
           <div className="absolute inset-0 flex flex-wrap gap-1 p-2 opacity-60">
@@ -63,11 +77,17 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon }: { siz
           <motion.div
             key="sprout"
             initial={{ scale: 0, y: 10 }}
-            animate={{ scale: 1, y: 0 }}
+            animate={{ scale: 1, y: 0, rotate: health01 < 0.4 ? [-7, 7, -5] : [-3, 3, -3] }}
             exit={{ scale: 0 }}
             className="mb-2 relative z-10"
           >
-            <div className="w-2.5 h-8 bg-[#8bc34a] rounded-full shadow-sm" />
+            <div
+              className="w-2.5 h-8 rounded-full shadow-sm"
+              style={{
+                backgroundColor: moisture01 < 0.25 ? '#7f1d1d' : '#8bc34a',
+                filter: `saturate(${0.7 + health01 * 0.6}) brightness(${0.85 + moisture01 * 0.25})`,
+              }}
+            />
             <motion.div 
               animate={{ rotate: [-5, 5, -5] }}
               transition={{ repeat: Infinity, duration: 2 }}
@@ -96,6 +116,10 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon }: { siz
               scale: { type: 'spring', damping: 15 }
             }}
             className="relative z-10 mb-2"
+            style={{
+              filter: `saturate(${0.65 + health01 * 0.75}) brightness(${0.85 + moisture01 * 0.25})`,
+              opacity: 0.75 + health01 * 0.25,
+            }}
           >
             {/* Trunk */}
             <div className={`mx-auto rounded-t-full relative shadow-lg ${stage === 4 ? 'w-4 h-16' : stage === 5 ? 'w-5 h-20' : 'w-6 h-24'} bg-[#5d4037]`}>
@@ -208,13 +232,170 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon }: { siz
   );
 };
 
-const CharacterSprite = ({ isWalking }: { isWalking: boolean }) => {
+const CharacterActionFX = ({ actionId, accent, toolIcon: ToolIcon }: { actionId: string | null, accent: string, toolIcon?: React.ElementType }) => {
+  if (!actionId) return null;
+
+  const isSoil = actionId === 'hole' || actionId === 'cover';
+  const isFertilizer = actionId === 'fertilizer';
+  const isPlant = actionId === 'plant';
+  const isWater = actionId === 'water';
+  const isSun = actionId === 'sun';
+
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      {(isSoil || isFertilizer) && (
+        <div className="absolute left-6 top-10">
+          {[...Array(10)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+              animate={{
+                opacity: [0, 1, 0],
+                scale: [0.6, 1, 0.7],
+                x: [-4 + (i % 5) * 3, -12 + (i % 5) * 6],
+                y: [0, -16 - (i % 4) * 6],
+              }}
+              transition={{ duration: 0.55 + (i % 4) * 0.05, delay: 0.02 * i }}
+              className="absolute rounded-full"
+              style={{
+                width: 5 + (i % 3),
+                height: 5 + (i % 3),
+                backgroundColor: isFertilizer ? '#111827' : '#5d4037',
+                filter: 'blur(0.2px)',
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {isPlant && (
+        <motion.div
+          initial={{ opacity: 0, y: -6, scale: 0.9 }}
+          animate={{ opacity: 1, y: [ -6, 2, 0 ], scale: [0.9, 1, 1] }}
+          transition={{ duration: 0.7 }}
+          className="absolute left-7 top-4"
+          style={{ color: accent }}
+        >
+          {ToolIcon ? <ToolIcon size={18} /> : <Sprout size={18} />}
+        </motion.div>
+      )}
+
+      {isWater && (
+        <div className="absolute left-6 top-6 text-blue-300">
+          {[...Array(8)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: -10, x: (i % 4) * 6 }}
+              animate={{ opacity: [0, 1, 0], y: [ -10, 18 ], x: [ (i % 4) * 6, (i % 4) * 6 + ((i % 2) ? 3 : -3) ] }}
+              transition={{ duration: 0.7, delay: 0.05 * i, repeat: 1 }}
+              className="absolute"
+            >
+              <Droplets size={14} fill="currentColor" />
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {isSun && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.7 }}
+          animate={{ opacity: 0.75, scale: [0.7, 1, 0.9], rotate: [0, 20, 0] }}
+          transition={{ duration: 0.9 }}
+          className="absolute -top-4 -right-4 text-yellow-300"
+        >
+          <Sun size={34} />
+        </motion.div>
+      )}
+    </div>
+  );
+};
+
+const HeldTool = ({ actionId, accent, icon: Icon }: { actionId: string, accent: string, icon?: React.ElementType }) => {
+  if (actionId === 'hole' || actionId === 'cover') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, rotate: -10 }}
+        animate={{ opacity: 1, scale: 1, rotate: [-14, 10, -8], y: [0, 2, 0] }}
+        transition={{ repeat: Infinity, duration: 0.35 }}
+        className="relative w-8 h-8"
+      >
+        <div className="absolute left-3 top-1 w-1.5 h-8 bg-[#8b5a2b] rounded-full shadow-md rotate-[22deg] origin-top" />
+        <div className="absolute left-0 top-6 w-4 h-3 bg-[#9ca3af] rounded-sm shadow-md rotate-[22deg] border border-black/10" />
+        <div className="absolute left-1 top-7 w-3 h-1 bg-black/10 rounded-full rotate-[22deg]" />
+      </motion.div>
+    );
+  }
+
+  if (actionId === 'fertilizer') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: [0.95, 1, 0.98], rotate: [-8, 10, -6] }}
+        transition={{ repeat: Infinity, duration: 0.55 }}
+        className="relative w-8 h-8"
+      >
+        <div className="absolute left-1 top-1 w-6 h-7 bg-[#f59e0b]/30 border border-black/10 rounded-2xl shadow-md" />
+        <div className="absolute left-2 top-3 w-4 h-2 bg-white/40 rounded-full" />
+        <div className="absolute right-0 top-5 w-3 h-3 bg-[#9ca3af] rounded-xl shadow-md border border-black/10" />
+        <div className="absolute right-0 top-5 w-3 h-3 flex items-center justify-center text-[#111827]">
+          <div className="w-1 h-1 bg-[#111827] rounded-full" />
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (actionId === 'water') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, rotate: [-10, 12, -8], y: [0, 1, 0] }}
+        transition={{ repeat: Infinity, duration: 0.42 }}
+        className="relative w-8 h-8"
+      >
+        <div className="absolute left-1 top-3 w-6 h-4 bg-[#60a5fa] rounded-2xl shadow-md border border-black/10" />
+        <div className="absolute left-2 top-1 w-3 h-3 border-2 border-[#60a5fa] rounded-full" />
+        <div className="absolute right-0 top-4 w-3 h-2 bg-[#93c5fd] rounded-full shadow-sm border border-black/10" />
+        <div className="absolute right-0 top-6 text-blue-200">
+          <Droplets size={12} fill="currentColor" />
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (actionId === 'sun') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: [0.95, 1.05, 1], rotate: [0, 10, 0] }}
+        transition={{ repeat: Infinity, duration: 0.7 }}
+        className="relative w-8 h-8 text-yellow-300"
+      >
+        <Sun size={22} />
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: [0.95, 1, 0.98], y: [0, 1, 0] }}
+      transition={{ repeat: Infinity, duration: 0.55 }}
+      className="relative w-8 h-8"
+      style={{ color: accent }}
+    >
+      {Icon ? <Icon size={22} /> : <Sprout size={22} />}
+    </motion.div>
+  );
+};
+
+const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent }: { isWalking: boolean, actionId: string | null, toolIcon?: React.ElementType, accent: string }) => {
+  const isActing = Boolean(actionId);
   return (
     <div className="relative flex flex-col items-center">
       {/* Head & Hat */}
       <motion.div 
-        animate={{ y: isWalking ? [0, -4, 0] : [0, -1, 0] }}
-        transition={{ repeat: Infinity, duration: 0.5 }}
+        animate={{ y: isActing ? [0, -2, 0] : isWalking ? [0, -4, 0] : [0, -1, 0] }}
+        transition={{ repeat: Infinity, duration: isActing ? 0.35 : 0.5 }}
         className="relative z-20"
       >
         {/* Hat */}
@@ -232,23 +413,34 @@ const CharacterSprite = ({ isWalking }: { isWalking: boolean }) => {
       {/* Body */}
       <motion.div 
         animate={{ 
-          rotate: isWalking ? [-5, 5, -5] : 0,
-          y: isWalking ? [0, -2, 0] : 0
+          rotate: isActing ? [-2, 3, -2] : isWalking ? [-5, 5, -5] : 0,
+          y: isActing ? [0, 2, 0] : isWalking ? [0, -2, 0] : 0
         }}
-        transition={{ repeat: Infinity, duration: 0.5 }}
+        transition={{ repeat: Infinity, duration: isActing ? 0.38 : 0.5 }}
         className="w-12 h-14 bg-[#3f51b5] rounded-xl border-2 border-[#303f9f] -mt-1 relative z-10 shadow-md"
       >
         {/* Overalls detail */}
         <div className="absolute inset-x-2 top-0 bottom-4 border-x-4 border-[#303f9f] opacity-20" />
         {/* Arms */}
         <motion.div 
-          animate={{ rotate: isWalking ? [20, -20, 20] : 0 }}
+          animate={{ rotate: isActing ? [30, -30, 18] : isWalking ? [20, -20, 20] : 0, y: isActing ? [0, 2, 0] : 0 }}
           className="absolute -left-3 top-2 w-4 h-8 bg-[#3f51b5] rounded-full border-2 border-[#303f9f] origin-top" 
         />
         <motion.div 
-          animate={{ rotate: isWalking ? [-20, 20, -20] : 0 }}
+          animate={{ rotate: isActing ? [-26, 26, -16] : isWalking ? [-20, 20, -20] : 0, y: isActing ? [0, 1, 0] : 0 }}
           className="absolute -right-3 top-2 w-4 h-8 bg-[#3f51b5] rounded-full border-2 border-[#303f9f] origin-top" 
         />
+
+        {isActing && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2 }}
+            className="absolute -right-9 top-4 w-10 h-10 rounded-[1.15rem] bg-white/90 border border-black/10 shadow-2xl flex items-center justify-center"
+          >
+            <HeldTool actionId={actionId ?? ''} accent={accent} icon={ToolIcon} />
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Legs */}
@@ -267,9 +459,11 @@ const CharacterSprite = ({ isWalking }: { isWalking: boolean }) => {
 
       {/* Shadow */}
       <motion.div 
-        animate={{ scale: isWalking ? [1, 0.9, 1] : 1 }}
+        animate={{ scale: isActing ? [0.98, 0.9, 0.98] : isWalking ? [1, 0.9, 1] : 1 }}
         className="w-12 h-3 bg-black/20 rounded-full blur-sm mt-1" 
       />
+
+      <CharacterActionFX actionId={actionId} accent={accent} toolIcon={ToolIcon} />
     </div>
   );
 };
@@ -292,6 +486,131 @@ const Butterfly = () => (
   </motion.div>
 );
 
+const Cloud = ({ delay, top, size, opacity }: { delay: number, top: number, size: number, opacity: number }) => (
+  <motion.div
+    initial={{ x: '-30%' }}
+    animate={{ x: '130%' }}
+    transition={{ repeat: Infinity, duration: 28 + delay * 4, ease: 'linear', delay }}
+    className="absolute pointer-events-none z-10"
+    style={{ top: `${top}%`, opacity }}
+  >
+    <div
+      className="relative"
+      style={{ width: size, height: Math.max(40, size * 0.33) }}
+    >
+      <div className="absolute inset-0 rounded-full blur-2xl bg-white/25" />
+      <div className="absolute left-[8%] top-[30%] w-[38%] h-[56%] rounded-full bg-white/25" />
+      <div className="absolute left-[28%] top-[12%] w-[46%] h-[70%] rounded-full bg-white/25" />
+      <div className="absolute left-[56%] top-[34%] w-[34%] h-[50%] rounded-full bg-white/25" />
+    </div>
+  </motion.div>
+);
+
+const FloatingLeaf = ({ seed }: { seed: number }) => {
+  const size = 10 + (seed % 7);
+  const startX = (seed * 37) % 520;
+  const drift = -90 + ((seed * 13) % 180);
+  const duration = 7 + ((seed * 17) % 7);
+  const delay = (seed % 10) * 0.6;
+  return (
+    <motion.div
+      initial={{ x: startX, y: -30, rotate: -25, opacity: 0 }}
+      animate={{
+        x: [startX, startX + drift, startX + drift * 1.2],
+        y: [0, 260, 560],
+        rotate: [-20, 30, -10],
+        opacity: [0, 0.7, 0],
+      }}
+      transition={{ repeat: Infinity, duration, ease: 'linear', delay }}
+      className="absolute pointer-events-none z-20"
+    >
+      <div
+        className="rounded-full blur-[0.2px]"
+        style={{
+          width: size,
+          height: Math.max(6, size * 0.65),
+          background: 'linear-gradient(135deg, rgba(34,197,94,0.9) 0%, rgba(16,185,129,0.7) 60%, rgba(245,158,11,0.55) 100%)',
+          boxShadow: '0 8px 18px rgba(0,0,0,0.18)',
+        }}
+      />
+    </motion.div>
+  );
+};
+
+const DPad = ({
+  disabled,
+  onMove,
+}: {
+  disabled: boolean;
+  onMove: (dx: number, dy: number) => void;
+}) => {
+  const intervalRef = useRef<number | null>(null);
+
+  const start = (dx: number, dy: number) => {
+    if (disabled) return;
+    onMove(dx, dy);
+    if (intervalRef.current) window.clearInterval(intervalRef.current);
+    intervalRef.current = window.setInterval(() => onMove(dx, dy), 80);
+  };
+
+  const stop = () => {
+    if (!intervalRef.current) return;
+    window.clearInterval(intervalRef.current);
+    intervalRef.current = null;
+  };
+
+  useEffect(() => stop, []);
+
+  const Btn = ({
+    label,
+    icon,
+    dx,
+    dy,
+  }: {
+    label: string;
+    icon: React.ReactNode;
+    dx: number;
+    dy: number;
+  }) => (
+    <button
+      type="button"
+      aria-label={label}
+      onPointerDown={() => start(dx, dy)}
+      onPointerUp={stop}
+      onPointerCancel={stop}
+      onPointerLeave={stop}
+      onContextMenu={(e) => e.preventDefault()}
+      className={`w-12 h-12 rounded-2xl border-2 font-black shadow-xl active:scale-95 transition-all select-none ${
+        disabled
+          ? 'bg-slate-200/50 text-slate-400 border-slate-300'
+          : 'bg-[#fff9eb]/90 text-[#8b4513] border-[#d4a373] hover:bg-[#fff9eb]'
+      }`}
+    >
+      <div className="flex items-center justify-center">{icon}</div>
+    </button>
+  );
+
+  return (
+    <div className="pointer-events-auto">
+      <div className="bg-[#0b1220]/25 backdrop-blur-md rounded-[2rem] p-3 border border-white/20 shadow-2xl">
+        <div className="grid grid-cols-3 grid-rows-3 gap-2">
+          <div />
+          <Btn label="Atas" icon={<span className="text-lg">▲</span>} dx={0} dy={-1} />
+          <div />
+          <Btn label="Kiri" icon={<span className="text-lg">◀</span>} dx={-1} dy={0} />
+          <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white/70">
+            <Move size={18} />
+          </div>
+          <Btn label="Kanan" icon={<span className="text-lg">▶</span>} dx={1} dy={0} />
+          <div />
+          <Btn label="Bawah" icon={<span className="text-lg">▼</span>} dx={0} dy={1} />
+          <div />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 type Region = {
   id: string;
   name: string;
@@ -308,6 +627,13 @@ type Seedling = {
   icon: typeof Trees;
   description: string;
   color: string;
+};
+
+type EnvImpact = {
+  co2: number;
+  water: number;
+  temp: number;
+  bio: number;
 };
 
 const seedlings: Seedling[] = [
@@ -446,7 +772,7 @@ const InteractiveMap = memo(({ onHover, hoveredRegion, onSelect }: {
         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gradient-to-br from-[#f87171] to-[#dc2626] shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div> Gersang</div>
       </div>
 
-      <svg viewBox="0 0 120 100" preserveAspectRatio="xMidYMid meet" className="w-[105%] h-[105%] -translate-x-[2.5%] -translate-y-[1.5%] drop-shadow-2xl">
+      <svg viewBox="0 0 120 100" preserveAspectRatio="xMidYMid meet" className="w-full h-full drop-shadow-2xl">
         <defs>
           <linearGradient id="grad-hijau" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#34d399" />
@@ -533,6 +859,12 @@ const TreeGame: React.FC = () => {
   const [levelIntroOpen, setLevelIntroOpen] = useState(false);
   const [level2Stages, setLevel2Stages] = useState<Record<string, number>>({ p1: 0, p2: 0, p3: 0, p4: 0 });
   const [activePlotId, setActivePlotId] = useState('p1');
+  const [toast, setToast] = useState<{ id: number, title: string, subtitle?: string, tone: 'good' | 'warn' | 'info' } | null>(null);
+  const [envScore, setEnvScore] = useState<EnvImpact>({ co2: 0, water: 0, temp: 0, bio: 0 });
+  const [plotMoisture, setPlotMoisture] = useState<Record<string, number>>({ p1: 45, p2: 45, p3: 45, p4: 45 });
+  const [plotHealth, setPlotHealth] = useState<Record<string, number>>({ p1: 75, p2: 75, p3: 75, p4: 75 });
+  const [dayPhase, setDayPhase] = useState(0);
+  const actionTimerRef = useRef<{ intervalId: number | null, timeoutId: number | null }>({ intervalId: null, timeoutId: null });
   
   // Character Movement State
   const [charPos, setCharPos] = useState({ x: 100, y: 100 });
@@ -542,21 +874,21 @@ const TreeGame: React.FC = () => {
   const [gameAreaSize, setGameAreaSize] = useState({ width: 640, height: 460 });
 
   const level1Steps = [
-    { id: 'hole', title: 'Gali Lubang', icon: MapPin, text: 'Gunakan Sekop untuk menggali lubang tanam. Pastikan tanah cukup gembur untuk perkembangan akar.' },
-    { id: 'fertilizer', title: 'Pupuk Dasar', icon: Thermometer, text: 'Taburkan pupuk organik. Nutrisi ini akan membantu bibit bertahan di fase awal penanaman.' },
-    { id: 'plant', title: 'Letakkan Bibit', icon: Trees, text: 'Letakkan bibit ke dalam lubang dengan hati-hati. Pastikan posisinya tegak lurus.' },
-    { id: 'cover', title: 'Tutup Tanah', icon: Sprout, text: 'Tutup kembali lubang dengan tanah dan tekan perlahan agar bibit tertanam kokoh.' },
-    { id: 'water', title: 'Penyiraman', icon: Droplets, text: 'Siram dengan air yang cukup agar tanah lembab dan merangsang pertumbuhan tunas baru.' },
-    { id: 'sun', title: 'Perawatan Matahari', icon: Sun, text: 'Pastikan tanaman mendapat sinar matahari yang cukup untuk proses fotosintesis.' },
+    { id: 'hole', title: 'Gali Lubang', icon: MapPin, text: 'Gunakan Sekop untuk menggali lubang tanam. Pastikan tanah cukup gembur untuk perkembangan akar.', edu: 'Lubang tanam yang cukup dalam membantu akar menyebar, meningkatkan stabilitas pohon dan daya serap air hujan.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
+    { id: 'fertilizer', title: 'Pupuk Dasar', icon: Thermometer, text: 'Taburkan pupuk organik. Nutrisi ini akan membantu bibit bertahan di fase awal penanaman.', edu: 'Pupuk organik memperbaiki struktur tanah dan meningkatkan mikroorganisme yang penting untuk kesehatan tanaman.', impact: { co2: 1, water: 2, temp: 0, bio: 2 } satisfies EnvImpact },
+    { id: 'plant', title: 'Letakkan Bibit', icon: Trees, text: 'Letakkan bibit ke dalam lubang dengan hati-hati. Pastikan posisinya tegak lurus.', edu: 'Posisi bibit yang tegak mencegah akar patah dan membantu pertumbuhan batang lebih kuat.', impact: { co2: 2, water: 1, temp: 1, bio: 1 } satisfies EnvImpact },
+    { id: 'cover', title: 'Tutup Tanah', icon: Sprout, text: 'Tutup kembali lubang dengan tanah dan tekan perlahan agar bibit tertanam kokoh.', edu: 'Menutup tanah rapat mengurangi kantong udara, menjaga kelembaban, dan melindungi akar dari panas berlebih.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
+    { id: 'water', title: 'Penyiraman', icon: Droplets, text: 'Siram dengan air yang cukup agar tanah lembab dan merangsang pertumbuhan tunas baru.', edu: 'Air membantu akar menyerap nutrisi. Tanah lembab stabil membuat bibit lebih tahan terhadap stres cuaca.', impact: { co2: 1, water: 4, temp: 0, bio: 1 } satisfies EnvImpact },
+    { id: 'sun', title: 'Perawatan Matahari', icon: Sun, text: 'Pastikan tanaman mendapat sinar matahari yang cukup untuk proses fotosintesis.', edu: 'Fotosintesis mengubah CO₂ menjadi oksigen. Pohon dewasa membantu menurunkan suhu dan meningkatkan kualitas udara.', impact: { co2: 4, water: 1, temp: 3, bio: 2 } satisfies EnvImpact },
   ];
 
   const level2Steps = [
-    { id: 'hole', title: 'Gali Lubang (Lahan Luas)', icon: MapPin, text: 'Sekarang lahannya lebih luas. Gali lubang untuk pohon berikutnya di area target yang menyala.' },
-    { id: 'fertilizer', title: 'Pupuk Dasar', icon: Thermometer, text: 'Taburkan pupuk organik agar tanah siap menumbuhkan akar yang kuat.' },
-    { id: 'plant', title: 'Letakkan Bibit', icon: Trees, text: 'Letakkan bibit ke dalam lubang dengan hati-hati. Pastikan posisinya tegak lurus.' },
-    { id: 'cover', title: 'Tutup Tanah', icon: Sprout, text: 'Tutup kembali lubang dengan tanah dan tekan perlahan agar bibit tertanam kokoh.' },
-    { id: 'water', title: 'Penyiraman', icon: Droplets, text: 'Siram dengan air yang cukup agar tanah lembab dan merangsang pertumbuhan tunas baru.' },
-    { id: 'sun', title: 'Perawatan Matahari', icon: Sun, text: 'Pastikan tanaman mendapat sinar matahari yang cukup untuk proses fotosintesis.' },
+    { id: 'hole', title: 'Gali Lubang (Lahan Luas)', icon: MapPin, text: 'Sekarang lahannya lebih luas. Gali lubang untuk pohon berikutnya di area target yang menyala.', edu: 'Menanam banyak pohon di lokasi yang tepat membantu mengurangi risiko erosi dan meningkatkan resapan air.', impact: { co2: 1, water: 3, temp: 1, bio: 1 } satisfies EnvImpact },
+    { id: 'fertilizer', title: 'Pupuk Dasar', icon: Thermometer, text: 'Taburkan pupuk organik agar tanah siap menumbuhkan akar yang kuat.', edu: 'Tanah yang kaya bahan organik menyimpan air lebih lama dan mendukung jamur/mikroba baik di tanah.', impact: { co2: 1, water: 2, temp: 0, bio: 2 } satisfies EnvImpact },
+    { id: 'plant', title: 'Letakkan Bibit', icon: Trees, text: 'Letakkan bibit ke dalam lubang dengan hati-hati. Pastikan posisinya tegak lurus.', edu: 'Bibit yang sehat dan tertanam benar punya peluang hidup lebih tinggi, sehingga restorasi lebih efektif.', impact: { co2: 2, water: 1, temp: 1, bio: 1 } satisfies EnvImpact },
+    { id: 'cover', title: 'Tutup Tanah', icon: Sprout, text: 'Tutup kembali lubang dengan tanah dan tekan perlahan agar bibit tertanam kokoh.', edu: 'Penutupan tanah membantu mengurangi penguapan dan melindungi akar dari hujan deras yang bisa menggeser bibit.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
+    { id: 'water', title: 'Penyiraman', icon: Droplets, text: 'Siram dengan air yang cukup agar tanah lembab dan merangsang pertumbuhan tunas baru.', edu: 'Penyiraman awal sangat penting. Terlalu sedikit membuat bibit layu, terlalu banyak membuat akar kekurangan oksigen.', impact: { co2: 1, water: 4, temp: 0, bio: 1 } satisfies EnvImpact },
+    { id: 'sun', title: 'Perawatan Matahari', icon: Sun, text: 'Pastikan tanaman mendapat sinar matahari yang cukup untuk proses fotosintesis.', edu: 'Pohon yang tumbuh akan membentuk kanopi yang meneduhkan. Ini menurunkan suhu sekitar dan membantu keanekaragaman hayati.', impact: { co2: 4, water: 1, temp: 3, bio: 2 } satisfies EnvImpact },
   ];
 
   const currentSteps = level === 1 ? level1Steps : level2Steps;
@@ -568,6 +900,15 @@ const TreeGame: React.FC = () => {
     const done = order.reduce((acc, id) => acc + Math.min(currentSteps.length, level2Stages[id] ?? 0), 0);
     return total === 0 ? 0 : done / total;
   }, [currentSteps.length, level, level2Stages, plantingStep]);
+
+  const envProgress = useMemo(() => {
+    const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+    const co2 = clamp01(envScore.co2 / 80);
+    const water = clamp01(envScore.water / 90);
+    const temp = clamp01(envScore.temp / 70);
+    const bio = clamp01(envScore.bio / 80);
+    return { co2, water, temp, bio };
+  }, [envScore.bio, envScore.co2, envScore.temp, envScore.water]);
 
   const plots = useMemo(() => {
     if (phase !== 'planting') return [];
@@ -598,6 +939,27 @@ const TreeGame: React.FC = () => {
     return activePlotId;
   }, [activePlotId, level]);
 
+  const clampPos = (x: number, y: number) => {
+    const margin = 10;
+    const maxX = Math.max(margin, gameAreaSize.width - 60 - margin);
+    const maxY = Math.max(margin, gameAreaSize.height - 80 - margin);
+    return { x: Math.max(margin, Math.min(maxX, x)), y: Math.max(margin, Math.min(maxY, y)) };
+  };
+
+  const moveCharacter = (dx: number, dy: number) => {
+    const step = 16;
+    setCharPos(prev => {
+      const nextX = prev.x + dx * step;
+      const nextY = prev.y + dy * step;
+      if (dx < 0) setCharDirection('left');
+      if (dx > 0) setCharDirection('right');
+      return clampPos(nextX, nextY);
+    });
+    setIsWalking(true);
+    window.clearTimeout((moveCharacter as unknown as { t?: number }).t);
+    (moveCharacter as unknown as { t?: number }).t = window.setTimeout(() => setIsWalking(false), 140);
+  };
+
   const isNearTarget = () => {
     const plot = plots.find(p => p.id === requiredPlotId);
     if (!plot) return false;
@@ -606,6 +968,8 @@ const TreeGame: React.FC = () => {
     const distance = Math.sqrt(Math.pow(charCenterX - plot.cx, 2) + Math.pow(charCenterY - plot.cy, 2));
     return distance < Math.max(90, plot.size * 0.55);
   };
+
+  const nearTargetNow = useMemo(() => isNearTarget(), [charPos.x, charPos.y, plots, requiredPlotId]);
 
   useEffect(() => {
     if (phase !== 'planting') return;
@@ -626,34 +990,31 @@ const TreeGame: React.FC = () => {
   useEffect(() => {
     if (phase !== 'planting') return;
     if (levelIntroOpen) return;
+    if (actionPlotId) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      const step = 18;
       setCharPos(prev => {
+        setIsWalking(true);
         let newX = prev.x;
         let newY = prev.y;
-        setIsWalking(true);
-
-        const margin = 10;
-        const maxX = Math.max(margin, gameAreaSize.width - 60 - margin);
-        const maxY = Math.max(margin, gameAreaSize.height - 80 - margin);
+        const step = 18;
 
         if (e.key === 'ArrowLeft' || e.key === 'a') {
-          newX = Math.max(margin, prev.x - step);
+          newX = prev.x - step;
           setCharDirection('left');
         }
         if (e.key === 'ArrowRight' || e.key === 'd') {
-          newX = Math.min(maxX, prev.x + step);
+          newX = prev.x + step;
           setCharDirection('right');
         }
         if (e.key === 'ArrowUp' || e.key === 'w') {
-          newY = Math.max(margin, prev.y - step);
+          newY = prev.y - step;
         }
         if (e.key === 'ArrowDown' || e.key === 's') {
-          newY = Math.min(maxY, prev.y + step);
+          newY = prev.y + step;
         }
 
-        return { x: newX, y: newY };
+        return clampPos(newX, newY);
       });
     };
 
@@ -665,7 +1026,7 @@ const TreeGame: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [gameAreaSize.height, gameAreaSize.width, levelIntroOpen, phase]);
+  }, [actionPlotId, gameAreaSize.height, gameAreaSize.width, levelIntroOpen, phase]);
 
   const handleRegionSelect = (region: Region) => {
     if (region.status === 'hijau') return;
@@ -684,13 +1045,115 @@ const TreeGame: React.FC = () => {
     setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 });
     setActivePlotId('p1');
     setCharPos({ x: 100, y: 100 });
+    setEnvScore({ co2: 0, water: 0, temp: 0, bio: 0 });
+    setPlotMoisture({ p1: 45, p2: 45, p3: 45, p4: 45 });
+    setPlotHealth({ p1: 75, p2: 75, p3: 75, p4: 75 });
+    setDayPhase(0);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (actionTimerRef.current.intervalId) window.clearInterval(actionTimerRef.current.intervalId);
+      if (actionTimerRef.current.timeoutId) window.clearTimeout(actionTimerRef.current.timeoutId);
+      actionTimerRef.current.intervalId = null;
+      actionTimerRef.current.timeoutId = null;
+    };
+  }, []);
+
+  const startAction = (plotId: string) => {
+    if (levelIntroOpen) return;
+    if (actionPlotId) return;
+    const step = currentSteps[Math.min(currentSteps.length - 1, plantingStep)];
+    const stepId = step?.id ?? '';
+    const durationMs =
+      stepId === 'hole' ? 1400 :
+      stepId === 'fertilizer' ? 1100 :
+      stepId === 'plant' ? 1400 :
+      stepId === 'cover' ? 1200 :
+      stepId === 'water' ? 1500 :
+      stepId === 'sun' ? 1600 :
+      1100;
+
+    setActionPlotId(plotId);
+    setActionProgress(0);
+
+    const startAt = Date.now();
+    if (actionTimerRef.current.intervalId) window.clearInterval(actionTimerRef.current.intervalId);
+    if (actionTimerRef.current.timeoutId) window.clearTimeout(actionTimerRef.current.timeoutId);
+
+    actionTimerRef.current.intervalId = window.setInterval(() => {
+      const p = Math.min(1, (Date.now() - startAt) / durationMs);
+      setActionProgress(p * 100);
+    }, 50);
+
+    actionTimerRef.current.timeoutId = window.setTimeout(() => {
+      if (actionTimerRef.current.intervalId) window.clearInterval(actionTimerRef.current.intervalId);
+      actionTimerRef.current.intervalId = null;
+      setActionProgress(100);
+      window.setTimeout(() => {
+        setActionProgress(0);
+        setActionPlotId(null);
+        handleActionComplete();
+      }, 120);
+    }, durationMs);
   };
 
   const handleActionComplete = () => {
+    const completedStep = currentSteps[Math.min(currentSteps.length - 1, plantingStep)];
+    const stepId = completedStep?.id ?? '';
+    const impact = completedStep?.impact ?? ({ co2: 0, water: 0, temp: 0, bio: 0 } as EnvImpact);
+    const moistureDelta =
+      stepId === 'water' ? 24 :
+      stepId === 'sun' ? -10 :
+      stepId === 'hole' ? -4 :
+      stepId === 'fertilizer' ? 2 :
+      stepId === 'cover' ? 5 :
+      0;
+
+    setEnvScore(prev => ({
+      co2: prev.co2 + impact.co2,
+      water: prev.water + impact.water,
+      temp: prev.temp + impact.temp,
+      bio: prev.bio + impact.bio,
+    }));
+
+    setDayPhase(p => (p + 1) % 8);
+
+    setPlotMoisture(prev => {
+      const id = level === 1 ? 'p1' : activePlotId;
+      const next = Math.max(0, Math.min(100, (prev[id] ?? 45) + moistureDelta));
+      return { ...prev, [id]: next };
+    });
+
+    const healthId = level === 1 ? 'p1' : activePlotId;
+    const currentMoisture = plotMoisture[healthId] ?? 45;
+    const isTooWet = stepId === 'water' && currentMoisture > 82;
+    const isTooDry = stepId === 'sun' && currentMoisture < 22;
+    if (isTooWet) setToast({ id: Date.now(), title: 'Terlalu basah', subtitle: 'Akar bisa busuk, kurangi siram', tone: 'warn' });
+    if (isTooDry) setToast({ id: Date.now(), title: 'Terlalu kering', subtitle: 'Tanaman stres panas, perlu air', tone: 'warn' });
+    setPlotHealth(prev => {
+      const goodWater = stepId === 'water' && currentMoisture < 55;
+      const goodSun = stepId === 'sun' && currentMoisture >= 28;
+      const bonus =
+        stepId === 'fertilizer' ? 6 :
+        stepId === 'cover' ? 4 :
+        stepId === 'plant' ? 5 :
+        0;
+      const delta =
+        (isTooWet ? -12 : 0) +
+        (isTooDry ? -10 : 0) +
+        (goodWater ? 8 : 0) +
+        (goodSun ? 4 : 0) +
+        bonus;
+      const next = Math.max(15, Math.min(100, (prev[healthId] ?? 75) + delta));
+      return { ...prev, [healthId]: next };
+    });
+
     if (level === 1) {
       if (plantingStep < currentSteps.length - 1) {
         setPlantingStep(s => s + 1);
         setActionProgress(0);
+        setToast({ id: Date.now(), title: 'Langkah berhasil!', subtitle: currentSteps[plantingStep].title, tone: 'good' });
         return;
       }
 
@@ -702,6 +1165,7 @@ const TreeGame: React.FC = () => {
       setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 });
       setActivePlotId('p1');
       setCharPos({ x: 80, y: 80 });
+      setToast({ id: Date.now(), title: 'Level 1 selesai!', subtitle: 'Masuk ke Level 2', tone: 'info' });
       return;
     }
 
@@ -713,6 +1177,7 @@ const TreeGame: React.FC = () => {
       if (next < currentSteps.length) {
         setPlantingStep(next);
         setActionProgress(0);
+        setToast({ id: Date.now(), title: 'Bagus!', subtitle: `Pohon ${(['p1', 'p2', 'p3', 'p4'].indexOf(activePlotId) + 1) || 1} • ${currentSteps[next - 1]?.title ?? 'Lanjut'}`, tone: 'good' });
         return nextStages;
       }
 
@@ -726,16 +1191,35 @@ const TreeGame: React.FC = () => {
       setActivePlotId(nextPlot);
       setPlantingStep(nextStages[nextPlot] ?? 0);
       setActionProgress(0);
+      setToast({ id: Date.now(), title: 'Pohon selesai!', subtitle: 'Lanjut ke target berikutnya', tone: 'info' });
       return nextStages;
     });
   };
 
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 1800);
+    return () => window.clearTimeout(t);
+  }, [toast]);
+
   return (
-    <div className="min-h-screen bg-emerald-50 py-6 px-4 font-sans select-none overflow-hidden">
-      <div className="max-w-6xl mx-auto h-full flex flex-col">
+    <div className="min-h-screen py-3 sm:py-4 px-4 font-sans select-none overflow-hidden relative">
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          backgroundImage: [
+            'radial-gradient(circle at 18% 12%, rgba(16,185,129,0.22) 0 280px, transparent 420px)',
+            'radial-gradient(circle at 82% 18%, rgba(59,130,246,0.14) 0 260px, transparent 420px)',
+            'radial-gradient(circle at 70% 86%, rgba(245,158,11,0.16) 0 320px, transparent 520px)',
+            'repeating-linear-gradient(135deg, rgba(2,6,23,0.04) 0 2px, transparent 2px 18px)',
+            'linear-gradient(180deg, #ecfeff 0%, #ecfdf5 45%, #f0fdf4 100%)',
+          ].join(','),
+        }}
+      />
+      <div className="max-w-7xl mx-auto h-full flex flex-col relative">
         <button 
           onClick={() => navigate('/')}
-          className="flex items-center text-primary font-bold mb-4 hover:underline self-start"
+          className="flex items-center text-primary font-bold mb-3 hover:underline self-start"
         >
           <ArrowLeft size={18} className="mr-2" /> Kembali
         </button>
@@ -747,8 +1231,9 @@ const TreeGame: React.FC = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="bg-white p-6 sm:p-8 rounded-[2.5rem] shadow-xl border border-emerald-100 flex-1 flex flex-col"
+              className="bg-white/85 backdrop-blur-md p-6 sm:p-8 rounded-[2.5rem] shadow-2xl border border-emerald-100/80 flex-1 flex flex-col overflow-hidden relative"
             >
+              <div className="absolute inset-0 pointer-events-none opacity-70" style={{ backgroundImage: 'radial-gradient(circle at 12% 10%, rgba(16,185,129,0.18) 0 220px, transparent 360px), radial-gradient(circle at 88% 24%, rgba(59,130,246,0.12) 0 220px, transparent 360px)' }} />
               <div className="mb-6 text-center">
                 <h1 className="text-2xl sm:text-3xl font-black text-gray-900 mb-1 flex items-center justify-center gap-3">
                   <MapPin className="text-primary" /> Eksplorasi Bandung Raya
@@ -757,16 +1242,18 @@ const TreeGame: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-stretch">
-                <div className="lg:col-span-8 flex flex-col">
-                  <InteractiveMap 
-                    onHover={setHoveredRegion} 
-                    hoveredRegion={hoveredRegion} 
-                    onSelect={handleRegionSelect}
-                  />
+                <div className="lg:col-span-7 flex flex-col items-center justify-center">
+                  <div className="w-full max-w-[680px]">
+                    <InteractiveMap 
+                      onHover={setHoveredRegion} 
+                      hoveredRegion={hoveredRegion} 
+                      onSelect={handleRegionSelect}
+                    />
+                  </div>
                 </div>
 
-                <div className="lg:col-span-4 flex flex-col">
-                  <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100 h-full flex flex-col">
+                <div className="lg:col-span-5 flex flex-col">
+                  <div className="bg-emerald-50/80 p-6 rounded-[2rem] border border-emerald-100 h-full flex flex-col shadow-[inset_0_0_90px_rgba(16,185,129,0.10)]">
                     <h3 className="text-lg font-black text-gray-900 mb-4 uppercase flex items-center gap-2 border-b border-emerald-200 pb-3">
                       <Info size={20} className="text-primary" /> Analisis Lahan
                     </h3>
@@ -792,8 +1279,15 @@ const TreeGame: React.FC = () => {
                             {(hoveredRegion || selectedRegion)?.status !== 'hijau' ? (
                               <button
                                 onClick={() => handleRegionSelect((hoveredRegion || selectedRegion)!)}
-                                className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95"
+                                className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95 relative overflow-hidden"
                               >
+                                <motion.div
+                                  aria-hidden
+                                  className="absolute inset-0 opacity-40"
+                                  animate={{ x: ['-30%', '130%'] }}
+                                  transition={{ repeat: Infinity, duration: 2.4, ease: 'linear' }}
+                                  style={{ backgroundImage: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.7) 50%, transparent 100%)' }}
+                                />
                                 MULAI RESTORASI <Zap size={18} />
                               </button>
                             ) : (
@@ -823,8 +1317,9 @@ const TreeGame: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className="bg-white p-8 rounded-[3rem] shadow-xl border border-emerald-100 max-w-4xl mx-auto w-full"
+              className="bg-white/85 backdrop-blur-md p-8 rounded-[3rem] shadow-2xl border border-emerald-100/80 max-w-4xl mx-auto w-full overflow-hidden relative"
             >
+              <div className="absolute inset-0 pointer-events-none opacity-70" style={{ backgroundImage: 'radial-gradient(circle at 14% 18%, rgba(16,185,129,0.16) 0 220px, transparent 380px), radial-gradient(circle at 86% 22%, rgba(245,158,11,0.12) 0 240px, transparent 420px)' }} />
               <div className="text-center mb-10">
                 <span className="bg-emerald-100 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-2 inline-block">
                   Langkah 1: Pemilihan
@@ -842,7 +1337,8 @@ const TreeGame: React.FC = () => {
                     className="cursor-pointer group"
                   >
                     <div className="bg-emerald-50 p-8 rounded-[2.5rem] border-2 border-transparent group-hover:border-primary transition-all flex flex-col items-center text-center h-full">
-                      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm group-hover:shadow-md transition-all text-primary">
+                      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm group-hover:shadow-md transition-all text-primary relative overflow-hidden">
+                        <div className="absolute inset-0 opacity-60" style={{ backgroundImage: 'radial-gradient(circle at 30% 30%, rgba(16,185,129,0.18) 0 24px, transparent 46px)' }} />
                         <s.icon size={40} />
                       </div>
                       <h3 className="text-xl font-black text-gray-900 mb-2">{s.name}</h3>
@@ -861,10 +1357,11 @@ const TreeGame: React.FC = () => {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className="bg-[#fdf6e3] p-8 rounded-[3rem] shadow-xl text-center border-8 border-[#8b4513] max-w-5xl mx-auto w-full relative overflow-hidden"
+              className="bg-[#fdf6e3] p-6 sm:p-7 rounded-[3rem] shadow-2xl text-center border-8 border-[#8b4513] max-w-7xl mx-auto w-full relative overflow-hidden"
             >
+              <div className="absolute inset-0 pointer-events-none opacity-45" style={{ backgroundImage: 'radial-gradient(circle at 20% 10%, rgba(255,235,59,0.25) 0 240px, transparent 420px), radial-gradient(circle at 85% 18%, rgba(76,175,80,0.18) 0 220px, transparent 420px), repeating-linear-gradient(135deg, rgba(0,0,0,0.04) 0 2px, transparent 2px 16px)' }} />
               {/* Header SIM Style */}
-              <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 relative z-20 bg-[#f4e4bc] p-4 rounded-2xl border-4 border-[#d4a373] shadow-md">
+              <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4 relative z-20 bg-[#f4e4bc] p-4 rounded-2xl border-4 border-[#d4a373] shadow-md">
                 <div className="text-left">
                   <span className="bg-[#8b4513] text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-1 inline-block shadow-sm">
                     {selectedRegion.name} • {selectedSeedling.name}
@@ -880,7 +1377,8 @@ const TreeGame: React.FC = () => {
                       <p className="text-[10px] font-black text-[#8b4513] uppercase leading-none">Misi Selesai</p>
                       <p className="text-xl font-black text-[#2e7d32] leading-none mt-1">{Math.round(overallProgress * 100)}%</p>
                     </div>
-                    <div className="w-32 h-3 bg-[#e0e0e0] rounded-full overflow-hidden border-2 border-[#8b4513]">
+                    <div className="w-32 h-3 bg-[#e0e0e0] rounded-full overflow-hidden border-2 border-[#8b4513] relative">
+                      <div className="absolute inset-0 opacity-25" style={{ backgroundImage: 'repeating-linear-gradient(90deg, rgba(0,0,0,0.12) 0 6px, transparent 6px 12px)' }} />
                       <motion.div 
                         animate={{ width: `${overallProgress * 100}%` }}
                         className="h-full bg-[#4caf50]"
@@ -889,11 +1387,11 @@ const TreeGame: React.FC = () => {
                   </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch min-h-[560px]">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch h-[calc(100vh-220px)] max-h-[680px] min-h-[520px]">
                 {/* Interactive Area - Harvest Moon Style */}
                 <div 
                   ref={gameAreaRef}
-                  className="lg:col-span-8 rounded-[2rem] relative shadow-[inset_0_0_120px_rgba(0,0,0,0.25)] overflow-hidden border-4 border-[#558b2f]"
+                  className="lg:col-span-8 rounded-[2rem] relative h-full min-h-[420px] shadow-[inset_0_0_120px_rgba(0,0,0,0.25)] overflow-hidden border-4 border-[#558b2f]"
                   style={{ 
                     backgroundImage: [
                       'radial-gradient(circle at 12% 18%, rgba(255,235,59,0.18) 0 120px, transparent 160px)',
@@ -907,8 +1405,11 @@ const TreeGame: React.FC = () => {
                     backgroundPosition: '0 0, 0 0, 0 0, 0 0, 19px 19px, 0 0'
                   }}
                 >
-                  {/* Environmental Life */}
                   {[...Array(5)].map((_, i) => <Butterfly key={i} />)}
+                  <Cloud delay={0} top={10} size={220} opacity={0.35} />
+                  <Cloud delay={1.8} top={22} size={280} opacity={0.24} />
+                  <Cloud delay={3.2} top={6} size={180} opacity={0.22} />
+                  {[...Array(10)].map((_, i) => <FloatingLeaf key={i} seed={i + level * 11} />)}
 
                   <div className="absolute inset-0 pointer-events-none opacity-70">
                     <div className="absolute -left-10 top-24 w-[240px] h-[90px] bg-[#8d6e63]/35 rounded-full blur-md rotate-[-12deg]" />
@@ -931,6 +1432,69 @@ const TreeGame: React.FC = () => {
                     <div className="absolute top-4 left-0 w-full h-2 bg-[#8b4513]" />
                   </div>
 
+                  <div className="absolute top-4 right-4 z-40">
+                    <div className="bg-[#fff9eb]/90 backdrop-blur-md px-4 py-3 rounded-2xl border-2 border-[#d4a373] shadow-xl text-left">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${nearTargetNow ? 'bg-emerald-500' : 'bg-red-500'} shadow-[0_0_12px_rgba(0,0,0,0.18)]`} />
+                        <div className="text-[10px] font-black uppercase tracking-widest text-[#8b4513]">Status Target</div>
+                      </div>
+                      <div className="mt-1 text-xs font-black text-[#5d4037]">
+                        {nearTargetNow ? 'Dekat • Siap Aksi' : 'Jauh • Dekati Area'}
+                      </div>
+                      <div className="mt-2 flex items-center gap-2 text-[10px] font-black uppercase text-[#5d4037]/70">
+                        <Move size={14} />
+                        <span>WASD</span>
+                        <span className="opacity-40">•</span>
+                        <Sparkles size={14} />
+                        <span>Seret Alat</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="absolute bottom-6 left-6 z-40 flex flex-col gap-3">
+                    <div className="hidden sm:block">
+                      <div className="bg-[#fff9eb]/90 backdrop-blur-md px-4 py-2 rounded-2xl border-2 border-[#d4a373] shadow-xl text-left">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-[#8b4513]">Kontrol</div>
+                        <div className="mt-1 text-[10px] font-bold text-[#5d4037]/80 leading-tight">
+                          WASD/Arrow atau tombol arah
+                        </div>
+                      </div>
+                    </div>
+                    <DPad disabled={levelIntroOpen || Boolean(actionPlotId)} onMove={moveCharacter} />
+                  </div>
+
+                  <AnimatePresence>
+                    {toast && (
+                      <motion.div
+                        key={toast.id}
+                        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 18, scale: 0.98 }}
+                        className="absolute top-16 left-1/2 -translate-x-1/2 z-50"
+                      >
+                        <div
+                          className={`px-5 py-4 rounded-2xl shadow-2xl border-2 backdrop-blur-md ${
+                            toast.tone === 'good'
+                              ? 'bg-emerald-600/90 text-white border-emerald-200'
+                              : toast.tone === 'warn'
+                                ? 'bg-red-600/90 text-white border-red-200'
+                                : 'bg-[#8b4513]/90 text-white border-[#d4a373]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center">
+                              {toast.tone === 'good' ? <ShieldCheck size={18} /> : toast.tone === 'warn' ? <Zap size={18} /> : <Sparkles size={18} />}
+                            </div>
+                            <div className="text-left">
+                              <div className="text-[10px] font-black uppercase tracking-widest opacity-90">{toast.title}</div>
+                              {toast.subtitle && <div className="text-sm font-black leading-tight">{toast.subtitle}</div>}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   {/* Character */}
                   <motion.div
                     animate={{ 
@@ -942,7 +1506,12 @@ const TreeGame: React.FC = () => {
                     className="absolute z-30 pointer-events-none"
                     style={{ width: 60, height: 80 }}
                   >
-                    <CharacterSprite isWalking={isWalking} />
+                    <CharacterSprite
+                      isWalking={isWalking}
+                      actionId={actionPlotId === requiredPlotId ? currentSteps[plantingStep]?.id ?? null : null}
+                      toolIcon={plantingStep === 2 ? selectedSeedling.icon : currentSteps[plantingStep].icon}
+                      accent={selectedSeedling.color}
+                    />
                   </motion.div>
 
                   <div className="absolute inset-0">
@@ -951,6 +1520,10 @@ const TreeGame: React.FC = () => {
                       const near = isRequired && isNearTarget();
                       const stage = level === 1 ? plantingStep : (level2Stages[plot.id] ?? 0);
                       const size = Math.max(120, plot.size - 24);
+                      const moisture = plotMoisture[plot.id] ?? 45;
+                      const health = plotHealth[plot.id] ?? 75;
+                      const stageCap = health < 30 ? 3 : health < 45 ? 4 : 6;
+                      const stageShown = Math.min(stageCap, Math.min(stage, 6));
                       return (
                         <motion.div
                           key={plot.id}
@@ -999,10 +1572,37 @@ const TreeGame: React.FC = () => {
                             <RealisticTree
                               size={size + (Math.min(stage, 6) * 6)}
                               color={selectedSeedling.color}
-                              stage={Math.min(stage, 6)}
+                              stage={stageShown}
                               actionProgress={actionPlotId === plot.id ? actionProgress : 0}
                               icon={selectedSeedling.icon}
+                              health={health}
+                              moisture={moisture}
                             />
+
+                            {actionPlotId === plot.id && (
+                              <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
+                                <div className="bg-[#fff9eb]/90 backdrop-blur-md px-4 py-2 rounded-full border-2 border-[#d4a373] shadow-xl">
+                                  <div className="w-44 h-2 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
+                                    <motion.div animate={{ width: `${actionProgress}%` }} className="h-full bg-emerald-500" />
+                                  </div>
+                                  <div className="mt-1 text-[9px] font-black uppercase tracking-widest text-[#8b4513] text-center">
+                                    {currentSteps[plantingStep]?.title}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {moisture < 22 && stage >= 2 && (
+                              <div className="absolute -top-8 right-3 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border-2 shadow-md bg-red-50 text-red-700 border-red-200">
+                                Kering
+                              </div>
+                            )}
+
+                            {moisture > 85 && stage >= 2 && (
+                              <div className="absolute -top-8 right-3 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border-2 shadow-md bg-blue-50 text-blue-700 border-blue-200">
+                                Basah
+                              </div>
+                            )}
 
                             {level === 1 && plantingStep < 3 && isRequired && (
                               <div className="absolute inset-0 flex items-center justify-center">
@@ -1097,18 +1697,24 @@ const TreeGame: React.FC = () => {
                         setIsDragging(false);
                         if (levelIntroOpen) return;
                         if (isNearTarget()) {
-                          setActionProgress(100);
-                          setActionPlotId(requiredPlotId);
-                          setTimeout(() => {
-                            handleActionComplete();
-                            setActionPlotId(null);
-                          }, 1000);
+                          const plot = plots.find(p => p.id === requiredPlotId);
+                          if (plot) setCharDirection((charPos.x + 30) > plot.cx ? 'left' : 'right');
+                          setIsWalking(false);
+                          startAction(requiredPlotId);
                         }
                       }}
                       whileDrag={{ scale: 1.2 }}
-                      className="w-24 h-24 bg-[#fff9eb] rounded-2xl shadow-xl flex flex-col items-center justify-center cursor-grab active:cursor-grabbing border-4 border-[#8b4513] text-[#8b4513] relative overflow-hidden group"
+                      className="w-24 h-24 bg-[#fff9eb] rounded-2xl shadow-2xl flex flex-col items-center justify-center cursor-grab active:cursor-grabbing border-4 border-[#8b4513] text-[#8b4513] relative overflow-hidden group"
                     >
                       <div className="absolute inset-0 bg-[#8b4513]/5" />
+                      <motion.div
+                        aria-hidden
+                        className="absolute -inset-10 opacity-35"
+                        animate={{ rotate: [0, 360] }}
+                        transition={{ repeat: Infinity, duration: 10, ease: 'linear' }}
+                        style={{ backgroundImage: 'conic-gradient(from 0deg, rgba(76,175,80,0.45), rgba(255,235,59,0.35), rgba(244,63,94,0.25), rgba(76,175,80,0.45))' }}
+                      />
+                      <div className="absolute inset-0 bg-[#fff9eb]/75" />
                       {React.createElement(
                         plantingStep === 2 ? selectedSeedling.icon : currentSteps[plantingStep].icon, 
                         { size: 40, className: "relative z-10" }
@@ -1116,18 +1722,135 @@ const TreeGame: React.FC = () => {
                       <div className="text-[7px] font-black uppercase mt-1 relative z-10 opacity-60">
                         {currentSteps[plantingStep].id}
                       </div>
+                      <motion.div
+                        className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase tracking-widest text-[#8b4513] z-10"
+                        animate={{ opacity: [0.6, 1, 0.6] }}
+                        transition={{ repeat: Infinity, duration: 1.4 }}
+                      >
+                        Seret
+                      </motion.div>
                     </motion.div>
+                    <button
+                      type="button"
+                      disabled={!nearTargetNow || levelIntroOpen}
+                      onClick={() => {
+                        if (levelIntroOpen) return;
+                        if (!isNearTarget()) return;
+                        const plot = plots.find(p => p.id === requiredPlotId);
+                        if (plot) setCharDirection((charPos.x + 30) > plot.cx ? 'left' : 'right');
+                        setIsWalking(false);
+                        startAction(requiredPlotId);
+                      }}
+                      className={`mt-3 w-28 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl border-2 active:scale-95 transition-all ${
+                        nearTargetNow && !levelIntroOpen
+                          ? 'bg-[#8b4513] text-white border-[#5d4037]'
+                          : 'bg-slate-200/70 text-slate-400 border-slate-300'
+                      }`}
+                    >
+                      Aksi Cepat
+                    </button>
                   </div>
                 </div>
 
                 {/* Info & Guide - Wooden Style */}
-                <div className="lg:col-span-4 flex flex-col gap-4">
-                  <div className="bg-[#f4e4bc] p-6 rounded-[2rem] border-4 border-[#d4a373] shadow-md flex-1 flex flex-col text-left relative overflow-hidden">
+                <div className="lg:col-span-4 flex flex-col gap-3 h-full min-h-0">
+                  <div className="bg-[#f4e4bc] p-5 rounded-[2rem] border-4 border-[#d4a373] shadow-md flex-1 min-h-0 overflow-auto flex flex-col text-left relative">
                     <div className="absolute top-0 right-0 w-16 h-16 bg-[#d4a373] rotate-45 translate-x-8 -translate-y-8" />
                     <h3 className="text-xs font-black text-[#8b4513] uppercase mb-1 tracking-widest opacity-60">Langkah {plantingStep + 1}</h3>
                     <h4 className="text-xl font-black text-[#5d4037] mb-3 uppercase border-b-2 border-[#d4a373] pb-2">{currentSteps[plantingStep].title}</h4>
                     <p className="text-[#5d4037] text-xs leading-relaxed mb-6 font-medium italic">"{currentSteps[plantingStep].text}"</p>
                     
+                    <div className="mb-5 bg-[#fff9eb] rounded-2xl border-2 border-[#d4a373] p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-[#8b4513]">Checklist Misi</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-[#5d4037]/60">
+                          {level === 2 ? `${Object.values(level2Stages).filter(v => v >= currentSteps.length).length}/4` : `${plantingStep}/${currentSteps.length}`}
+                        </div>
+                      </div>
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        {currentSteps.map((s, i) => {
+                          const done = i < plantingStep || (level === 2 && (level2Stages[activePlotId] ?? 0) > i);
+                          const current = i === plantingStep;
+                          return (
+                            <div
+                              key={s.id}
+                              className={`rounded-xl border px-2 py-2 flex items-center gap-2 ${
+                                done
+                                  ? 'bg-emerald-50 border-emerald-200'
+                                  : current
+                                    ? 'bg-white border-[#8b4513]'
+                                    : 'bg-white/70 border-[#d4a373]'
+                              }`}
+                            >
+                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                                done
+                                  ? 'bg-emerald-600 text-white'
+                                  : current
+                                    ? 'bg-[#8b4513] text-white'
+                                    : 'bg-[#d4a373]/30 text-[#8b4513]'
+                              }`}>
+                                {React.createElement(s.icon, { size: 16 })}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-[9px] font-black uppercase text-[#5d4037] truncate">{s.title}</div>
+                                <div className={`text-[8px] font-black uppercase tracking-widest ${done ? 'text-emerald-700' : current ? 'text-[#8b4513]' : 'text-[#5d4037]/45'}`}>
+                                  {done ? 'Selesai' : current ? 'Sekarang' : 'Nanti'}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="mb-5 bg-[#fff9eb] rounded-2xl border-2 border-[#d4a373] p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-[#8b4513]">Edukasi</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-[#5d4037]/60">{selectedSeedling.name}</div>
+                      </div>
+                      <div className="mt-3 flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-[#8b4513] text-white flex items-center justify-center shadow-inner">
+                          <Sprout size={18} />
+                        </div>
+                        <div className="text-[11px] font-bold text-[#5d4037]/90 leading-relaxed">
+                          {currentSteps[plantingStep].edu}
+                        </div>
+                      </div>
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <div className="bg-white/70 border border-[#d4a373] rounded-xl px-3 py-2">
+                          <div className="text-[9px] font-black uppercase tracking-widest text-[#8b4513]">Kelembaban</div>
+                          <div className="mt-1 flex items-center gap-2">
+                            <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
+                              <motion.div
+                                animate={{ width: `${plotMoisture[level === 1 ? 'p1' : activePlotId] ?? 45}%` }}
+                                className={`h-full ${((plotMoisture[level === 1 ? 'p1' : activePlotId] ?? 45) < 25) ? 'bg-red-500' : 'bg-blue-500'}`}
+                              />
+                            </div>
+                            <div className="text-[10px] font-black text-[#5d4037]">
+                              {Math.round(plotMoisture[level === 1 ? 'p1' : activePlotId] ?? 45)}%
+                            </div>
+                          </div>
+                          {((plotMoisture[level === 1 ? 'p1' : activePlotId] ?? 45) < 25) && (
+                            <div className="mt-1 text-[9px] font-black uppercase tracking-widest text-red-600">Tanah kering</div>
+                          )}
+                        </div>
+                        <div className="bg-white/70 border border-[#d4a373] rounded-xl px-3 py-2">
+                          <div className="text-[9px] font-black uppercase tracking-widest text-[#8b4513]">Siklus Hari</div>
+                          <div className="mt-1 flex items-center gap-2">
+                            <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
+                              <motion.div
+                                animate={{ width: `${((dayPhase + 1) / 8) * 100}%` }}
+                                className="h-full bg-yellow-400"
+                              />
+                            </div>
+                            <div className="text-[10px] font-black text-[#5d4037]">
+                              {dayPhase + 1}/8
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="mt-auto p-4 bg-[#fff9eb] rounded-xl border-2 border-[#d4a373]">
                       <div className="flex items-center gap-3 text-[#2e7d32] font-black text-[10px]">
                         <div className="w-2 h-2 rounded-full bg-[#2e7d32] animate-pulse" />
@@ -1146,7 +1869,69 @@ const TreeGame: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="bg-[#3e2723] p-5 rounded-[2rem] text-white border-4 border-[#212121] shadow-lg">
+                  <div className="bg-[#0b1220] p-4 rounded-[2rem] text-white border-4 border-[#111827] shadow-2xl overflow-hidden relative">
+                    <div className="absolute inset-0 opacity-50" style={{ backgroundImage: 'radial-gradient(circle at 18% 20%, rgba(34,197,94,0.22) 0 160px, transparent 260px), radial-gradient(circle at 82% 30%, rgba(59,130,246,0.18) 0 160px, transparent 260px)' }} />
+                    <div className="relative">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-inner">
+                            <Trees size={20} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-white/50 uppercase leading-none">Dampak Lingkungan</p>
+                            <p className="text-xs font-black text-white mt-1 tracking-wider">Simulasi Restorasi</p>
+                          </div>
+                        </div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-white/60">
+                          {Math.round((envProgress.co2 + envProgress.water + envProgress.temp + envProgress.bio) * 25)}%
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-3">
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="text-[9px] font-black uppercase tracking-widest text-white/60">CO₂</div>
+                            <div className="text-[10px] font-black text-emerald-200">{Math.round(envScore.co2)} pts</div>
+                          </div>
+                          <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
+                            <motion.div animate={{ width: `${envProgress.co2 * 100}%` }} className="h-full bg-emerald-500" />
+                          </div>
+                        </div>
+
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="text-[9px] font-black uppercase tracking-widest text-white/60">Resapan</div>
+                            <div className="text-[10px] font-black text-blue-200">{Math.round(envScore.water)} pts</div>
+                          </div>
+                          <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
+                            <motion.div animate={{ width: `${envProgress.water * 100}%` }} className="h-full bg-blue-500" />
+                          </div>
+                        </div>
+
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="text-[9px] font-black uppercase tracking-widest text-white/60">Suhu</div>
+                            <div className="text-[10px] font-black text-yellow-200">-{Math.round(envScore.temp)} pts</div>
+                          </div>
+                          <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
+                            <motion.div animate={{ width: `${envProgress.temp * 100}%` }} className="h-full bg-yellow-400" />
+                          </div>
+                        </div>
+
+                        <div className="bg-white/5 border border-white/10 rounded-2xl p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="text-[9px] font-black uppercase tracking-widest text-white/60">Bio</div>
+                            <div className="text-[10px] font-black text-pink-200">{Math.round(envScore.bio)} pts</div>
+                          </div>
+                          <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
+                            <motion.div animate={{ width: `${envProgress.bio * 100}%` }} className="h-full bg-pink-500" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#3e2723] p-4 rounded-[2rem] text-white border-4 border-[#212121] shadow-lg">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-[#4caf50] rounded-xl flex items-center justify-center text-white shadow-inner">
                         <Zap size={20} />
