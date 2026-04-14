@@ -5,6 +5,75 @@ import { useNavigate } from 'react-router-dom';
 
 // --- Realistic Visual Components ---
 
+const SeedlingIcon = ({ type }: { type: string }) => {
+  if (type === 'Mahoni') {
+    return (
+      <svg viewBox="0 0 120 120" className="w-28 h-28 transform transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3 drop-shadow-xl z-10">
+        <defs>
+          <linearGradient id="mahoniGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#4ade80" />
+            <stop offset="100%" stopColor="#14532d" />
+          </linearGradient>
+          <linearGradient id="trunkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#78350f" />
+            <stop offset="100%" stopColor="#451a03" />
+          </linearGradient>
+        </defs>
+        <ellipse cx="60" cy="105" rx="35" ry="8" fill="rgba(0,0,0,0.15)" />
+        <path d="M52 105 C52 80 45 60 45 60 L75 60 C75 60 68 80 68 105 Z" fill="url(#trunkGrad)" />
+        <path d="M60 65 L40 40 M60 60 L80 35" fill="none" stroke="url(#trunkGrad)" strokeWidth="6" strokeLinecap="round" />
+        <circle cx="60" cy="35" r="28" fill="url(#mahoniGrad)" />
+        <circle cx="40" cy="45" r="22" fill="url(#mahoniGrad)" />
+        <circle cx="80" cy="45" r="22" fill="url(#mahoniGrad)" />
+        <circle cx="50" cy="20" r="18" fill="#22c55e" />
+        <circle cx="70" cy="20" r="18" fill="#22c55e" />
+      </svg>
+    );
+  }
+  if (type === 'Jati') {
+    return (
+      <svg viewBox="0 0 120 120" className="w-28 h-28 transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 drop-shadow-xl z-10">
+        <defs>
+          <linearGradient id="jatiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#a3e635" />
+            <stop offset="100%" stopColor="#4d7c0f" />
+          </linearGradient>
+        </defs>
+        <ellipse cx="60" cy="105" rx="30" ry="6" fill="rgba(0,0,0,0.15)" />
+        <path d="M60 105 C60 90 55 80 55 80" fill="none" stroke="#78350f" strokeWidth="6" strokeLinecap="round" />
+        <path d="M55 80 C20 70 5 30 60 10 C115 30 100 70 55 80 Z" fill="url(#jatiGrad)" />
+        <path d="M55 80 C60 50 60 20 60 10 M58 65 C45 55 30 50 30 50 M58 65 C70 55 85 50 85 50 M59 45 C45 35 35 30 35 30 M59 45 C75 35 85 30 85 30 M60 25 C50 20 45 15 45 15 M60 25 C70 20 75 15 75 15" fill="none" stroke="#3f6212" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (type === 'Pinus') {
+    return (
+      <svg viewBox="0 0 120 120" className="w-28 h-28 transform transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3 drop-shadow-xl z-10">
+        <defs>
+          <linearGradient id="pinusGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#34d399" />
+            <stop offset="100%" stopColor="#059669" />
+          </linearGradient>
+          <linearGradient id="pinusGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#10b981" />
+            <stop offset="100%" stopColor="#047857" />
+          </linearGradient>
+          <linearGradient id="pinusGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#059669" />
+            <stop offset="100%" stopColor="#064e3b" />
+          </linearGradient>
+        </defs>
+        <ellipse cx="60" cy="105" rx="35" ry="8" fill="rgba(0,0,0,0.15)" />
+        <path d="M55 105 L65 105 L62 70 L58 70 Z" fill="#78350f" />
+        <path d="M25 80 Q60 70 95 80 L60 30 Z" fill="url(#pinusGrad3)" />
+        <path d="M30 60 Q60 50 90 60 L60 15 Z" fill="url(#pinusGrad2)" />
+        <path d="M35 40 Q60 30 85 40 L60 5 Z" fill="url(#pinusGrad1)" />
+      </svg>
+    );
+  }
+  return <Trees size={64} className="text-emerald-700" />;
+};
+
 const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health, moisture }: { size: number, color: string, stage: number, actionProgress: number, icon?: React.ElementType, health: number, moisture: number }) => {
   const health01 = Math.max(0, Math.min(1, health / 100));
   const moisture01 = Math.max(0, Math.min(1, moisture / 100));
@@ -1337,9 +1406,9 @@ const TreeGame: React.FC = () => {
                     className="cursor-pointer group"
                   >
                     <div className="bg-emerald-50 p-8 rounded-[2.5rem] border-2 border-transparent group-hover:border-primary transition-all flex flex-col items-center text-center h-full">
-                      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm group-hover:shadow-md transition-all text-primary relative overflow-hidden">
-                        <div className="absolute inset-0 opacity-60" style={{ backgroundImage: 'radial-gradient(circle at 30% 30%, rgba(16,185,129,0.18) 0 24px, transparent 46px)' }} />
-                        <s.icon size={40} />
+                      <div className="w-40 h-40 bg-white rounded-full flex items-center justify-center mb-6 shadow-md group-hover:shadow-xl transition-all text-primary relative overflow-visible border-4 border-white">
+                        <div className="absolute inset-0 rounded-full opacity-60 overflow-hidden" style={{ backgroundImage: 'radial-gradient(circle at 30% 30%, rgba(16,185,129,0.18) 0 24px, transparent 46px)' }} />
+                        <SeedlingIcon type={s.name} />
                       </div>
                       <h3 className="text-xl font-black text-gray-900 mb-2">{s.name}</h3>
                       <p className="text-xs text-gray-500 leading-relaxed mb-6">{s.description}</p>
