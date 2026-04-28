@@ -1,6 +1,6 @@
 import React, { useState, useRef, memo, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
-import { MapPin, Trees, ArrowLeft, Thermometer, Droplets, Sun, Info, ShieldCheck, Zap, Move, Sparkles, Sprout, Trophy } from 'lucide-react';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { MapPin, Trees, ArrowLeft, Thermometer, Droplets, Sun, Info, ShieldCheck, Zap, Move, Sparkles, Sprout, Trophy, Shovel } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // --- Realistic Visual Components ---
@@ -73,6 +73,557 @@ const SeedlingIcon = ({ type }: { type: string }) => {
   }
   return <Trees size={64} className="text-emerald-700" />;
 };
+
+const HDBar = ({
+  value01,
+  from,
+  to,
+  track = 'rgba(255,255,255,0.18)',
+  height = 12,
+  rounded = 6,
+  className,
+}: {
+  value01: number;
+  from: string;
+  to: string;
+  track?: string;
+  height?: number;
+  rounded?: number;
+  className?: string;
+}) => {
+  const idRef = useRef(`hdbar-${Math.random().toString(16).slice(2)}`);
+  const id = idRef.current;
+  const v = Math.max(0, Math.min(1, value01));
+  const w = v * 100;
+  const knobX = Math.max(rounded, Math.min(100 - rounded, w));
+  return (
+    <svg
+      viewBox="0 0 100 10"
+      preserveAspectRatio="none"
+      className={className ?? ''}
+      style={{ height }}
+    >
+      <defs>
+        <linearGradient id={`${id}-g`} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor={from} />
+          <stop offset="100%" stopColor={to} />
+        </linearGradient>
+        <pattern id={`${id}-p`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="skewX(-18)">
+          <rect width="6" height="6" fill="transparent" />
+          <rect x="0" y="0" width="2" height="6" fill="rgba(255,255,255,0.10)" />
+        </pattern>
+        <filter id={`${id}-shadow`} x="-20%" y="-80%" width="140%" height="260%">
+          <feDropShadow dx="0" dy="1.2" stdDeviation="1.4" floodColor="rgba(0,0,0,0.45)" />
+        </filter>
+      </defs>
+      <rect x="0" y="0" width="100" height="10" rx={rounded} fill={track} />
+      <motion.rect
+        initial={false}
+        animate={{ width: w }}
+        x="0"
+        y="0"
+        height="10"
+        rx={rounded}
+        fill={`url(#${id}-g)`}
+        filter={`url(#${id}-shadow)`}
+      />
+      <motion.rect initial={false} animate={{ width: w }} x="0" y="0" height="10" rx={rounded} fill={`url(#${id}-p)`} opacity="0.7" />
+      <motion.rect initial={false} animate={{ width: w }} x="0" y="0.4" height="4" rx={rounded} fill="rgba(255,255,255,0.18)" />
+      <motion.circle
+        initial={false}
+        animate={{ cx: knobX }}
+        cy="5"
+        r="3.6"
+        fill="rgba(255,255,255,0.95)"
+        stroke="rgba(0,0,0,0.18)"
+        strokeWidth="0.6"
+      />
+      <motion.circle initial={false} animate={{ cx: knobX }} cy="5" r="2" fill={`url(#${id}-g)`} />
+    </svg>
+  );
+};
+
+type MascotPose = 'idle' | 'wave' | 'point' | 'plant' | 'water' | 'guard';
+
+type MascotAttention = {
+  pose?: MascotPose;
+  message?: string;
+  hint?: string;
+};
+
+const EnvMascotCard = memo(({
+  onGuide,
+  mode = 'full',
+  regionName,
+  regionStatus,
+  attention,
+}: {
+  onGuide: () => void;
+  mode?: 'full' | 'compact';
+  regionName?: string;
+  regionStatus?: string | null;
+  attention?: MascotAttention | null;
+}) => {
+  const [pose, setPose] = useState<MascotPose>('idle');
+  const [hovering, setHovering] = useState(false);
+  const [burstKey, setBurstKey] = useState(0);
+  const [idleTick, setIdleTick] = useState(0);
+
+  useEffect(() => {
+    if (mode === 'compact') return;
+    if (hovering) return;
+    if (attention?.pose) return;
+    if (pose !== 'idle') return;
+    const t = window.setInterval(() => setIdleTick(v => v + 1), 2600);
+    return () => window.clearInterval(t);
+  }, [attention?.pose, hovering, mode, pose]);
+
+  const idlePose: MascotPose = idleTick % 2 === 0 ? 'wave' : 'point';
+  const effectivePose: MascotPose = hovering ? 'wave' : (attention?.pose ?? (pose === 'idle' ? idlePose : pose));
+
+  const accent = useMemo(() => {
+    if (regionStatus === 'hijau') return { chipBg: 'bg-emerald-100', chipText: 'text-emerald-800', glow: 'rgba(16,185,129,0.22)', core: '#10b981' };
+    if (regionStatus === 'kritis') return { chipBg: 'bg-orange-100', chipText: 'text-orange-800', glow: 'rgba(251,146,60,0.22)', core: '#fb923c' };
+    if (regionStatus === 'gersang') return { chipBg: 'bg-red-100', chipText: 'text-red-800', glow: 'rgba(248,113,113,0.22)', core: '#f87171' };
+    return { chipBg: 'bg-emerald-100', chipText: 'text-emerald-800', glow: 'rgba(16,185,129,0.22)', core: '#10b981' };
+  }, [regionStatus]);
+
+  const setPoseAndBurst = (next: MascotPose) => {
+    setPose(next);
+    setBurstKey(k => k + 1);
+  };
+
+  const cyclePose = () => {
+    const order: MascotPose[] = ['idle', 'point', 'plant', 'water', 'guard', 'idle'];
+    const idx = Math.max(0, order.indexOf(pose));
+    setPoseAndBurst(order[(idx + 1) % order.length]);
+  };
+
+  const copy = useMemo(() => {
+    if (regionStatus === 'hijau') {
+      return {
+        headline: regionName ? `${regionName} sudah terproteksi` : 'Wilayah hijau itu penting!',
+        body: 'Yuk jaga tetap bersih, hemat air, dan dukung ruang hijau supaya manfaatnya bertahan lama.',
+      };
+    }
+    if (regionStatus === 'kritis') {
+      return {
+        headline: regionName ? `${regionName} butuh aksi cepat` : 'Wilayah kritis butuh aksi cepat',
+        body: 'Ayo mulai restorasi: tanam pohon, rawat, dan pantau dampaknya untuk lingkungan sekitar.',
+      };
+    }
+    if (regionStatus === 'gersang') {
+      return {
+        headline: regionName ? `Pulihkan ${regionName} bersama` : 'Pulihkan lahan gersang bersama',
+        body: 'Pilih wilayah, lalu kita jalankan langkah penanaman sampai pohon tumbuh sehat.',
+      };
+    }
+    if (mode === 'compact') {
+      return {
+        headline: 'Ayo lanjutkan gerakan lingkungan',
+        body: 'Lihat kondisi wilayah, lalu mulai restorasi jika perlu. Peta ada di kiri.',
+      };
+    }
+    const options = [
+      {
+        headline: 'Ayo bareng-bareng jaga lingkungan!',
+        body: 'Arahkan kursor ke wilayah di peta. Kita pilih yang butuh restorasi lalu mulai tanam pohon.',
+      },
+      {
+        headline: 'Gerakan tanam pohon untuk semua',
+        body: 'Mulai dari satu wilayah. Dampaknya bisa bikin udara lebih segar dan tanah lebih sejuk.',
+      },
+      {
+        headline: 'Satu aksi kecil, dampak besar',
+        body: 'Hover wilayah dulu untuk lihat status. Klik Oranye/Merah untuk mulai restorasi.',
+      },
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+  }, [mode, regionName, regionStatus]);
+
+  const speech = useMemo(() => {
+    if (attention?.message) return attention.message;
+    if (regionStatus === 'hijau') return 'Wilayah ini sudah aman. Coba wilayah lain ya.';
+    if (regionName && regionStatus && regionStatus !== 'hijau') return `Klik ${regionName} untuk mulai restorasi.`;
+    if (mode === 'compact') return 'Arahkan kursor ke peta kiri, lalu klik wilayah.';
+    return 'Arahkan kursor ke peta kiri, lalu klik wilayah Oranye/Merah untuk mulai tanam.';
+  }, [attention?.message, mode, regionName, regionStatus]);
+
+  const speechHint = useMemo(() => {
+    if (attention?.hint) return attention.hint;
+    if (regionStatus === 'hijau') return 'Cari Oranye/Merah';
+    if (regionStatus && regionStatus !== 'hijau') return 'Klik untuk mulai';
+    return 'Peta di kiri';
+  }, [attention?.hint, regionStatus]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={mode === 'compact' ? 'w-full flex items-center justify-center' : 'h-full flex flex-col items-center justify-center text-center'}
+    >
+      <div className="w-full rounded-3xl border border-emerald-200/80 bg-white/80 backdrop-blur-md shadow-[0_18px_50px_rgba(16,185,129,0.12)] p-5 relative overflow-hidden">
+        <motion.div
+          aria-hidden
+          className="absolute -top-12 -left-10 w-56 h-56 rounded-full blur-2xl opacity-70"
+          animate={{ x: [0, 12, 0], y: [0, -8, 0] }}
+          transition={{ repeat: Infinity, duration: 7, ease: 'easeInOut' }}
+          style={{ background: `radial-gradient(circle, ${accent.glow} 0%, transparent 70%)` }}
+        />
+        <motion.div
+          aria-hidden
+          className="absolute -bottom-16 -right-10 w-64 h-64 rounded-full blur-2xl opacity-70"
+          animate={{ x: [0, -14, 0], y: [0, 10, 0] }}
+          transition={{ repeat: Infinity, duration: 8.5, ease: 'easeInOut' }}
+          style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%)' }}
+        />
+
+        <div className={`relative z-10 flex items-center gap-4 ${mode === 'compact' ? 'py-1' : ''}`}>
+          <div className={`relative shrink-0 ${mode === 'compact' ? 'w-[96px]' : 'w-[132px]'}`}>
+            <motion.button
+              type="button"
+              onMouseEnter={() => setHovering(true)}
+              onMouseLeave={() => setHovering(false)}
+              onClick={cyclePose}
+              className={`relative w-full ${mode === 'compact' ? 'h-[112px]' : 'h-[164px]'} rounded-[2.2rem] shadow-xl border border-white/70 bg-white/70 backdrop-blur-md overflow-hidden text-left`}
+              style={{
+                backgroundImage: `radial-gradient(circle at 30% 18%, ${accent.glow} 0 70px, rgba(255,255,255,0.9) 120px)`,
+              }}
+              animate={{ rotate: [-1.2, 1.2, -1.2] }}
+              transition={{ repeat: Infinity, duration: 4.2, ease: 'easeInOut' }}
+            >
+              <AnimatePresence mode="wait">
+                {(mode !== 'compact' || Boolean(attention?.pose) || Boolean(regionName)) && (
+                  <motion.div
+                    key={`${speech}-${speechHint}`}
+                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.96 }}
+                    transition={{ duration: 0.18 }}
+                    className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-2 z-30"
+                  >
+                    <div className="relative max-w-[142px]">
+                      <div className="rounded-2xl bg-white/90 backdrop-blur-md border border-emerald-200/70 shadow-xl px-3 py-2">
+                        <div className="flex items-start gap-2">
+                          <motion.div
+                            animate={{ y: [0, -2, 0], rotate: [0, -6, 0] }}
+                            transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+                            className="mt-[1px] text-emerald-700"
+                          >
+                            <MapPin size={14} />
+                          </motion.div>
+                          <div className="min-w-0">
+                            <div className="text-[9px] font-black uppercase tracking-widest text-slate-700/70 leading-none">{speechHint}</div>
+                            <div className="mt-1 text-[10px] font-black text-slate-900 leading-snug">{speech}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-3 h-3 rotate-45 bg-white/90 border-r border-b border-emerald-200/70" />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <motion.div
+                aria-hidden
+                className="absolute inset-0 opacity-80"
+                animate={{ y: [0, -2, 0], scale: [1, 1.01, 1] }}
+                transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut' }}
+                style={{
+                  backgroundImage:
+                    'radial-gradient(circle at 20% 15%, rgba(255,255,255,0.65) 0 30px, transparent 78px), radial-gradient(circle at 78% 22%, rgba(59,130,246,0.10) 0 42px, transparent 110px)',
+                }}
+              />
+
+              <motion.div
+                aria-hidden
+                className="absolute left-1/2 -translate-x-1/2 bottom-3 w-16 h-5 rounded-full blur-[0.2px]"
+                style={{ backgroundColor: 'rgba(0,0,0,0.10)' }}
+                animate={{ scale: [1, 0.92, 1] }}
+                transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut' }}
+              />
+
+              <motion.div
+                className="absolute left-1/2 -translate-x-1/2 bottom-6"
+                animate={{
+                  y: [0, -3, 0],
+                  x:
+                    effectivePose === 'point'
+                      ? [-2, -4, -2]
+                      : effectivePose === 'plant'
+                        ? [1, 2, 1]
+                        : effectivePose === 'guard'
+                          ? [0, 1, 0]
+                          : [0, 0, 0],
+                }}
+                transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut' }}
+              >
+                <div className="relative w-[72px] h-[118px]">
+                  <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[54px] h-[54px] rounded-full border border-emerald-200/70 shadow-[0_10px_22px_rgba(0,0,0,0.12)] bg-white">
+                    <div
+                      className="absolute inset-0 rounded-full opacity-70"
+                      style={{ background: `radial-gradient(circle at 35% 30%, ${accent.glow} 0 18px, transparent 42px)` }}
+                    />
+                    <motion.div
+                      className="absolute left-[14px] top-[22px] w-[7px] h-[10px] rounded-full bg-slate-900/80"
+                      animate={{ scaleY: [1, 1, 0.15, 1, 1] }}
+                      transition={{ repeat: Infinity, duration: 4.2, times: [0, 0.45, 0.5, 0.55, 1] }}
+                    />
+                    <motion.div
+                      className="absolute right-[14px] top-[22px] w-[7px] h-[10px] rounded-full bg-slate-900/80"
+                      animate={{ scaleY: [1, 1, 0.15, 1, 1] }}
+                      transition={{ repeat: Infinity, duration: 4.2, times: [0, 0.45, 0.5, 0.55, 1] }}
+                    />
+                    <motion.div
+                      className="absolute left-1/2 -translate-x-1/2 top-[35px] w-[18px] h-[10px] rounded-b-full border-b-2 border-slate-900/60"
+                      animate={{
+                        y: effectivePose === 'plant' ? [0, 1, 0] : 0,
+                        rotate: effectivePose === 'guard' ? [-2, 2, -2] : 0,
+                      }}
+                      transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
+                    />
+                    <div className="absolute left-[10px] top-[34px] w-[12px] h-[6px] rounded-full bg-rose-300/40 blur-[0.5px]" />
+                    <div className="absolute right-[10px] top-[34px] w-[12px] h-[6px] rounded-full bg-rose-300/40 blur-[0.5px]" />
+                    <div className="absolute left-1/2 -translate-x-1/2 -top-2 w-10 h-6 rounded-[1.2rem] border border-white/70 shadow-lg" style={{ backgroundColor: accent.core }} />
+                  </div>
+
+                  <div className="absolute left-1/2 -translate-x-1/2 top-[52px] w-[54px] h-[46px] rounded-[1.4rem] border border-emerald-200/60 shadow-[0_10px_22px_rgba(0,0,0,0.10)] bg-white">
+                    <div className="absolute inset-0 rounded-[1.4rem] opacity-75" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(16,185,129,0.10) 100%)' }} />
+                    <div className="absolute left-1/2 -translate-x-1/2 top-2 w-8 h-2 rounded-full bg-slate-900/10" />
+                    <div className="absolute left-1/2 -translate-x-1/2 top-5 w-10 h-2 rounded-full bg-slate-900/8" />
+                  </div>
+
+                  <motion.div
+                    aria-hidden
+                    className="absolute left-1 top-[60px] w-[22px] h-[10px] rounded-full bg-emerald-600/25 blur-[0.2px] border border-emerald-500/20"
+                    animate={
+                      effectivePose === 'point'
+                        ? { rotate: -50, x: -4, y: -4 }
+                        : effectivePose === 'plant'
+                          ? { rotate: 35, x: 2, y: 2 }
+                          : { rotate: [-18, 12, -18], x: [0, 2, 0], y: [0, -1, 0] }
+                    }
+                    transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
+                  />
+                  <motion.div
+                    aria-hidden
+                    className="absolute right-1 top-[60px] w-[22px] h-[10px] rounded-full bg-emerald-600/25 blur-[0.2px] border border-emerald-500/20"
+                    animate={
+                      effectivePose === 'wave'
+                        ? { rotate: [30, -10, 30], x: [0, -2, 0], y: [0, -2, 0] }
+                        : effectivePose === 'water'
+                          ? { rotate: [18, 34, 18], x: [0, 1, 0], y: [0, 2, 0] }
+                          : { rotate: [18, -12, 18], x: [0, -2, 0], y: [0, -1, 0] }
+                    }
+                    transition={{ repeat: Infinity, duration: 1.9, ease: 'easeInOut', delay: 0.05 }}
+                  />
+
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-[18px] w-[58px] h-[10px] rounded-full bg-slate-900/10" />
+                  <motion.div
+                    aria-hidden
+                    className="absolute left-[18px] bottom-0 w-[14px] h-[24px] rounded-[1rem] bg-slate-900/25"
+                    animate={
+                      effectivePose === 'plant' || effectivePose === 'water'
+                        ? { y: [0, 1, 0] }
+                        : effectivePose === 'point' || effectivePose === 'wave'
+                          ? { y: [0, -2, 0] }
+                          : { y: [0, -1, 0] }
+                    }
+                    transition={{ repeat: Infinity, duration: 0.7, ease: 'easeInOut' }}
+                  />
+                  <motion.div
+                    aria-hidden
+                    className="absolute right-[18px] bottom-0 w-[14px] h-[24px] rounded-[1rem] bg-slate-900/25"
+                    animate={
+                      effectivePose === 'plant' || effectivePose === 'water'
+                        ? { y: [0, -1, 0] }
+                        : effectivePose === 'point' || effectivePose === 'wave'
+                          ? { y: [0, -2, 0] }
+                          : { y: [0, -1, 0] }
+                    }
+                    transition={{ repeat: Infinity, duration: 0.7, ease: 'easeInOut', delay: 0.18 }}
+                  />
+                  <motion.div
+                    aria-hidden
+                    className="absolute left-[10px] bottom-0 w-[22px] h-[12px] rounded-[1rem] bg-white shadow-md border border-slate-200/80"
+                    animate={{
+                      rotate:
+                        effectivePose === 'plant' || effectivePose === 'water'
+                          ? [-3, 3, -3]
+                          : effectivePose === 'point' || effectivePose === 'wave'
+                            ? [-2, 2, -2]
+                            : 0,
+                    }}
+                    transition={{ repeat: Infinity, duration: 0.7, ease: 'easeInOut' }}
+                  />
+                  <motion.div
+                    aria-hidden
+                    className="absolute right-[10px] bottom-0 w-[22px] h-[12px] rounded-[1rem] bg-white shadow-md border border-slate-200/80"
+                    animate={{
+                      rotate:
+                        effectivePose === 'plant' || effectivePose === 'water'
+                          ? [3, -3, 3]
+                          : effectivePose === 'point' || effectivePose === 'wave'
+                            ? [2, -2, 2]
+                            : 0,
+                    }}
+                    transition={{ repeat: Infinity, duration: 0.7, ease: 'easeInOut', delay: 0.18 }}
+                  />
+
+                  <AnimatePresence>
+                    {effectivePose === 'plant' && (
+                      <motion.div
+                        key="tool-plant"
+                        initial={{ opacity: 0, scale: 0.8, x: 8, y: -2 }}
+                        animate={{ opacity: 1, scale: 1, x: 10, y: 0, rotate: [-8, 8, -8] }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ rotate: { repeat: Infinity, duration: 1.6, ease: 'easeInOut' } }}
+                        className="absolute right-0 top-[58px] text-slate-800"
+                      >
+                        <Shovel size={18} />
+                      </motion.div>
+                    )}
+                    {effectivePose === 'water' && (
+                      <motion.div
+                        key="tool-water"
+                        initial={{ opacity: 0, scale: 0.85, x: 8, y: 0 }}
+                        animate={{ opacity: 1, scale: 1, x: 10, y: 2 }}
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        className="absolute right-0 top-[58px] text-blue-500"
+                      >
+                        <Droplets size={18} />
+                      </motion.div>
+                    )}
+                    {effectivePose === 'point' && (
+                      <motion.div
+                        key="tool-point"
+                        initial={{ opacity: 0, scale: 0.85, x: -8, y: 0 }}
+                        animate={{ opacity: 1, scale: 1, x: -10, y: -2 }}
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        className="absolute left-0 top-[58px] text-emerald-700"
+                      >
+                        <MapPin size={18} />
+                      </motion.div>
+                    )}
+                    {effectivePose === 'guard' && (
+                      <motion.div
+                        key="tool-guard"
+                        initial={{ opacity: 0, scale: 0.85, y: -2 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        className="absolute left-1/2 -translate-x-1/2 top-[54px] text-emerald-700"
+                      >
+                        <ShieldCheck size={18} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <AnimatePresence>
+                    <motion.div
+                      key={`burst-${burstKey}`}
+                      initial={{ opacity: 0, scale: 0.6, y: 6 }}
+                      animate={{ opacity: [0, 1, 0], scale: [0.6, 1.15, 0.85], y: [6, -8, -14] }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.7 }}
+                      className="absolute left-1/2 -translate-x-1/2 top-[50px] text-yellow-400 pointer-events-none"
+                    >
+                      <Sparkles size={22} />
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+
+              <AnimatePresence>
+                {mode !== 'compact' && (
+                  <motion.div
+                    key="hint"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 0.9, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    className="absolute left-1/2 -translate-x-1/2 bottom-2 text-[9px] font-black uppercase tracking-widest text-slate-600"
+                    style={{ textShadow: '0 1px 0 rgba(255,255,255,0.6)' }}
+                  >
+                    Klik maskot
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          </div>
+
+          <div className="flex-1 text-left">
+            <div className="text-[11px] font-black uppercase tracking-widest text-emerald-700/80">Maskot Gerakan Lingkungan</div>
+            <div className="mt-1 text-base font-black text-slate-900 leading-tight">{copy.headline}</div>
+            <div
+              className={`mt-2 text-xs text-slate-600 leading-relaxed ${mode === 'compact' ? 'opacity-90' : ''}`}
+              style={mode === 'compact' ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } : undefined}
+            >
+              {copy.body}
+            </div>
+
+            <div className={`mt-3 flex items-center gap-2 flex-wrap ${mode === 'compact' ? 'hidden' : ''}`}>
+              <motion.button
+                type="button"
+                onClick={() => setPoseAndBurst('plant')}
+                className={`px-2 py-1 rounded-full ${accent.chipBg} ${accent.chipText} text-[10px] font-black uppercase flex items-center gap-1 border border-white/60 shadow-sm active:scale-95 transition-transform`}
+                whileHover={{ y: -1 }}
+              >
+                <Sprout size={12} /> Tanam
+              </motion.button>
+              <motion.button
+                type="button"
+                onClick={() => setPoseAndBurst('water')}
+                className="px-2 py-1 rounded-full bg-sky-100 text-sky-800 text-[10px] font-black uppercase flex items-center gap-1 border border-white/60 shadow-sm active:scale-95 transition-transform"
+                whileHover={{ y: -1 }}
+              >
+                <Droplets size={12} /> Rawat
+              </motion.button>
+              <motion.button
+                type="button"
+                onClick={() => setPoseAndBurst('guard')}
+                className="px-2 py-1 rounded-full bg-emerald-50 text-emerald-900 text-[10px] font-black uppercase flex items-center gap-1 border border-emerald-200/70 shadow-sm active:scale-95 transition-transform"
+                whileHover={{ y: -1 }}
+              >
+                <ShieldCheck size={12} /> Lindungi
+              </motion.button>
+              <motion.button
+                type="button"
+                onClick={() => {
+                  setPoseAndBurst('point');
+                  onGuide();
+                }}
+                className="px-2 py-1 rounded-full bg-white text-slate-700 text-[10px] font-black uppercase flex items-center gap-1 border border-slate-200/70 shadow-sm active:scale-95 transition-transform"
+                whileHover={{ y: -1 }}
+              >
+                <MapPin size={12} /> Ajak
+              </motion.button>
+            </div>
+
+            <div className={`mt-4 flex items-center gap-2 ${mode === 'compact' ? 'mt-3' : ''}`}>
+              <button
+                type="button"
+                onClick={onGuide}
+                className="px-4 py-2 rounded-2xl bg-primary text-white text-[11px] font-black uppercase shadow-lg hover:shadow-xl active:scale-95 transition-all inline-flex items-center gap-2"
+              >
+                Tunjukkan Caranya <MapPin size={14} />
+              </button>
+              <motion.div
+                aria-hidden
+                className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2"
+                animate={{ x: [0, 6, 0], opacity: [0.6, 1, 0.6] }}
+                transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                Lihat peta di kiri
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+
+EnvMascotCard.displayName = 'EnvMascotCard';
 
 const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health, moisture }: { size: number, color: string, stage: number, actionProgress: number, icon?: React.ElementType, health: number, moisture: number }) => {
   const health01 = Math.max(0, Math.min(1, health / 100));
@@ -736,12 +1287,78 @@ const allRegions: Region[] = [
   { id: 'kbb-cililin', name: 'Cililin & Sindangkerta', status: 'hijau', description: 'Kawasan barat daya dengan waduk dan perbukitan.', path: "M 5,45 L 15,40 L 30,45 L 35,55 L 30,65 L 15,70 L 5,60 Z", x: 18, y: 55 },
 ];
 
-const RegionItem = memo(({ region, isHovered, onHover, onClick }: { 
-  region: Region, isHovered: boolean, onHover: (r: Region | null) => void, onClick: (r: Region) => void 
+const RegionItem = memo(({ region, isHovered, isFocused, focusActive, hoverActive, onHover, onClick }: {
+  region: Region;
+  isHovered: boolean;
+  isFocused: boolean;
+  focusActive: boolean;
+  hoverActive: boolean;
+  onHover: (r: Region | null) => void;
+  onClick: (r: Region) => void;
 }) => {
   const isHijau = region.status === 'hijau';
   const fillUrl = `url(#grad-${region.status})`;
-  const strokeColor = isHovered ? "#ffffff" : "rgba(255,255,255,0.6)";
+  const glowColor =
+    region.status === 'hijau'
+      ? 'rgba(16,185,129,0.55)'
+      : region.status === 'kritis'
+        ? 'rgba(245,158,11,0.60)'
+        : 'rgba(239,68,68,0.62)';
+  const isDimmed = (focusActive && !isFocused) || (hoverActive && !isHovered && !isFocused);
+  const strokeColor = isHovered || isFocused ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.32)';
+  const labelLinesFull = useMemo(() => {
+    const cleaned = region.name.replace(/\s*\(.*?\)\s*/g, '').replace(/^Kota\s+/i, '').trim();
+    const parts = cleaned.split('&').map(s => s.trim()).filter(Boolean);
+    if (parts.length >= 2) return [parts[0], parts[1]];
+    const words = cleaned.split(/\s+/).filter(Boolean);
+    if (words.length <= 2) return [cleaned];
+    return [`${words.slice(0, 2).join(' ')}`, `${words.slice(2).join(' ')}`];
+  }, [region.name]);
+  const labelLineCompact = useMemo(() => {
+    const cleaned = region.name.replace(/\s*\(.*?\)\s*/g, '').replace(/^Kota\s+/i, '').trim();
+    const firstPart = cleaned.split('&')[0]?.trim() ?? cleaned;
+    const firstWord = firstPart.split(/\s+/).filter(Boolean)[0] ?? firstPart;
+    return firstWord.length > 10 ? `${firstWord.slice(0, 10)}…` : firstWord;
+  }, [region.name]);
+  const showFullLabel = isHovered || isFocused;
+  const labelLines = showFullLabel ? labelLinesFull : [labelLineCompact];
+  const labelOffset = useMemo(() => {
+    const map: Record<string, { dx: number; dy: number }> = {
+      'bdg-bojonagara': { dx: 0, dy: 2 },
+      'bdg-cibeunying': { dx: 0, dy: -2 },
+      'bdg-ujungberung': { dx: -10, dy: 2 },
+      'bdg-karees': { dx: 0, dy: 0 },
+      'bdg-tegalega': { dx: 0, dy: 4 },
+      'bdg-gedebage': { dx: -4, dy: 4 },
+      'kab-margahayu': { dx: 0, dy: -2 },
+      'kab-baleendah': { dx: -2, dy: 4 },
+      'kab-soreang': { dx: -2, dy: -4 },
+      'kab-ciwidey': { dx: 10, dy: -2 },
+      'kab-pangalengan': { dx: 0, dy: -10 },
+      'kab-majalaya': { dx: -10, dy: 2 },
+      'kbb-lembang': { dx: 0, dy: 6 },
+      cimahi: { dx: 2, dy: -8 },
+      'kbb-padalarang': { dx: 6, dy: -2 },
+      'kbb-cipatat': { dx: 10, dy: 0 },
+      'kbb-cililin': { dx: 8, dy: 2 },
+    };
+    return map[region.id] ?? { dx: 0, dy: 0 };
+  }, [region.id]);
+
+  const labelBox = useMemo(() => {
+    const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+    const w = showFullLabel ? (labelLines.length > 1 ? 40 : 34) : 26;
+    const h = showFullLabel ? (labelLines.length > 1 ? 16 : 12) : 9;
+    const x = clamp(region.x - w / 2 + labelOffset.dx, 2, 118 - w);
+    const y = clamp(region.y - h / 2 + labelOffset.dy, 2, 98 - h);
+    const fontSize =
+      region.id === 'cimahi'
+        ? (showFullLabel ? 6.3 : 5.0)
+        : labelLines.length > 1
+          ? (showFullLabel ? 6.1 : 5.0)
+          : (showFullLabel ? 6.5 : 5.2);
+    return { x, y, w, h, fontSize };
+  }, [labelLines.length, labelOffset.dx, labelOffset.dy, region.id, region.x, region.y, showFullLabel]);
   
   return (
     <motion.g
@@ -750,41 +1367,56 @@ const RegionItem = memo(({ region, isHovered, onHover, onClick }: {
       onClick={() => onClick(region)}
       className={!isHijau ? 'cursor-pointer' : 'cursor-default'}
       animate={{ 
-        scale: isHovered ? 1.03 : 1,
-        y: isHovered ? -2 : 0,
-        filter: isHovered ? 'drop-shadow(0px 8px 8px rgba(0,0,0,0.25))' : 'drop-shadow(0px 2px 3px rgba(0,0,0,0.15))',
+        scale: isFocused ? 1.055 : isHovered ? 1.04 : 1,
+        opacity: isDimmed ? 0.12 : 1,
+        filter: isFocused
+          ? `drop-shadow(0px 10px 18px rgba(0,0,0,0.38)) drop-shadow(0px 0px 26px ${glowColor})`
+          : isHovered
+            ? `drop-shadow(0px 8px 14px rgba(0,0,0,0.34)) drop-shadow(0px 0px 20px ${glowColor})`
+            : 'drop-shadow(0px 2px 4px rgba(0,0,0,0.22))',
       }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      transition={{ duration: 0.38, ease: 'easeInOut' }}
       style={{ transformOrigin: `${region.x}px ${region.y}px` }}
     >
-      {/* 3D Base Thickness */}
-      <path
-        d={region.path}
-        fill="#0f172a"
-        opacity={0.2}
-        transform="translate(0, 2)"
-      />
       {/* Main Surface */}
       <path
         d={region.path}
         fill={fillUrl}
-        fillOpacity={isHovered ? 1 : 0.9}
+        fillOpacity={isDimmed ? 0.35 : (isHovered || isFocused ? 1 : 0.86)}
         stroke={strokeColor}
-        strokeWidth={isHovered ? 0.8 : 0.4}
+        strokeWidth={isHovered || isFocused ? 0.9 : 0.35}
         strokeLinejoin="round"
+      />
+      <path
+        d={region.path}
+        fill="transparent"
+        stroke={glowColor}
+        strokeWidth={isHovered || isFocused ? 1.6 : 0}
+        opacity={isHovered || isFocused ? 0.55 : 0}
+        strokeLinejoin="round"
+        className="pointer-events-none"
       />
       {/* Texture Overlay */}
       <path
         d={region.path}
         fill="url(#pattern-dots)"
-        opacity={isHovered ? 0.3 : 0.15}
+        opacity={isDimmed ? 0.06 : (isHovered || isFocused ? 0.22 : 0.10)}
         className="pointer-events-none"
       />
       
       {/* Interactive Markers */}
       {!isHijau ? (
         <g transform={`translate(${region.x}, ${region.y})`}>
-          {isHovered && <circle r="3" fill="white" opacity="0.3" className="animate-ping" />}
+          {(isHovered || isFocused) && <circle r="3.5" fill="white" opacity="0.22" className="animate-ping" />}
+          {!isHovered && !isFocused && (
+            <motion.circle
+              r="3.8"
+              fill="white"
+              opacity="0.10"
+              animate={{ r: [3.2, 4.6, 3.2], opacity: [0.08, 0.16, 0.08] }}
+              transition={{ repeat: Infinity, duration: region.status === 'gersang' ? 1.6 : 2.2, ease: 'easeInOut' }}
+            />
+          )}
           <circle r="1.5" fill="white" className="drop-shadow-md" />
           <circle r="0.6" fill={region.status === 'kritis' ? '#f59e0b' : '#ef4444'} />
         </g>
@@ -793,39 +1425,210 @@ const RegionItem = memo(({ region, isHovered, onHover, onClick }: {
           <circle r="1" fill="#a7f3d0" opacity="0.6" />
         </g>
       )}
+
+      <foreignObject
+        x={labelBox.x}
+        y={labelBox.y}
+        width={labelBox.w}
+        height={labelBox.h}
+        className="pointer-events-none"
+        style={{ opacity: showFullLabel ? 0.98 : 0.60 }}
+      >
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            style={{
+              padding: showFullLabel ? (labelLines.length > 1 ? '1px 6px' : '1px 7px') : '0px 5px',
+              borderRadius: 999,
+              background: showFullLabel ? 'rgba(2,6,23,0.46)' : 'rgba(2,6,23,0.28)',
+              border: showFullLabel ? '1px solid rgba(255,255,255,0.14)' : '1px solid rgba(255,255,255,0.08)',
+              boxShadow: showFullLabel ? '0 8px 18px rgba(0,0,0,0.26)' : '0 5px 12px rgba(0,0,0,0.20)',
+              color: 'rgba(255,255,255,0.95)',
+              fontWeight: 900,
+              fontSize: `${labelBox.fontSize}px`,
+              lineHeight: 1.05,
+              letterSpacing: '0.01em',
+              textTransform: 'none',
+              textAlign: 'center',
+              textShadow: showFullLabel ? '0 2px 6px rgba(0,0,0,0.5)' : '0 1px 3px rgba(0,0,0,0.5)',
+              maxWidth: '100%',
+            }}
+          >
+            {labelLines.length > 1 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <div>{labelLines[0]}</div>
+                <div style={{ opacity: 0.92 }}>{labelLines[1]}</div>
+              </div>
+            ) : (
+              <div>{labelLines[0]}</div>
+            )}
+          </div>
+        </div>
+      </foreignObject>
     </motion.g>
   );
 });
 
-const InteractiveMap = memo(({ onHover, hoveredRegion, onSelect }: { 
-  onHover: (r: Region | null) => void, 
-  hoveredRegion: Region | null,
-  onSelect: (r: Region) => void 
+const InteractiveMap = memo(({
+  onHover,
+  hoveredRegion,
+  onSelect,
+  focusedRegionId,
+  onResetFocus,
+}: {
+  onHover: (r: Region | null) => void;
+  hoveredRegion: Region | null;
+  onSelect: (r: Region) => void;
+  focusedRegionId?: string | null;
+  onResetFocus?: () => void;
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
+  const rectRef = useRef<DOMRect | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const pendingRef = useRef<{ x: number; y: number } | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const smoothX = useSpring(mouseX, { damping: 25, stiffness: 200 });
   const smoothY = useSpring(mouseY, { damping: 25, stiffness: 200 });
+  const [filters, setFilters] = useState<{ hijau: boolean; kritis: boolean; gersang: boolean }>({ hijau: true, kritis: true, gersang: true });
+  const focusActive = Boolean(focusedRegionId);
+  const hoverActive = Boolean(hoveredRegion);
+  const [ripple, setRipple] = useState<{ id: string; key: number } | null>(null);
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+  const [tooltipSize, setTooltipSize] = useState({ w: 220, h: 120 });
+
+  useEffect(() => {
+    const el = mapRef.current;
+    if (!el) return;
+    const updateRect = () => {
+      const r = el.getBoundingClientRect();
+      rectRef.current = r;
+      setContainerSize({ w: r.width, h: r.height });
+    };
+    updateRect();
+    const ro = new ResizeObserver(updateRect);
+    ro.observe(el);
+    window.addEventListener('scroll', updateRect, true);
+    window.addEventListener('resize', updateRect);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('scroll', updateRect, true);
+      window.removeEventListener('resize', updateRect);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hoveredRegion) return;
+    const el = tooltipRef.current;
+    if (!el) return;
+    const update = () => {
+      const r = el.getBoundingClientRect();
+      setTooltipSize({ w: r.width, h: r.height });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [hoveredRegion]);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hoveredRegion) return;
+    if (!filters[hoveredRegion.status]) onHover(null);
+  }, [filters, hoveredRegion, onHover]);
+
+  useEffect(() => {
+    if (!focusedRegionId) return;
+    setRipple({ id: focusedRegionId, key: Date.now() });
+  }, [focusedRegionId]);
+
+  const visibleRegions = useMemo(() => {
+    return allRegions.filter(r => filters[r.status]);
+  }, [filters]);
+
+  const rippleTarget = useMemo(() => {
+    if (!ripple) return null;
+    return allRegions.find(r => r.id === ripple.id) ?? null;
+  }, [ripple]);
+
+  const focusTransform = useMemo(() => {
+    const s = focusActive ? 1.35 : 1;
+    const centerX = 60;
+    const centerY = 50;
+    const target = focusedRegionId ? allRegions.find(r => r.id === focusedRegionId) : null;
+    if (!target) return 'translate(0px, 0px) scale(1)';
+    const rawTx = centerX - target.x * s;
+    const rawTy = centerY - target.y * s;
+    const minTx = 120 * (1 - s);
+    const maxTx = 0;
+    const minTy = 100 * (1 - s);
+    const maxTy = 0;
+    const tx = Math.max(minTx, Math.min(maxTx, rawTx));
+    const ty = Math.max(minTy, Math.min(maxTy, rawTy));
+    return `translate(${tx}px, ${ty}px) scale(${s})`;
+  }, [focusActive, focusedRegionId]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (mapRef.current) {
-      const rect = mapRef.current.getBoundingClientRect();
-      mouseX.set(e.clientX - rect.left);
-      mouseY.set(e.clientY - rect.top);
-    }
+    const rect = rectRef.current ?? mapRef.current?.getBoundingClientRect() ?? null;
+    if (!rect) return;
+    rectRef.current = rect;
+    pendingRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    if (rafRef.current) return;
+    rafRef.current = window.requestAnimationFrame(() => {
+      rafRef.current = null;
+      const p = pendingRef.current;
+      if (!p) return;
+      mouseX.set(p.x);
+      mouseY.set(p.y);
+    });
   };
 
-  const tooltipOffset = hoveredRegion ? {
-    x: hoveredRegion.x > 70 ? -220 : 15,
-    y: hoveredRegion.y > 70 ? -130 : 15
-  } : { x: 15, y: 15 };
+  const tooltipX = useTransform(smoothX, (x) => {
+    const pad = 10;
+    const w = Math.max(0, containerSize.w);
+    const tw = Math.max(0, tooltipSize.w);
+    if (w <= 0 || tw <= 0) return x + 16;
+    const preferred = 16;
+    const rightOverflow = x + preferred + tw > w - pad;
+    const dx = rightOverflow ? (-tw - 16) : preferred;
+    const raw = x + dx;
+    return Math.max(pad, Math.min(w - tw - pad, raw));
+  });
+
+  const tooltipY = useTransform(smoothY, (y) => {
+    const pad = 10;
+    const h = Math.max(0, containerSize.h);
+    const th = Math.max(0, tooltipSize.h);
+    if (h <= 0 || th <= 0) return y + 14;
+    const preferred = 14;
+    const bottomOverflow = y + preferred + th > h - pad;
+    const dy = bottomOverflow ? (-th - 14) : preferred;
+    const raw = y + dy;
+    return Math.max(pad, Math.min(h - th - pad, raw));
+  });
 
   return (
     <div 
       ref={mapRef}
       onMouseMove={handleMouseMove}
-      className="relative bg-[#0f172a] rounded-[2rem] border-4 border-slate-800 aspect-[4/3] overflow-hidden shadow-2xl"
+      onMouseEnter={() => {
+        if (mapRef.current) rectRef.current = mapRef.current.getBoundingClientRect();
+      }}
+      className="relative bg-[#0b1220] rounded-[2rem] border border-white/10 aspect-[4/3] overflow-hidden shadow-2xl"
     >
       {/* High-tech / Blueprint Background */}
       <div className="absolute inset-0 pointer-events-none">
@@ -834,12 +1637,76 @@ const InteractiveMap = memo(({ onHover, hoveredRegion, onSelect }: {
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#334155 2px, transparent 2px), linear-gradient(90deg, #334155 2px, transparent 2px)', backgroundSize: '100px 100px' }} />
       </div>
 
-      {/* Floating Map Legend */}
-      <div className="absolute top-4 left-4 z-10 space-y-2 bg-slate-900/80 p-3 rounded-xl border border-slate-700 backdrop-blur-md text-[10px] font-black uppercase text-slate-300 pointer-events-none shadow-xl">
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gradient-to-br from-[#34d399] to-[#059669] shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div> Lestari</div>
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div> Kritis</div>
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gradient-to-br from-[#f87171] to-[#dc2626] shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div> Gersang</div>
+      <div className="absolute top-4 left-4 z-20 space-y-2 bg-white/6 p-3 rounded-2xl border border-white/10 backdrop-blur-md text-[10px] font-black uppercase text-slate-200 shadow-xl pointer-events-auto">
+        <div className="flex items-center justify-between gap-2">
+          <div className="tracking-widest text-slate-200/80">Filter</div>
+          <button
+            type="button"
+            onClick={() => setFilters({ hijau: true, kritis: true, gersang: true })}
+            className="px-2 py-1 rounded-xl bg-white/10 border border-white/10 text-[9px] tracking-widest text-slate-200/80 hover:bg-white/15 active:scale-95 transition-all"
+          >
+            Reset
+          </button>
+        </div>
+        <div className="flex flex-col gap-2">
+          <motion.button
+            type="button"
+            onClick={() => setFilters(p => ({ ...p, hijau: !p.hijau }))}
+            whileTap={{ scale: 0.98 }}
+            className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 border transition-all ${
+              filters.hijau ? 'bg-white/8 border-white/12' : 'bg-white/3 border-white/8 opacity-60'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#34d399] to-[#059669] shadow-[0_0_10px_rgba(16,185,129,0.55)]" />
+              Lestari
+            </span>
+            <span className="text-[9px] tracking-widest text-slate-200/70">{filters.hijau ? 'ON' : 'OFF'}</span>
+          </motion.button>
+          <motion.button
+            type="button"
+            onClick={() => setFilters(p => ({ ...p, kritis: !p.kritis }))}
+            whileTap={{ scale: 0.98 }}
+            className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 border transition-all ${
+              filters.kritis ? 'bg-white/8 border-white/12' : 'bg-white/3 border-white/8 opacity-60'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] shadow-[0_0_10px_rgba(245,158,11,0.55)]" />
+              Kritis
+            </span>
+            <span className="text-[9px] tracking-widest text-slate-200/70">{filters.kritis ? 'ON' : 'OFF'}</span>
+          </motion.button>
+          <motion.button
+            type="button"
+            onClick={() => setFilters(p => ({ ...p, gersang: !p.gersang }))}
+            whileTap={{ scale: 0.98 }}
+            className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 border transition-all ${
+              filters.gersang ? 'bg-white/8 border-white/12' : 'bg-white/3 border-white/8 opacity-60'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#f87171] to-[#dc2626] shadow-[0_0_10px_rgba(239,68,68,0.55)]" />
+              Gersang
+            </span>
+            <span className="text-[9px] tracking-widest text-slate-200/70">{filters.gersang ? 'ON' : 'OFF'}</span>
+          </motion.button>
+        </div>
+        <div className="text-[9px] tracking-widest text-slate-200/60">Hover untuk detail • Klik untuk fokus</div>
       </div>
+
+      {focusActive && onResetFocus && (
+        <motion.button
+          type="button"
+          onClick={onResetFocus}
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          className="absolute top-4 right-4 z-20 px-3 py-2 rounded-2xl bg-white/8 border border-white/10 backdrop-blur-md text-[10px] font-black uppercase tracking-widest text-slate-200 shadow-xl hover:bg-white/12 active:scale-95 transition-all"
+        >
+          Reset Fokus
+        </motion.button>
+      )}
 
       <svg viewBox="0 0 120 100" preserveAspectRatio="xMidYMid meet" className="w-full h-full drop-shadow-2xl">
         <defs>
@@ -863,44 +1730,102 @@ const InteractiveMap = memo(({ onHover, hoveredRegion, onSelect }: {
           </filter>
         </defs>
 
-        {/* Thick 3D Map Base */}
-        <g filter="url(#softShadow)">
-          <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="#1e293b" transform="translate(0, 4)" />
-          <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="#334155" />
-        </g>
-
-        {/* Map Regions */}
-        {allRegions.map(r => (
-          <RegionItem 
-            key={r.id} 
-            region={r} 
-            isHovered={hoveredRegion?.id === r.id} 
-            onHover={onHover} 
-            onClick={onSelect}
-          />
-        ))}
+        <motion.g
+          initial={false}
+          animate={{ transform: focusTransform }}
+          transition={{ duration: 0.42, ease: 'easeInOut' }}
+        >
+          <g filter="url(#softShadow)">
+            <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="rgba(148,163,184,0.12)" />
+          </g>
+          {visibleRegions.map(r => (
+            <RegionItem
+              key={r.id}
+              region={r}
+              isHovered={hoveredRegion?.id === r.id}
+              isFocused={focusedRegionId === r.id}
+              focusActive={focusActive}
+              hoverActive={hoverActive}
+              onHover={onHover}
+              onClick={onSelect}
+            />
+          ))}
+          <AnimatePresence>
+            {rippleTarget && (
+              <motion.g
+                key={ripple?.key}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <motion.circle
+                  cx={rippleTarget.x}
+                  cy={rippleTarget.y}
+                  r={4}
+                  fill="transparent"
+                  stroke="rgba(255,255,255,0.75)"
+                  strokeWidth={0.8}
+                  initial={{ r: 4, opacity: 0.0 }}
+                  animate={{ r: [4, 12, 22], opacity: [0.0, 0.35, 0.0] }}
+                  transition={{ duration: 0.48, ease: 'easeOut' }}
+                />
+                <motion.circle
+                  cx={rippleTarget.x}
+                  cy={rippleTarget.y}
+                  r={5}
+                  fill="transparent"
+                  stroke={
+                    rippleTarget.status === 'hijau'
+                      ? 'rgba(16,185,129,0.65)'
+                      : rippleTarget.status === 'kritis'
+                        ? 'rgba(245,158,11,0.70)'
+                        : 'rgba(239,68,68,0.70)'
+                  }
+                  strokeWidth={1.2}
+                  initial={{ r: 6, opacity: 0.0 }}
+                  animate={{ r: [6, 14, 26], opacity: [0.0, 0.55, 0.0] }}
+                  transition={{ duration: 0.48, ease: 'easeOut' }}
+                />
+              </motion.g>
+            )}
+          </AnimatePresence>
+        </motion.g>
       </svg>
 
       <AnimatePresence>
         {hoveredRegion && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
+            ref={tooltipRef}
+            initial={{ opacity: 0, scale: 0.96, y: 6 }}
             animate={{ 
               opacity: 1, 
               scale: 1,
-              transition: { duration: 0.15 }
+              y: 0,
+              transition: { duration: 0.32, ease: 'easeOut' }
             }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 6 }}
             style={{ 
-              left: smoothX, 
-              top: smoothY, 
-              x: tooltipOffset.x, 
-              y: tooltipOffset.y 
+              left: 0,
+              top: 0,
+              x: tooltipX,
+              y: tooltipY,
             }}
             className="absolute z-50 bg-slate-900/95 text-white p-4 rounded-2xl shadow-2xl pointer-events-none min-w-[200px] border border-white/10 backdrop-blur-md"
           >
             <div className="flex justify-between items-center mb-2">
-              <span className="font-black text-sm text-emerald-400 uppercase tracking-wide">{hoveredRegion.name}</span>
+              <span className="font-black text-sm text-emerald-400 uppercase tracking-wide inline-flex items-center gap-2">
+                <span
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    hoveredRegion.status === 'hijau'
+                      ? 'bg-emerald-400'
+                      : hoveredRegion.status === 'kritis'
+                        ? 'bg-orange-400'
+                        : 'bg-red-400'
+                  }`}
+                  style={{ boxShadow: '0 0 12px rgba(255,255,255,0.18)' }}
+                />
+                {hoveredRegion.name}
+              </span>
               <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${
                 hoveredRegion.status === 'hijau' ? 'bg-emerald-500' : 
                 hoveredRegion.status === 'kritis' ? 'bg-orange-500' : 'bg-red-500'
@@ -921,6 +1846,9 @@ const TreeGame: React.FC = () => {
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
   const [selectedSeedling, setSelectedSeedling] = useState<Seedling | null>(null);
   const [hoveredRegion, setHoveredRegion] = useState<Region | null>(null);
+  const [mapFocusRegionId, setMapFocusRegionId] = useState<string | null>(null);
+  const [mapFocusLock, setMapFocusLock] = useState(false);
+  const regionSelectTimerRef = useRef<number | null>(null);
   const [plantingStep, setPlantingStep] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [actionProgress, setActionProgress] = useState(0);
@@ -1097,10 +2025,25 @@ const TreeGame: React.FC = () => {
     };
   }, [actionPlotId, gameAreaSize.height, gameAreaSize.width, levelIntroOpen, phase]);
 
-  const handleRegionSelect = (region: Region) => {
+  const commitRegionSelect = (region: Region) => {
     if (region.status === 'hijau') return;
     setSelectedRegion(region);
     setPhase('seedling');
+  };
+
+  const beginRegionSelect = (region: Region) => {
+    if (region.status === 'hijau') return;
+    if (mapFocusLock) return;
+    setMapFocusLock(true);
+    setMapFocusRegionId(region.id);
+    setHoveredRegion(region);
+    if (regionSelectTimerRef.current) window.clearTimeout(regionSelectTimerRef.current);
+    regionSelectTimerRef.current = window.setTimeout(() => {
+      setMapFocusLock(false);
+      setMapFocusRegionId(null);
+      regionSelectTimerRef.current = null;
+      commitRegionSelect(region);
+    }, 420);
   };
 
   const handleSeedlingSelect = (seedling: Seedling) => {
@@ -1120,12 +2063,37 @@ const TreeGame: React.FC = () => {
     setDayPhase(0);
   };
 
+  const mascotAttention = useMemo<MascotAttention | null>(() => {
+    if (phase !== 'selection') return null;
+    if (hoveredRegion) {
+      if (hoveredRegion.status === 'hijau') {
+        return {
+          pose: 'guard',
+          hint: 'Wilayah Aman',
+          message: 'Wilayah ini sudah terproteksi. Cari yang Oranye/Merah untuk mulai tanam.',
+        };
+      }
+      return {
+        pose: 'point',
+        hint: 'Klik Wilayah',
+        message: `Klik ${hoveredRegion.name} untuk mulai restorasi.`,
+      };
+    }
+    return {
+      pose: 'point',
+      hint: 'Pilih Wilayah',
+      message: 'Arahkan kursor ke peta kiri, lalu klik wilayah Oranye/Merah untuk mulai tanam.',
+    };
+  }, [hoveredRegion, phase]);
+
   useEffect(() => {
     return () => {
       if (actionTimerRef.current.intervalId) window.clearInterval(actionTimerRef.current.intervalId);
       if (actionTimerRef.current.timeoutId) window.clearTimeout(actionTimerRef.current.timeoutId);
       actionTimerRef.current.intervalId = null;
       actionTimerRef.current.timeoutId = null;
+      if (regionSelectTimerRef.current) window.clearTimeout(regionSelectTimerRef.current);
+      regionSelectTimerRef.current = null;
     };
   }, []);
 
@@ -1313,10 +2281,17 @@ const TreeGame: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-stretch">
                 <div className="lg:col-span-7 flex flex-col items-center justify-center">
                   <div className="w-full max-w-[680px]">
-                    <InteractiveMap 
-                      onHover={setHoveredRegion} 
-                      hoveredRegion={hoveredRegion} 
-                      onSelect={handleRegionSelect}
+                    <InteractiveMap
+                      onHover={setHoveredRegion}
+                      hoveredRegion={hoveredRegion}
+                      focusedRegionId={mapFocusRegionId}
+                      onResetFocus={() => {
+                        setMapFocusRegionId(null);
+                        setMapFocusLock(false);
+                        if (regionSelectTimerRef.current) window.clearTimeout(regionSelectTimerRef.current);
+                        regionSelectTimerRef.current = null;
+                      }}
+                      onSelect={beginRegionSelect}
                     />
                   </div>
                 </div>
@@ -1326,7 +2301,7 @@ const TreeGame: React.FC = () => {
                     <h3 className="text-lg font-black text-gray-900 mb-4 uppercase flex items-center gap-2 border-b border-emerald-200 pb-3">
                       <Info size={20} className="text-primary" /> Analisis Lahan
                     </h3>
-                    <div className="flex-1">
+                    <div className="flex-1 min-h-0 flex flex-col">
                       <AnimatePresence mode="wait">
                         {hoveredRegion || selectedRegion ? (
                           <motion.div
@@ -1335,19 +2310,20 @@ const TreeGame: React.FC = () => {
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -10 }}
                             transition={{ duration: 0.15 }}
+                            className="mb-4"
                           >
-                            <div className={`p-4 rounded-2xl border-2 mb-4 bg-white ${
+                            <div className={`p-4 rounded-2xl border-2 mb-3 bg-white ${
                               (hoveredRegion || selectedRegion)?.status === 'hijau' ? 'border-emerald-400' :
                               (hoveredRegion || selectedRegion)?.status === 'kritis' ? 'border-orange-400' : 'border-red-400'
                             }`}>
                               <h4 className="text-xl font-black">{(hoveredRegion || selectedRegion)?.name}</h4>
                               <p className="text-[10px] font-black uppercase opacity-50">Status: {(hoveredRegion || selectedRegion)?.status}</p>
                             </div>
-                            <p className="text-sm text-gray-600 italic mb-6 leading-relaxed">"{(hoveredRegion || selectedRegion)?.description}"</p>
+                            <p className="text-sm text-gray-600 italic mb-4 leading-relaxed">"{(hoveredRegion || selectedRegion)?.description}"</p>
                             
                             {(hoveredRegion || selectedRegion)?.status !== 'hijau' ? (
                               <button
-                                onClick={() => handleRegionSelect((hoveredRegion || selectedRegion)!)}
+                                onClick={() => beginRegionSelect((hoveredRegion || selectedRegion)!)}
                                 className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95 relative overflow-hidden"
                               >
                                 <motion.div
@@ -1366,13 +2342,23 @@ const TreeGame: React.FC = () => {
                               </div>
                             )}
                           </motion.div>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center h-full py-12 opacity-20 text-center">
-                            <MapPin size={48} className="mb-4" />
-                            <p className="text-[10px] font-black uppercase">Pilih wilayah pada peta</p>
-                          </div>
-                        )}
+                        ) : null}
                       </AnimatePresence>
+
+                      <EnvMascotCard
+                        mode={hoveredRegion || selectedRegion ? 'compact' : 'full'}
+                        regionName={(hoveredRegion || selectedRegion)?.name}
+                        regionStatus={(hoveredRegion || selectedRegion)?.status ?? null}
+                        attention={mascotAttention}
+                        onGuide={() =>
+                          setToast({
+                            id: Date.now(),
+                            title: 'Ayo mulai dari peta',
+                            subtitle: 'Klik wilayah Oranye/Merah untuk mulai restorasi.',
+                            tone: 'info',
+                          })
+                        }
+                      />
                     </div>
                   </div>
                 </div>
@@ -1446,34 +2432,38 @@ const TreeGame: React.FC = () => {
                       <p className="text-[10px] font-black text-[#8b4513] uppercase leading-none">Misi Selesai</p>
                       <p className="text-xl font-black text-[#2e7d32] leading-none mt-1">{Math.round(overallProgress * 100)}%</p>
                     </div>
-                    <div className="w-32 h-3 bg-[#e0e0e0] rounded-full overflow-hidden border-2 border-[#8b4513] relative">
-                      <div className="absolute inset-0 opacity-25" style={{ backgroundImage: 'repeating-linear-gradient(90deg, rgba(0,0,0,0.12) 0 6px, transparent 6px 12px)' }} />
-                      <motion.div 
-                        animate={{ width: `${overallProgress * 100}%` }}
-                        className="h-full bg-[#4caf50]"
+                    <div className="w-36">
+                      <HDBar
+                        value01={overallProgress}
+                        from="#16a34a"
+                        to="#86efac"
+                        track="rgba(0,0,0,0.12)"
+                        height={14}
+                        rounded={7}
+                        className="w-full"
                       />
                     </div>
                   </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch h-[calc(100vh-220px)] max-h-[680px] min-h-[520px]">
-                {/* Interactive Area - Harvest Moon Style */}
-                <div 
-                  ref={gameAreaRef}
-                  className="lg:col-span-8 rounded-[2rem] relative h-full min-h-[420px] shadow-[inset_0_0_120px_rgba(0,0,0,0.25)] overflow-hidden border-4 border-[#558b2f]"
-                  style={{ 
-                    backgroundImage: [
-                      'radial-gradient(circle at 12% 18%, rgba(255,235,59,0.18) 0 120px, transparent 160px)',
-                      'radial-gradient(circle at 78% 30%, rgba(255,255,255,0.12) 0 140px, transparent 200px)',
-                      'repeating-linear-gradient(135deg, rgba(0,0,0,0.07) 0 2px, transparent 2px 14px)',
-                      'radial-gradient(rgba(139,195,74,0.55) 12%, rgba(0,0,0,0) 13%)',
-                      'radial-gradient(rgba(139,195,74,0.45) 12%, rgba(0,0,0,0) 13%)',
-                      'linear-gradient(180deg, #8bc34a 0%, #7cb342 55%, #6aa336 100%)'
-                    ].join(','),
-                    backgroundSize: 'auto, auto, auto, 38px 38px, 38px 38px, auto',
-                    backgroundPosition: '0 0, 0 0, 0 0, 0 0, 19px 19px, 0 0'
-                  }}
-                >
+                <div className="lg:col-span-8 flex flex-col gap-3 h-full min-h-0">
+                  <div 
+                    ref={gameAreaRef}
+                    className="rounded-[2rem] relative flex-1 min-h-[420px] shadow-[inset_0_0_120px_rgba(0,0,0,0.25)] overflow-hidden border-4 border-[#558b2f]"
+                    style={{ 
+                      backgroundImage: [
+                        'radial-gradient(circle at 12% 18%, rgba(255,235,59,0.18) 0 120px, transparent 160px)',
+                        'radial-gradient(circle at 78% 30%, rgba(255,255,255,0.12) 0 140px, transparent 200px)',
+                        'repeating-linear-gradient(135deg, rgba(0,0,0,0.07) 0 2px, transparent 2px 14px)',
+                        'radial-gradient(rgba(139,195,74,0.55) 12%, rgba(0,0,0,0) 13%)',
+                        'radial-gradient(rgba(139,195,74,0.45) 12%, rgba(0,0,0,0) 13%)',
+                        'linear-gradient(180deg, #8bc34a 0%, #7cb342 55%, #6aa336 100%)'
+                      ].join(','),
+                      backgroundSize: 'auto, auto, auto, 38px 38px, 38px 38px, auto',
+                      backgroundPosition: '0 0, 0 0, 0 0, 0 0, 19px 19px, 0 0'
+                    }}
+                  >
                   {[...Array(5)].map((_, i) => <Butterfly key={i} />)}
                   <Cloud delay={0} top={10} size={220} opacity={0.35} />
                   <Cloud delay={1.8} top={22} size={280} opacity={0.24} />
@@ -1501,11 +2491,11 @@ const TreeGame: React.FC = () => {
                     <div className="absolute top-4 left-0 w-full h-2 bg-[#8b4513]" />
                   </div>
 
-                  <div className="absolute top-4 right-4 z-40">
+                  <div className="absolute top-4 right-4 z-40 hidden lg:block">
                     <div className="bg-[#fff9eb]/90 backdrop-blur-md px-4 py-3 rounded-2xl border-2 border-[#d4a373] shadow-xl text-left">
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${nearTargetNow ? 'bg-emerald-500' : 'bg-red-500'} shadow-[0_0_12px_rgba(0,0,0,0.18)]`} />
-                        <div className="text-[10px] font-black uppercase tracking-widest text-[#8b4513]">Status Target</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-[#8b4513]">Target</div>
                       </div>
                       <div className="mt-1 text-xs font-black text-[#5d4037]">
                         {nearTargetNow ? 'Dekat • Siap Aksi' : 'Jauh • Dekati Area'}
@@ -1515,21 +2505,68 @@ const TreeGame: React.FC = () => {
                         <span>WASD</span>
                         <span className="opacity-40">•</span>
                         <Sparkles size={14} />
-                        <span>Seret Alat</span>
+                        <span>Seret</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="absolute bottom-6 left-6 z-40 flex flex-col gap-3">
-                    <div className="hidden sm:block">
-                      <div className="bg-[#fff9eb]/90 backdrop-blur-md px-4 py-2 rounded-2xl border-2 border-[#d4a373] shadow-xl text-left">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-[#8b4513]">Kontrol</div>
-                        <div className="mt-1 text-[10px] font-bold text-[#5d4037]/80 leading-tight">
-                          WASD/Arrow atau tombol arah
-                        </div>
+                  <div className="absolute bottom-6 right-6 z-40 hidden lg:flex flex-col items-center pointer-events-auto">
+                    <p className="text-[10px] font-black text-[#5d4037] uppercase mb-2 bg-[#fff9eb]/90 backdrop-blur-md px-3 py-1 rounded-lg border-2 border-[#d4a373] shadow-xl">
+                      Gunakan Alat
+                    </p>
+                    <motion.div
+                      drag
+                      dragSnapToOrigin
+                      onDragStart={() => setIsDragging(true)}
+                      onDragEnd={() => {
+                        setIsDragging(false);
+                        if (levelIntroOpen) return;
+                        if (isNearTarget()) {
+                          const plot = plots.find(p => p.id === requiredPlotId);
+                          if (plot) setCharDirection((charPos.x + 30) > plot.cx ? 'left' : 'right');
+                          setIsWalking(false);
+                          startAction(requiredPlotId);
+                        }
+                      }}
+                      whileDrag={{ scale: 1.2 }}
+                      className="w-24 h-24 bg-[#fff9eb] rounded-2xl shadow-2xl flex flex-col items-center justify-center cursor-grab active:cursor-grabbing border-4 border-[#8b4513] text-[#8b4513] relative overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-[#8b4513]/5" />
+                      <div className="absolute inset-0 bg-[#fff9eb]/75" />
+                      {React.createElement(
+                        plantingStep === 2 ? selectedSeedling.icon : currentSteps[plantingStep].icon, 
+                        { size: 40, className: "relative z-10" }
+                      )}
+                      <div className="text-[7px] font-black uppercase mt-1 relative z-10 opacity-60">
+                        {currentSteps[plantingStep].id}
                       </div>
-                    </div>
-                    <DPad disabled={levelIntroOpen || Boolean(actionPlotId)} onMove={moveCharacter} />
+                      <motion.div
+                        className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase tracking-widest text-[#8b4513] z-10"
+                        animate={{ opacity: [0.6, 1, 0.6] }}
+                        transition={{ repeat: Infinity, duration: 1.4 }}
+                      >
+                        Seret
+                      </motion.div>
+                    </motion.div>
+                    <button
+                      type="button"
+                      disabled={!nearTargetNow || levelIntroOpen}
+                      onClick={() => {
+                        if (levelIntroOpen) return;
+                        if (!isNearTarget()) return;
+                        const plot = plots.find(p => p.id === requiredPlotId);
+                        if (plot) setCharDirection((charPos.x + 30) > plot.cx ? 'left' : 'right');
+                        setIsWalking(false);
+                        startAction(requiredPlotId);
+                      }}
+                      className={`mt-3 w-28 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl border-2 active:scale-95 transition-all ${
+                        nearTargetNow && !levelIntroOpen
+                          ? 'bg-[#8b4513] text-white border-[#5d4037]'
+                          : 'bg-slate-200/70 text-slate-400 border-slate-300'
+                      }`}
+                    >
+                      Aksi Cepat
+                    </button>
                   </div>
 
                   <AnimatePresence>
@@ -1711,7 +2748,7 @@ const TreeGame: React.FC = () => {
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
-                        className="absolute top-12 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-full font-black text-xs uppercase shadow-xl z-40 border-2 border-white"
+                        className="absolute top-6 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-full font-black text-xs uppercase shadow-xl z-40 border-2 border-white"
                       >
                         DEKATI AREA TANAM DULU!
                       </motion.div>
@@ -1755,69 +2792,58 @@ const TreeGame: React.FC = () => {
                     )}
                   </AnimatePresence>
 
-                  {/* Draggable Tool HUD */}
-                  <div className="absolute bottom-6 right-6 z-40 flex flex-col items-center">
-                    <p className="text-[10px] font-black text-[#5d4037] uppercase mb-2 bg-[#fff9eb] px-3 py-1 rounded-lg border-2 border-[#d4a373]">Gunakan Alat</p>
-                    <motion.div
-                      drag
-                      dragSnapToOrigin
-                      onDragStart={() => setIsDragging(true)}
-                      onDragEnd={() => {
-                        setIsDragging(false);
-                        if (levelIntroOpen) return;
-                        if (isNearTarget()) {
+                  </div>
+
+                  <div className="lg:hidden bg-[#fff9eb]/85 backdrop-blur-md rounded-[2rem] border-2 border-[#d4a373] shadow-xl p-3 flex items-center justify-between gap-3">
+                    <DPad disabled={levelIntroOpen || Boolean(actionPlotId)} onMove={moveCharacter} />
+                    <div className="flex items-center gap-3">
+                      <motion.div
+                        drag
+                        dragSnapToOrigin
+                        onDragStart={() => setIsDragging(true)}
+                        onDragEnd={() => {
+                          setIsDragging(false);
+                          if (levelIntroOpen) return;
+                          if (isNearTarget()) {
+                            const plot = plots.find(p => p.id === requiredPlotId);
+                            if (plot) setCharDirection((charPos.x + 30) > plot.cx ? 'left' : 'right');
+                            setIsWalking(false);
+                            startAction(requiredPlotId);
+                          }
+                        }}
+                        whileDrag={{ scale: 1.14 }}
+                        className="w-20 h-20 bg-[#fff9eb] rounded-2xl shadow-xl flex flex-col items-center justify-center cursor-grab active:cursor-grabbing border-4 border-[#8b4513] text-[#8b4513] relative overflow-hidden"
+                      >
+                        <div className="absolute inset-0 bg-[#8b4513]/5" />
+                        <div className="absolute inset-0 bg-[#fff9eb]/75" />
+                        {React.createElement(
+                          plantingStep === 2 ? selectedSeedling.icon : currentSteps[plantingStep].icon, 
+                          { size: 34, className: "relative z-10" }
+                        )}
+                        <div className="text-[7px] font-black uppercase mt-1 relative z-10 opacity-60">
+                          Seret
+                        </div>
+                      </motion.div>
+                      <button
+                        type="button"
+                        disabled={!nearTargetNow || levelIntroOpen}
+                        onClick={() => {
+                          if (levelIntroOpen) return;
+                          if (!isNearTarget()) return;
                           const plot = plots.find(p => p.id === requiredPlotId);
                           if (plot) setCharDirection((charPos.x + 30) > plot.cx ? 'left' : 'right');
                           setIsWalking(false);
                           startAction(requiredPlotId);
-                        }
-                      }}
-                      whileDrag={{ scale: 1.2 }}
-                      className="w-24 h-24 bg-[#fff9eb] rounded-2xl shadow-2xl flex flex-col items-center justify-center cursor-grab active:cursor-grabbing border-4 border-[#8b4513] text-[#8b4513] relative overflow-hidden group"
-                    >
-                      <div className="absolute inset-0 bg-[#8b4513]/5" />
-                      <motion.div
-                        aria-hidden
-                        className="absolute -inset-10 opacity-35"
-                        animate={{ rotate: [0, 360] }}
-                        transition={{ repeat: Infinity, duration: 10, ease: 'linear' }}
-                        style={{ backgroundImage: 'conic-gradient(from 0deg, rgba(76,175,80,0.45), rgba(255,235,59,0.35), rgba(244,63,94,0.25), rgba(76,175,80,0.45))' }}
-                      />
-                      <div className="absolute inset-0 bg-[#fff9eb]/75" />
-                      {React.createElement(
-                        plantingStep === 2 ? selectedSeedling.icon : currentSteps[plantingStep].icon, 
-                        { size: 40, className: "relative z-10" }
-                      )}
-                      <div className="text-[7px] font-black uppercase mt-1 relative z-10 opacity-60">
-                        {currentSteps[plantingStep].id}
-                      </div>
-                      <motion.div
-                        className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[8px] font-black uppercase tracking-widest text-[#8b4513] z-10"
-                        animate={{ opacity: [0.6, 1, 0.6] }}
-                        transition={{ repeat: Infinity, duration: 1.4 }}
+                        }}
+                        className={`h-20 px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl border-2 active:scale-95 transition-all ${
+                          nearTargetNow && !levelIntroOpen
+                            ? 'bg-[#8b4513] text-white border-[#5d4037]'
+                            : 'bg-slate-200/70 text-slate-400 border-slate-300'
+                        }`}
                       >
-                        Seret
-                      </motion.div>
-                    </motion.div>
-                    <button
-                      type="button"
-                      disabled={!nearTargetNow || levelIntroOpen}
-                      onClick={() => {
-                        if (levelIntroOpen) return;
-                        if (!isNearTarget()) return;
-                        const plot = plots.find(p => p.id === requiredPlotId);
-                        if (plot) setCharDirection((charPos.x + 30) > plot.cx ? 'left' : 'right');
-                        setIsWalking(false);
-                        startAction(requiredPlotId);
-                      }}
-                      className={`mt-3 w-28 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl border-2 active:scale-95 transition-all ${
-                        nearTargetNow && !levelIntroOpen
-                          ? 'bg-[#8b4513] text-white border-[#5d4037]'
-                          : 'bg-slate-200/70 text-slate-400 border-slate-300'
-                      }`}
-                    >
-                      Aksi Cepat
-                    </button>
+                        Aksi Cepat
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -1828,6 +2854,66 @@ const TreeGame: React.FC = () => {
                     <h3 className="text-xs font-black text-[#8b4513] uppercase mb-1 tracking-widest opacity-60">Langkah {plantingStep + 1}</h3>
                     <h4 className="text-xl font-black text-[#5d4037] mb-3 uppercase border-b-2 border-[#d4a373] pb-2">{currentSteps[plantingStep].title}</h4>
                     <p className="text-[#5d4037] text-xs leading-relaxed mb-6 font-medium italic">"{currentSteps[plantingStep].text}"</p>
+
+                    <div className="hidden lg:block mb-5 bg-[#fff9eb] rounded-2xl border-2 border-[#d4a373] p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-[#8b4513]">Aksi</div>
+                        <div className={`text-[10px] font-black uppercase tracking-widest ${nearTargetNow ? 'text-emerald-700' : 'text-red-700'}`}>
+                          {nearTargetNow ? 'Dekat Target' : 'Dekati Target'}
+                        </div>
+                      </div>
+                      <div className="mt-3 flex items-center gap-3">
+                        <motion.div
+                          drag
+                          dragSnapToOrigin
+                          onDragStart={() => setIsDragging(true)}
+                          onDragEnd={() => {
+                            setIsDragging(false);
+                            if (levelIntroOpen) return;
+                            if (isNearTarget()) {
+                              const plot = plots.find(p => p.id === requiredPlotId);
+                              if (plot) setCharDirection((charPos.x + 30) > plot.cx ? 'left' : 'right');
+                              setIsWalking(false);
+                              startAction(requiredPlotId);
+                            }
+                          }}
+                          whileDrag={{ scale: 1.18 }}
+                          className="w-20 h-20 bg-[#fff9eb] rounded-2xl shadow-xl flex flex-col items-center justify-center cursor-grab active:cursor-grabbing border-4 border-[#8b4513] text-[#8b4513] relative overflow-hidden"
+                        >
+                          <div className="absolute inset-0 bg-[#8b4513]/5" />
+                          <div className="absolute inset-0 bg-[#fff9eb]/75" />
+                          {React.createElement(
+                            plantingStep === 2 ? selectedSeedling.icon : currentSteps[plantingStep].icon, 
+                            { size: 34, className: "relative z-10" }
+                          )}
+                          <div className="text-[7px] font-black uppercase mt-1 relative z-10 opacity-60">
+                            Seret
+                          </div>
+                        </motion.div>
+                        <button
+                          type="button"
+                          disabled={!nearTargetNow || levelIntroOpen}
+                          onClick={() => {
+                            if (levelIntroOpen) return;
+                            if (!isNearTarget()) return;
+                            const plot = plots.find(p => p.id === requiredPlotId);
+                            if (plot) setCharDirection((charPos.x + 30) > plot.cx ? 'left' : 'right');
+                            setIsWalking(false);
+                            startAction(requiredPlotId);
+                          }}
+                          className={`flex-1 h-20 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl border-2 active:scale-95 transition-all ${
+                            nearTargetNow && !levelIntroOpen
+                              ? 'bg-[#8b4513] text-white border-[#5d4037]'
+                              : 'bg-slate-200/70 text-slate-400 border-slate-300'
+                          }`}
+                        >
+                          Aksi Cepat
+                        </button>
+                      </div>
+                      <div className="mt-2 text-[10px] font-bold text-[#5d4037]/70">
+                        Seret alat atau klik Aksi Cepat saat sudah dekat target.
+                      </div>
+                    </div>
                     
                     <div className="mb-5 bg-[#fff9eb] rounded-2xl border-2 border-[#d4a373] p-4">
                       <div className="flex items-center justify-between">
@@ -1962,8 +3048,8 @@ const TreeGame: React.FC = () => {
                             <div className="text-[9px] font-black uppercase tracking-widest text-white/60">CO₂</div>
                             <div className="text-[10px] font-black text-emerald-200">{Math.round(envScore.co2)} pts</div>
                           </div>
-                          <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
-                            <motion.div animate={{ width: `${envProgress.co2 * 100}%` }} className="h-full bg-emerald-500" />
+                          <div className="mt-2">
+                            <HDBar value01={envProgress.co2} from="#10b981" to="#a7f3d0" track="rgba(255,255,255,0.12)" height={10} rounded={6} className="w-full" />
                           </div>
                         </div>
 
@@ -1972,8 +3058,8 @@ const TreeGame: React.FC = () => {
                             <div className="text-[9px] font-black uppercase tracking-widest text-white/60">Resapan</div>
                             <div className="text-[10px] font-black text-blue-200">{Math.round(envScore.water)} pts</div>
                           </div>
-                          <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
-                            <motion.div animate={{ width: `${envProgress.water * 100}%` }} className="h-full bg-blue-500" />
+                          <div className="mt-2">
+                            <HDBar value01={envProgress.water} from="#3b82f6" to="#bfdbfe" track="rgba(255,255,255,0.12)" height={10} rounded={6} className="w-full" />
                           </div>
                         </div>
 
@@ -1982,8 +3068,8 @@ const TreeGame: React.FC = () => {
                             <div className="text-[9px] font-black uppercase tracking-widest text-white/60">Suhu</div>
                             <div className="text-[10px] font-black text-yellow-200">-{Math.round(envScore.temp)} pts</div>
                           </div>
-                          <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
-                            <motion.div animate={{ width: `${envProgress.temp * 100}%` }} className="h-full bg-yellow-400" />
+                          <div className="mt-2">
+                            <HDBar value01={envProgress.temp} from="#f59e0b" to="#fde68a" track="rgba(255,255,255,0.12)" height={10} rounded={6} className="w-full" />
                           </div>
                         </div>
 
@@ -1992,8 +3078,8 @@ const TreeGame: React.FC = () => {
                             <div className="text-[9px] font-black uppercase tracking-widest text-white/60">Bio</div>
                             <div className="text-[10px] font-black text-pink-200">{Math.round(envScore.bio)} pts</div>
                           </div>
-                          <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
-                            <motion.div animate={{ width: `${envProgress.bio * 100}%` }} className="h-full bg-pink-500" />
+                          <div className="mt-2">
+                            <HDBar value01={envProgress.bio} from="#ec4899" to="#fbcfe8" track="rgba(255,255,255,0.12)" height={10} rounded={6} className="w-full" />
                           </div>
                         </div>
                       </div>
