@@ -1,6 +1,6 @@
-import React, { useState, useRef, memo, useEffect, useMemo } from 'react';
+import React, { useState, useRef, memo, useEffect, useMemo, useReducer, useCallback } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { MapPin, Trees, ArrowLeft, Thermometer, Droplets, Sun, Info, ShieldCheck, Zap, Move, Sparkles, Sprout, Trophy, Shovel } from 'lucide-react';
+import { MapPin, Trees, ArrowLeft, Thermometer, Droplets, Sun, Info, ShieldCheck, Zap, Move, Sparkles, Sprout, Trophy, Shovel, Volume2, VolumeX, Eye, EyeOff, ThumbsUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // --- Realistic Visual Components ---
@@ -143,13 +143,38 @@ const HDBar = ({
   );
 };
 
-type MascotPose = 'idle' | 'wave' | 'point' | 'plant' | 'water' | 'guard';
+type MascotPose = 'idle' | 'wave' | 'point' | 'plant' | 'water' | 'guard' | 'cheer' | 'worry';
 
 type MascotAttention = {
   pose?: MascotPose;
   message?: string;
   hint?: string;
+  tone?: 'happy' | 'neutral' | 'worried';
+  kind?: 'idle' | 'hover' | 'click' | 'action';
 };
+
+type MascotState = 'idle' | 'aware' | 'hoverMap' | 'happy' | 'thinking' | 'worried' | 'active';
+
+type MascotMachine = {
+  state: MascotState;
+  lockUntil: number;
+  lastActivityAt: number;
+  near: boolean;
+  nudgeUntil: number;
+  funUntil: number;
+  dialogNonce: number;
+  attentionSig: string;
+  statusSig: string;
+  lastActionPose: MascotPose | null;
+};
+
+type MascotEvent =
+  | { type: 'NEAR'; now: number; near: boolean }
+  | { type: 'ATTENTION'; now: number; sig: string; statusSig: string; attention: MascotAttention | null | undefined; regionStatus: string | null | undefined }
+  | { type: 'ACTION'; now: number; pose: MascotPose }
+  | { type: 'CHAR_CLICK'; now: number }
+  | { type: 'IDLE_NUDGE'; now: number }
+  | { type: 'TICK'; now: number };
 
 const EnvMascotCard = memo(({
   onGuide,
@@ -164,22 +189,163 @@ const EnvMascotCard = memo(({
   regionStatus?: string | null;
   attention?: MascotAttention | null;
 }) => {
-  const [pose, setPose] = useState<MascotPose>('idle');
-  const [hovering, setHovering] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const headRef = useRef<HTMLDivElement | null>(null);
+  const [selfHover, setSelfHover] = useState(false);
   const [burstKey, setBurstKey] = useState(0);
   const [idleTick, setIdleTick] = useState(0);
+  const [actionFxId, setActionFxId] = useState<number | null>(null);
+  const [actionFxKind, setActionFxKind] = useState<'thumb' | 'spark'>('spark');
+  const [typedText, setTypedText] = useState('');
+
+  const attentionSig = `${attention?.kind ?? ''}|${attention?.tone ?? ''}|${attention?.hint ?? ''}|${attention?.message ?? ''}`;
+  const statusSig = `${regionStatus ?? ''}|${regionName ?? ''}`;
+
+  const machineReducer = useCallback((m: MascotMachine, e: MascotEvent): MascotMachine => {
+    const fast = e.now - m.lastActivityAt < 2400;
+    if (e.type === 'ACTION') {
+      return {
+        ...m,
+        state: 'active',
+        lockUntil: e.now + (fast ? 720 : 920),
+        lastActivityAt: e.now,
+        dialogNonce: m.dialogNonce + 1,
+        lastActionPose: e.pose,
+        nudgeUntil: 0,
+      };
+    }
+    if (e.type === 'CHAR_CLICK') {
+      return {
+        ...m,
+        state: 'active',
+        lockUntil: e.now + (fast ? 560 : 740),
+        lastActivityAt: e.now,
+        dialogNonce: m.dialogNonce + 1,
+        funUntil: e.now + 620,
+        lastActionPose: m.lastActionPose ?? 'wave',
+        nudgeUntil: 0,
+      };
+    }
+    if (e.type === 'IDLE_NUDGE') {
+      if (e.now < m.lockUntil) return m;
+      if (e.now - m.lastActivityAt < 5200) return m;
+      return {
+        ...m,
+        state: 'idle',
+        nudgeUntil: e.now + 1650,
+        dialogNonce: m.dialogNonce + 1,
+      };
+    }
+    if (e.type === 'NEAR') {
+      const next: MascotMachine = {
+        ...m,
+        near: e.near,
+        lastActivityAt: e.near ? e.now : m.lastActivityAt,
+      };
+      if (e.now < next.lockUntil) return next;
+      if (next.attentionSig && next.attentionSig !== '||||') return next;
+      if (next.state === 'hoverMap') return next;
+      return { ...next, state: e.near ? 'aware' : 'idle', dialogNonce: next.dialogNonce + (e.near ? 1 : 0) };
+    }
+    if (e.type === 'ATTENTION') {
+      if (e.sig === m.attentionSig && e.statusSig === m.statusSig && e.now < m.lockUntil) {
+        return m;
+      }
+      if (e.now < m.lockUntil) {
+        return { ...m, attentionSig: e.sig, statusSig: e.statusSig };
+      }
+
+      let nextState: MascotState = m.near ? 'aware' : 'idle';
+      let lockUntil = 0;
+      let funUntil = m.funUntil;
+
+      if (e.attention?.kind === 'hover') nextState = 'hoverMap';
+      if (e.attention?.kind === 'click') {
+        const s = e.regionStatus ?? null;
+        if (s === 'hijau') nextState = 'happy';
+        else if (s === 'kritis') nextState = 'thinking';
+        else nextState = 'worried';
+        lockUntil = e.now + (fast ? 820 : 1150);
+        funUntil = nextState === 'happy' ? e.now + 560 : funUntil;
+      }
+      if (e.attention?.kind === 'action') nextState = 'active';
+
+      const activityNow = e.attention?.kind && e.attention.kind !== 'idle' ? e.now : m.lastActivityAt;
+      const changed = nextState !== m.state || e.sig !== m.attentionSig || e.statusSig !== m.statusSig;
+      return {
+        ...m,
+        state: nextState,
+        lockUntil,
+        funUntil,
+        lastActivityAt: activityNow,
+        dialogNonce: changed ? m.dialogNonce + 1 : m.dialogNonce,
+        attentionSig: e.sig,
+        statusSig: e.statusSig,
+        nudgeUntil: changed ? 0 : m.nudgeUntil,
+      };
+    }
+    if (e.type === 'TICK') {
+      const next: MascotMachine = { ...m };
+      if (next.nudgeUntil && e.now > next.nudgeUntil) next.nudgeUntil = 0;
+      if (next.funUntil && e.now > next.funUntil) next.funUntil = 0;
+      if (next.lockUntil && e.now > next.lockUntil) next.lockUntil = 0;
+      if (!next.lockUntil && (next.state === 'active' || next.state === 'happy' || next.state === 'thinking' || next.state === 'worried')) {
+        next.state = next.attentionSig && next.attentionSig !== '||||' ? next.state : next.near ? 'aware' : 'idle';
+      }
+      return next;
+    }
+    return m;
+  }, []);
+
+  const [machine, send] = useReducer(machineReducer, null, () => ({
+    state: 'idle',
+    lockUntil: 0,
+    lastActivityAt: Date.now(),
+    near: false,
+    nudgeUntil: 0,
+    funUntil: 0,
+    dialogNonce: 0,
+    attentionSig: '',
+    statusSig: '',
+    lastActionPose: null,
+  } satisfies MascotMachine));
 
   useEffect(() => {
-    if (mode === 'compact') return;
-    if (hovering) return;
-    if (attention?.pose) return;
-    if (pose !== 'idle') return;
+    const now = Date.now();
+    send({ type: 'ATTENTION', now, sig: attentionSig, statusSig, attention, regionStatus });
+  }, [attention, attentionSig, regionStatus, send, statusSig]);
+
+  useEffect(() => {
+    const t = window.setInterval(() => send({ type: 'TICK', now: Date.now() }), 220);
+    return () => window.clearInterval(t);
+  }, [send]);
+
+  useEffect(() => {
     const t = window.setInterval(() => setIdleTick(v => v + 1), 2600);
     return () => window.clearInterval(t);
-  }, [attention?.pose, hovering, mode, pose]);
+  }, []);
 
-  const idlePose: MascotPose = idleTick % 2 === 0 ? 'wave' : 'point';
-  const effectivePose: MascotPose = hovering ? 'wave' : (attention?.pose ?? (pose === 'idle' ? idlePose : pose));
+  useEffect(() => {
+    if (!actionFxId) return;
+    const t = window.setTimeout(() => setActionFxId(null), 720);
+    return () => window.clearTimeout(t);
+  }, [actionFxId]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => send({ type: 'IDLE_NUDGE', now: Date.now() }), 5600);
+    return () => window.clearTimeout(t);
+  }, [machine.lastActivityAt, send]);
+
+  const mood = useMemo<'happy' | 'neutral' | 'worried'>(() => {
+    if (machine.state === 'happy') return 'happy';
+    if (machine.state === 'worried') return 'worried';
+    if (regionStatus === 'hijau') return 'happy';
+    if (regionStatus === 'gersang') return 'worried';
+    return 'neutral';
+  }, [machine.state, regionStatus]);
+
+  const isFast = Date.now() - machine.lastActivityAt < 2600;
+  const showBubble = machine.state !== 'idle' || selfHover || Boolean(actionFxId) || Boolean(machine.nudgeUntil);
 
   const accent = useMemo(() => {
     if (regionStatus === 'hijau') return { chipBg: 'bg-emerald-100', chipText: 'text-emerald-800', glow: 'rgba(16,185,129,0.22)', core: '#10b981' };
@@ -188,81 +354,199 @@ const EnvMascotCard = memo(({
     return { chipBg: 'bg-emerald-100', chipText: 'text-emerald-800', glow: 'rgba(16,185,129,0.22)', core: '#10b981' };
   }, [regionStatus]);
 
-  const setPoseAndBurst = (next: MascotPose) => {
-    setPose(next);
-    setBurstKey(k => k + 1);
-  };
+  const pupilX = useMotionValue(0);
+  const pupilY = useMotionValue(0);
+  const pupilXS = useSpring(pupilX, { stiffness: 420, damping: 34, mass: 0.5 });
+  const pupilYS = useSpring(pupilY, { stiffness: 420, damping: 34, mass: 0.5 });
+  const lastNearRef = useRef(false);
+  const moveRafRef = useRef<number | null>(null);
+  const lastMoveRef = useRef<{ x: number; y: number } | null>(null);
 
-  const cyclePose = () => {
-    const order: MascotPose[] = ['idle', 'point', 'plant', 'water', 'guard', 'idle'];
-    const idx = Math.max(0, order.indexOf(pose));
-    setPoseAndBurst(order[(idx + 1) % order.length]);
-  };
+  useEffect(() => {
+    const onMove = (ev: MouseEvent) => {
+      lastMoveRef.current = { x: ev.clientX, y: ev.clientY };
+      if (moveRafRef.current) return;
+      moveRafRef.current = window.requestAnimationFrame(() => {
+        moveRafRef.current = null;
+        const last = lastMoveRef.current;
+        if (!last) return;
+        const now = Date.now();
+
+        const head = headRef.current;
+        if (head) {
+          const r = head.getBoundingClientRect();
+          const cx = r.left + r.width / 2;
+          const cy = r.top + r.height / 2;
+          const dx = Math.max(-1, Math.min(1, (last.x - cx) / Math.max(1, r.width)));
+          const dy = Math.max(-1, Math.min(1, (last.y - cy) / Math.max(1, r.height)));
+          pupilX.set(dx * 3.2);
+          pupilY.set(dy * 2.6);
+        }
+
+        const root = rootRef.current;
+        if (root) {
+          const r = root.getBoundingClientRect();
+          const ax = r.right - 24;
+          const ay = r.bottom - 24;
+          const near = Math.hypot(last.x - ax, last.y - ay) < 170;
+          if (near !== lastNearRef.current) {
+            lastNearRef.current = near;
+            send({ type: 'NEAR', now, near });
+          }
+        }
+      });
+    };
+
+    window.addEventListener('mousemove', onMove);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      if (moveRafRef.current) window.cancelAnimationFrame(moveRafRef.current);
+      moveRafRef.current = null;
+    };
+  }, [headRef, pupilX, pupilY, send]);
+
+  const idlePose: MascotPose = idleTick % 2 === 0 ? 'wave' : 'point';
+  const effectivePose: MascotPose = useMemo(() => {
+    if (machine.state === 'active') return machine.lastActionPose ?? 'cheer';
+    if (machine.state === 'happy') return 'cheer';
+    if (machine.state === 'thinking') return 'point';
+    if (machine.state === 'worried') return 'worry';
+    if (machine.state === 'hoverMap') return 'point';
+    if (machine.state === 'aware') return 'wave';
+    if (machine.nudgeUntil) return 'wave';
+    return idlePose;
+  }, [idlePose, machine.lastActionPose, machine.nudgeUntil, machine.state]);
 
   const copy = useMemo(() => {
     if (regionStatus === 'hijau') {
       return {
-        headline: regionName ? `${regionName} sudah terproteksi` : 'Wilayah hijau itu penting!',
-        body: 'Yuk jaga tetap bersih, hemat air, dan dukung ruang hijau supaya manfaatnya bertahan lama.',
+        headline: regionName ? `${regionName} relatif stabil` : 'Wilayah hijau perlu dijaga',
+        body: 'Pertahankan ruang hijau: kurangi sampah, hemat air, dan dukung penanaman di area sekitar.',
       };
     }
     if (regionStatus === 'kritis') {
       return {
-        headline: regionName ? `${regionName} butuh aksi cepat` : 'Wilayah kritis butuh aksi cepat',
-        body: 'Ayo mulai restorasi: tanam pohon, rawat, dan pantau dampaknya untuk lingkungan sekitar.',
+        headline: regionName ? `${regionName} butuh pemulihan` : 'Wilayah kritis perlu pemulihan',
+        body: 'Prioritaskan restorasi: pilih bibit, tanam, rawat (air & cahaya), lalu pantau perubahan tanah dan udara.',
       };
     }
     if (regionStatus === 'gersang') {
       return {
-        headline: regionName ? `Pulihkan ${regionName} bersama` : 'Pulihkan lahan gersang bersama',
-        body: 'Pilih wilayah, lalu kita jalankan langkah penanaman sampai pohon tumbuh sehat.',
+        headline: regionName ? `Pulihkan ${regionName} selangkah demi selangkah` : 'Pulihkan lahan gersang',
+        body: 'Mulai dari penanaman yang benar: gali, beri nutrisi, tanam, tutup, siram, dan pastikan cukup cahaya.',
       };
     }
     if (mode === 'compact') {
       return {
-        headline: 'Ayo lanjutkan gerakan lingkungan',
-        body: 'Lihat kondisi wilayah, lalu mulai restorasi jika perlu. Peta ada di kiri.',
+        headline: 'Aku pemandu lingkunganmu',
+        body: 'Arahkan kursor ke wilayah di peta. Kalau status Oranye/Merah, klik untuk mulai restorasi.',
       };
     }
     const options = [
       {
-        headline: 'Ayo bareng-bareng jaga lingkungan!',
-        body: 'Arahkan kursor ke wilayah di peta. Kita pilih yang butuh restorasi lalu mulai tanam pohon.',
+        headline: 'Cek status wilayah dulu',
+        body: 'Hover wilayah untuk lihat kondisi. Fokuskan restorasi di Oranye/Merah untuk dampak paling terasa.',
       },
       {
-        headline: 'Gerakan tanam pohon untuk semua',
-        body: 'Mulai dari satu wilayah. Dampaknya bisa bikin udara lebih segar dan tanah lebih sejuk.',
+        headline: 'Restorasi itu bertahap',
+        body: 'Mulai dari satu wilayah: pilih bibit, tanam, rawat. Setiap langkah punya efek ke air, suhu, dan biodiversitas.',
       },
       {
-        headline: 'Satu aksi kecil, dampak besar',
-        body: 'Hover wilayah dulu untuk lihat status. Klik Oranye/Merah untuk mulai restorasi.',
+        headline: 'Aksi kecil, dampak besar',
+        body: 'Klik wilayah yang butuh bantuan. Kita bikin tanah lebih sejuk, air lebih terserap, dan udara lebih bersih.',
       },
     ];
     return options[Math.floor(Math.random() * options.length)];
   }, [mode, regionName, regionStatus]);
 
-  const speech = useMemo(() => {
-    if (attention?.message) return attention.message;
-    if (regionStatus === 'hijau') return 'Wilayah ini sudah aman. Coba wilayah lain ya.';
-    if (regionName && regionStatus && regionStatus !== 'hijau') return `Klik ${regionName} untuk mulai restorasi.`;
-    if (mode === 'compact') return 'Arahkan kursor ke peta kiri, lalu klik wilayah.';
-    return 'Arahkan kursor ke peta kiri, lalu klik wilayah Oranye/Merah untuk mulai tanam.';
-  }, [attention?.message, mode, regionName, regionStatus]);
+  const dialog = useMemo(() => {
+    const seedFromText = (s: string) => {
+      let acc = 0;
+      for (let i = 0; i < s.length; i += 1) acc = (acc * 31 + s.charCodeAt(i)) >>> 0;
+      return acc;
+    };
+    const pick = <T,>(options: T[], seed: number) => options[Math.abs(seed) % options.length];
 
-  const speechHint = useMemo(() => {
-    if (attention?.hint) return attention.hint;
-    if (regionStatus === 'hijau') return 'Cari Oranye/Merah';
-    if (regionStatus && regionStatus !== 'hijau') return 'Klik untuk mulai';
-    return 'Peta di kiri';
-  }, [attention?.hint, regionStatus]);
+    const state = machine.state;
+    const seed = seedFromText(`${state}|${regionStatus ?? ''}|${regionName ?? ''}|${machine.dialogNonce}`);
+    const name = regionName ?? 'wilayah ini';
+
+    if (attention?.message && state !== 'idle') {
+      return { hint: attention?.hint ?? 'Info', text: attention.message };
+    }
+
+    if (state === 'active') {
+      return {
+        hint: 'Aksi',
+        text: pick(['Mantap! Lanjutkan langkahnya biar dampaknya makin terasa.', 'Sip, aksi tercatat. Aku bantu pantau perkembangannya.', 'Nice! Konsisten ya—aksi kecil bisa berdampak besar.'], seed),
+      };
+    }
+    if (state === 'happy') {
+      return {
+        hint: 'Apresiasi',
+        text: pick([`${name} sudah stabil. Terima kasih sudah menjaga!`, `Keren—${name} terlihat sehat. Yuk bantu area lain juga.`, `Bagus! ${name} aman. Kita fokus ke Oranye/Merah ya.`], seed),
+      };
+    }
+    if (state === 'thinking') {
+      return {
+        hint: 'Saran',
+        text: pick([`Untuk ${name}, mulai dari tanam lalu rawat rutin.`, `${name} butuh pemulihan bertahap. Mulai restorasi ya.`, `Aku sarankan mulai aksi di ${name} supaya kondisi membaik.`], seed),
+      };
+    }
+    if (state === 'worried') {
+      return {
+        hint: 'Waspada',
+        text: pick([`${name} perlu perhatian 🌱`, `Hati-hati, ${name} cukup gersang. Prioritaskan restorasi.`, `Warning: ${name} butuh pemulihan segera.`], seed),
+      };
+    }
+    if (state === 'hoverMap') {
+      return {
+        hint: 'Analisis',
+        text: pick([`Aku cek status ${name}. Klik kalau butuh restorasi.`, `Hover mantap—klik ${name} untuk mulai aksi.`, `Status ${name} terbaca. Klik Oranye/Merah untuk mulai.`], seed),
+      };
+    }
+    if (state === 'aware') {
+      return {
+        hint: 'Hai!',
+        text: pick(['Aku siap bantu. Coba hover wilayah di peta ya.', 'Butuh arahan? Lihat peta dan pilih wilayah yang perlu pemulihan.', 'Aku di sini. Pilih wilayah Oranye/Merah untuk mulai restorasi.'], seed),
+      };
+    }
+    if (machine.nudgeUntil) {
+      return {
+        hint: 'Hint',
+        text: pick(['Coba arahkan kursor ke peta, lalu pilih wilayah yang butuh bantuan.', 'Mulai dari Oranye/Merah ya—itu yang paling perlu restorasi.', 'Kalau bingung, hover wilayah dulu untuk baca statusnya.'], seed),
+      };
+    }
+    return {
+      hint: 'Analisis',
+      text: pick(['Hover wilayah di peta untuk lihat status, lalu klik untuk mulai.', 'Pilih Oranye/Merah untuk aksi restorasi yang paling berdampak.', 'Arahkan kursor ke peta, lalu klik wilayah yang butuh pemulihan.'], seed),
+    };
+  }, [attention?.hint, attention?.message, machine.dialogNonce, machine.nudgeUntil, machine.state, regionName, regionStatus]);
+
+  useEffect(() => {
+    if (!showBubble) return;
+    const full = dialog.text;
+    setTypedText('');
+    let i = 0;
+    const speed = Date.now() - machine.lastActivityAt < 2600 ? 14 : 22;
+    const t = window.setInterval(() => {
+      i += 1;
+      setTypedText(full.slice(0, i));
+      if (i >= full.length) window.clearInterval(t);
+    }, speed);
+    return () => window.clearInterval(t);
+  }, [dialog.text, machine.dialogNonce, machine.lastActivityAt, showBubble]);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className={mode === 'compact' ? 'w-full flex items-center justify-center' : 'h-full flex flex-col items-center justify-center text-center'}
+      className="w-full flex items-end justify-end"
     >
-      <div className="w-full rounded-3xl border border-emerald-200/80 bg-white/80 backdrop-blur-md shadow-[0_18px_50px_rgba(16,185,129,0.12)] p-5 relative overflow-hidden">
+      <div
+        ref={rootRef}
+        className={`w-full ${mode === 'compact' ? 'max-w-[360px]' : 'max-w-[430px]'} rounded-3xl border border-emerald-200/80 bg-white/80 backdrop-blur-md shadow-[0_18px_50px_rgba(16,185,129,0.12)] p-5 relative overflow-visible translate-y-3`}
+      >
         <motion.div
           aria-hidden
           className="absolute -top-12 -left-10 w-56 h-56 rounded-full blur-2xl opacity-70"
@@ -280,50 +564,92 @@ const EnvMascotCard = memo(({
 
         <div className={`relative z-10 flex items-center gap-4 ${mode === 'compact' ? 'py-1' : ''}`}>
           <div className={`relative shrink-0 ${mode === 'compact' ? 'w-[96px]' : 'w-[132px]'}`}>
+            <AnimatePresence mode="wait">
+              {showBubble && (
+                <motion.div
+                  key={`${machine.state}-${machine.dialogNonce}`}
+                  initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                    x:
+                      machine.state === 'hoverMap'
+                        ? -48
+                        : machine.state === 'thinking'
+                          ? -38
+                          : machine.state === 'worried'
+                            ? -44
+                            : machine.state === 'aware'
+                              ? -26
+                              : -18,
+                  }}
+                  exit={{ opacity: 0, y: 10, scale: 0.96 }}
+                  transition={{ duration: 0.18 }}
+                  className="pointer-events-none absolute right-0 -top-1 z-40"
+                >
+                  <div className={`relative ${mode === 'compact' ? 'max-w-[172px]' : 'max-w-[200px]'}`}>
+                    <div className="rounded-2xl bg-white/90 backdrop-blur-md border border-emerald-200/70 shadow-xl px-3 py-2">
+                      <div className="flex items-start gap-2">
+                        <motion.div
+                          animate={{ y: [0, -2, 0], rotate: [0, -6, 0] }}
+                          transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+                          className={`mt-[1px] ${mood === 'worried' ? 'text-red-600' : mood === 'happy' ? 'text-emerald-700' : 'text-sky-700'}`}
+                        >
+                          {mood === 'worried' ? <Zap size={14} /> : mood === 'happy' ? <ThumbsUp size={14} /> : <MapPin size={14} />}
+                        </motion.div>
+                        <div className="min-w-0">
+                          <div className="text-[9px] font-black uppercase tracking-widest text-slate-700/70 leading-none">{dialog.hint}</div>
+                          <div className="mt-1 text-[10px] font-black text-slate-900 leading-snug">{typedText}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-3 h-3 rotate-45 bg-white/90 border-r border-b border-emerald-200/70" />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <motion.button
               type="button"
-              onMouseEnter={() => setHovering(true)}
-              onMouseLeave={() => setHovering(false)}
-              onClick={cyclePose}
+              onMouseEnter={() => setSelfHover(true)}
+              onMouseLeave={() => setSelfHover(false)}
+              onClick={() => {
+                send({ type: 'CHAR_CLICK', now: Date.now() });
+                setActionFxKind('spark');
+                setActionFxId(Date.now());
+                setBurstKey(k => k + 1);
+              }}
               className={`relative w-full ${mode === 'compact' ? 'h-[112px]' : 'h-[164px]'} rounded-[2.2rem] shadow-xl border border-white/70 bg-white/70 backdrop-blur-md overflow-hidden text-left`}
               style={{
                 backgroundImage: `radial-gradient(circle at 30% 18%, ${accent.glow} 0 70px, rgba(255,255,255,0.9) 120px)`,
               }}
-              animate={{ rotate: [-1.2, 1.2, -1.2] }}
-              transition={{ repeat: Infinity, duration: 4.2, ease: 'easeInOut' }}
+              animate={{
+                rotate:
+                  machine.funUntil
+                    ? [0, 12, -10, 0]
+                    : machine.state === 'thinking'
+                      ? [3, 1, 3]
+                      : machine.state === 'hoverMap'
+                        ? [0.8, -0.8, 0.8]
+                        : machine.state === 'aware'
+                          ? [-2, 2, -2]
+                          : [-1.2, 1.2, -1.2],
+                y: machine.state === 'happy' || machine.state === 'active' ? [0, -5, 0] : [0, -2, 0],
+                x:
+                  machine.state === 'worried'
+                    ? [0, -2, 2, -2, 0]
+                    : machine.state === 'hoverMap'
+                      ? [0, -3, 0]
+                      : machine.state === 'aware'
+                        ? [0, -2, 0]
+                        : 0,
+                scale: selfHover ? 1.02 : machine.state === 'aware' ? 1.01 : 1,
+              }}
+              transition={{ repeat: Infinity, duration: machine.state === 'worried' ? 0.9 : isFast ? 2.4 : 3.4, ease: 'easeInOut' }}
+              whileHover={{ y: -3 }}
+              whileTap={{ scale: 0.98, y: 1 }}
             >
-              <AnimatePresence mode="wait">
-                {(mode !== 'compact' || Boolean(attention?.pose) || Boolean(regionName)) && (
-                  <motion.div
-                    key={`${speech}-${speechHint}`}
-                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.96 }}
-                    transition={{ duration: 0.18 }}
-                    className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-2 z-30"
-                  >
-                    <div className="relative max-w-[142px]">
-                      <div className="rounded-2xl bg-white/90 backdrop-blur-md border border-emerald-200/70 shadow-xl px-3 py-2">
-                        <div className="flex items-start gap-2">
-                          <motion.div
-                            animate={{ y: [0, -2, 0], rotate: [0, -6, 0] }}
-                            transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
-                            className="mt-[1px] text-emerald-700"
-                          >
-                            <MapPin size={14} />
-                          </motion.div>
-                          <div className="min-w-0">
-                            <div className="text-[9px] font-black uppercase tracking-widest text-slate-700/70 leading-none">{speechHint}</div>
-                            <div className="mt-1 text-[10px] font-black text-slate-900 leading-snug">{speech}</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-3 h-3 rotate-45 bg-white/90 border-r border-b border-emerald-200/70" />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
               <motion.div
                 aria-hidden
                 className="absolute inset-0 opacity-80"
@@ -358,127 +684,146 @@ const EnvMascotCard = memo(({
                 }}
                 transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut' }}
               >
-                <div className="relative w-[72px] h-[118px]">
-                  <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[54px] h-[54px] rounded-full border border-emerald-200/70 shadow-[0_10px_22px_rgba(0,0,0,0.12)] bg-white">
-                    <div
-                      className="absolute inset-0 rounded-full opacity-70"
-                      style={{ background: `radial-gradient(circle at 35% 30%, ${accent.glow} 0 18px, transparent 42px)` }}
-                    />
+                <div className="relative w-[86px] h-[128px]">
+                  <motion.div
+                    ref={headRef}
+                    className="absolute left-1/2 -translate-x-1/2 top-0 w-[58px] h-[58px] rounded-full border border-emerald-200/70 shadow-[0_14px_30px_rgba(0,0,0,0.12)]"
+                    animate={{
+                      rotate:
+                        machine.state === 'thinking'
+                          ? [6, 2, 6]
+                          : machine.state === 'hoverMap'
+                            ? (effectivePose === 'point' ? [-6, -3, -6] : [4, 6, 4])
+                            : machine.state === 'aware'
+                              ? [-3, 3, -3]
+                              : effectivePose === 'guard'
+                                ? [-2, 2, -2]
+                                : mood === 'worried'
+                                  ? [-2, 0, -2]
+                                  : [0, 1, 0],
+                      x:
+                        machine.state === 'hoverMap'
+                          ? (effectivePose === 'point' ? [-2, -3, -2] : [2, 3, 2])
+                          : machine.state === 'aware'
+                            ? [0, -1, 0]
+                            : 0,
+                      y: machine.state === 'happy' ? [0, -1, 0] : 0,
+                      scale: machine.state === 'aware' ? [1, 1.02, 1] : [1, 1.01, 1],
+                    }}
+                    transition={{ repeat: Infinity, duration: isFast ? 1.6 : 2.2, ease: 'easeInOut' }}
+                    style={{
+                      backgroundImage: `radial-gradient(circle at 28% 24%, rgba(255,255,255,0.95) 0 14px, rgba(255,255,255,0.75) 18px, transparent 46px), linear-gradient(140deg, ${accent.core} 0%, rgba(59,130,246,0.55) 100%)`,
+                    }}
+                  >
+                    <div className="absolute inset-0 rounded-full opacity-60" style={{ background: `radial-gradient(circle at 35% 30%, ${accent.glow} 0 18px, transparent 46px)` }} />
                     <motion.div
-                      className="absolute left-[14px] top-[22px] w-[7px] h-[10px] rounded-full bg-slate-900/80"
+                      className="absolute left-[12px] top-[20px] w-[16px] h-[12px] rounded-full bg-white/85 border border-white/70 shadow-inner overflow-hidden"
                       animate={{ scaleY: [1, 1, 0.15, 1, 1] }}
                       transition={{ repeat: Infinity, duration: 4.2, times: [0, 0.45, 0.5, 0.55, 1] }}
-                    />
+                    >
+                      <motion.div
+                        className="absolute left-1/2 top-1/2 w-[6px] h-[6px] rounded-full bg-slate-900 -translate-x-1/2 -translate-y-1/2"
+                        style={{ x: pupilXS, y: pupilYS }}
+                      />
+                      <div className="absolute left-1/2 top-1/2 w-[2px] h-[2px] rounded-full bg-white/80 -translate-x-[1px] -translate-y-[1px]" />
+                    </motion.div>
                     <motion.div
-                      className="absolute right-[14px] top-[22px] w-[7px] h-[10px] rounded-full bg-slate-900/80"
+                      className="absolute right-[12px] top-[20px] w-[16px] h-[12px] rounded-full bg-white/85 border border-white/70 shadow-inner overflow-hidden"
                       animate={{ scaleY: [1, 1, 0.15, 1, 1] }}
                       transition={{ repeat: Infinity, duration: 4.2, times: [0, 0.45, 0.5, 0.55, 1] }}
-                    />
+                    >
+                      <motion.div
+                        className="absolute left-1/2 top-1/2 w-[6px] h-[6px] rounded-full bg-slate-900 -translate-x-1/2 -translate-y-1/2"
+                        style={{ x: pupilXS, y: pupilYS }}
+                      />
+                      <div className="absolute left-1/2 top-1/2 w-[2px] h-[2px] rounded-full bg-white/80 -translate-x-[1px] -translate-y-[1px]" />
+                    </motion.div>
+                    {mood === 'worried' ? (
+                      <motion.div
+                        className="absolute left-1/2 -translate-x-1/2 top-[40px] w-[20px] h-[10px] rounded-t-full border-t-2 border-slate-900/60"
+                        animate={{ y: [0, 1, 0] }}
+                        transition={{ repeat: Infinity, duration: 2.0, ease: 'easeInOut' }}
+                      />
+                    ) : mood === 'happy' ? (
+                      <motion.div
+                        className="absolute left-1/2 -translate-x-1/2 top-[38px] w-[22px] h-[10px] rounded-b-full border-b-2 border-slate-900/60"
+                        animate={{ y: effectivePose === 'plant' ? [0, 1, 0] : 0 }}
+                        transition={{ repeat: Infinity, duration: 2.0, ease: 'easeInOut' }}
+                      />
+                    ) : (
+                      <motion.div
+                        className="absolute left-1/2 -translate-x-1/2 top-[41px] w-[18px] h-[8px] border-b-2 border-slate-900/50"
+                        animate={{ opacity: [0.85, 1, 0.85] }}
+                        transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}
+                      />
+                    )}
+                    <div className="absolute left-[12px] top-[36px] w-[12px] h-[6px] rounded-full bg-white/30 blur-[0.4px]" />
+                    <div className="absolute right-[12px] top-[36px] w-[12px] h-[6px] rounded-full bg-white/30 blur-[0.4px]" />
                     <motion.div
-                      className="absolute left-1/2 -translate-x-1/2 top-[35px] w-[18px] h-[10px] rounded-b-full border-b-2 border-slate-900/60"
-                      animate={{
-                        y: effectivePose === 'plant' ? [0, 1, 0] : 0,
-                        rotate: effectivePose === 'guard' ? [-2, 2, -2] : 0,
+                      aria-hidden
+                      className="absolute left-1/2 -translate-x-1/2 -top-2 w-11 h-7 rounded-[1.3rem] border border-white/70 shadow-lg"
+                      animate={{ rotate: effectivePose === 'wave' ? [-8, 8, -8] : 0 }}
+                      transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
+                      style={{
+                        backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 100%)',
+                        backgroundColor: accent.core,
                       }}
-                      transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
                     />
-                    <div className="absolute left-[10px] top-[34px] w-[12px] h-[6px] rounded-full bg-rose-300/40 blur-[0.5px]" />
-                    <div className="absolute right-[10px] top-[34px] w-[12px] h-[6px] rounded-full bg-rose-300/40 blur-[0.5px]" />
-                    <div className="absolute left-1/2 -translate-x-1/2 -top-2 w-10 h-6 rounded-[1.2rem] border border-white/70 shadow-lg" style={{ backgroundColor: accent.core }} />
-                  </div>
+                    <motion.div
+                      aria-hidden
+                      className="absolute left-1/2 -translate-x-1/2 -top-[6px] w-[14px] h-[10px] rounded-full"
+                      animate={{ y: effectivePose === 'wave' ? [0, -1, 0] : [0, 0, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
+                      style={{
+                        backgroundImage: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.75) 0 35%, rgba(16,185,129,0.0) 70%)',
+                        clipPath: 'polygon(50% 0%, 80% 18%, 100% 50%, 82% 82%, 50% 100%, 18% 82%, 0% 50%, 20% 18%)',
+                      }}
+                    />
+                  </motion.div>
 
-                  <div className="absolute left-1/2 -translate-x-1/2 top-[52px] w-[54px] h-[46px] rounded-[1.4rem] border border-emerald-200/60 shadow-[0_10px_22px_rgba(0,0,0,0.10)] bg-white">
-                    <div className="absolute inset-0 rounded-[1.4rem] opacity-75" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(16,185,129,0.10) 100%)' }} />
-                    <div className="absolute left-1/2 -translate-x-1/2 top-2 w-8 h-2 rounded-full bg-slate-900/10" />
-                    <div className="absolute left-1/2 -translate-x-1/2 top-5 w-10 h-2 rounded-full bg-slate-900/8" />
+                  <div className="absolute left-1/2 -translate-x-1/2 top-[54px] w-[62px] h-[54px] rounded-[1.8rem] border border-emerald-200/60 shadow-[0_14px_28px_rgba(0,0,0,0.10)] bg-white">
+                    <div className="absolute inset-0 rounded-[1.8rem] opacity-75" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(59,130,246,0.08) 100%)' }} />
+                    <div className="absolute left-1/2 -translate-x-1/2 top-2 w-10 h-10 rounded-[1.4rem] bg-emerald-50 border border-emerald-200/70 shadow-inner flex items-center justify-center text-emerald-700">
+                      <Sprout size={18} />
+                    </div>
                   </div>
 
                   <motion.div
                     aria-hidden
-                    className="absolute left-1 top-[60px] w-[22px] h-[10px] rounded-full bg-emerald-600/25 blur-[0.2px] border border-emerald-500/20"
+                    className="absolute -left-1 top-[70px] w-[24px] h-[12px] rounded-full border border-emerald-200/60 shadow-sm"
                     animate={
                       effectivePose === 'point'
-                        ? { rotate: -50, x: -4, y: -4 }
+                        ? { rotate: -55, x: -4, y: -6 }
                         : effectivePose === 'plant'
-                          ? { rotate: 35, x: 2, y: 2 }
-                          : { rotate: [-18, 12, -18], x: [0, 2, 0], y: [0, -1, 0] }
+                          ? { rotate: 30, x: 1, y: 2 }
+                          : { rotate: [-14, 10, -14], x: [0, 2, 0], y: [0, -1, 0] }
                     }
-                    transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
+                    transition={{ repeat: Infinity, duration: 2.1, ease: 'easeInOut' }}
+                    style={{ backgroundColor: 'rgba(16,185,129,0.18)' }}
                   />
                   <motion.div
                     aria-hidden
-                    className="absolute right-1 top-[60px] w-[22px] h-[10px] rounded-full bg-emerald-600/25 blur-[0.2px] border border-emerald-500/20"
+                    className="absolute -right-1 top-[70px] w-[24px] h-[12px] rounded-full border border-emerald-200/60 shadow-sm"
                     animate={
                       effectivePose === 'wave'
-                        ? { rotate: [30, -10, 30], x: [0, -2, 0], y: [0, -2, 0] }
+                        ? { rotate: [32, -12, 32], x: [0, -2, 0], y: [0, -3, 0] }
                         : effectivePose === 'water'
-                          ? { rotate: [18, 34, 18], x: [0, 1, 0], y: [0, 2, 0] }
-                          : { rotate: [18, -12, 18], x: [0, -2, 0], y: [0, -1, 0] }
+                          ? { rotate: [18, 32, 18], x: [0, 1, 0], y: [0, 2, 0] }
+                          : { rotate: [14, -10, 14], x: [0, -2, 0], y: [0, -1, 0] }
                     }
                     transition={{ repeat: Infinity, duration: 1.9, ease: 'easeInOut', delay: 0.05 }}
-                  />
-
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-[18px] w-[58px] h-[10px] rounded-full bg-slate-900/10" />
-                  <motion.div
-                    aria-hidden
-                    className="absolute left-[18px] bottom-0 w-[14px] h-[24px] rounded-[1rem] bg-slate-900/25"
-                    animate={
-                      effectivePose === 'plant' || effectivePose === 'water'
-                        ? { y: [0, 1, 0] }
-                        : effectivePose === 'point' || effectivePose === 'wave'
-                          ? { y: [0, -2, 0] }
-                          : { y: [0, -1, 0] }
-                    }
-                    transition={{ repeat: Infinity, duration: 0.7, ease: 'easeInOut' }}
-                  />
-                  <motion.div
-                    aria-hidden
-                    className="absolute right-[18px] bottom-0 w-[14px] h-[24px] rounded-[1rem] bg-slate-900/25"
-                    animate={
-                      effectivePose === 'plant' || effectivePose === 'water'
-                        ? { y: [0, -1, 0] }
-                        : effectivePose === 'point' || effectivePose === 'wave'
-                          ? { y: [0, -2, 0] }
-                          : { y: [0, -1, 0] }
-                    }
-                    transition={{ repeat: Infinity, duration: 0.7, ease: 'easeInOut', delay: 0.18 }}
-                  />
-                  <motion.div
-                    aria-hidden
-                    className="absolute left-[10px] bottom-0 w-[22px] h-[12px] rounded-[1rem] bg-white shadow-md border border-slate-200/80"
-                    animate={{
-                      rotate:
-                        effectivePose === 'plant' || effectivePose === 'water'
-                          ? [-3, 3, -3]
-                          : effectivePose === 'point' || effectivePose === 'wave'
-                            ? [-2, 2, -2]
-                            : 0,
-                    }}
-                    transition={{ repeat: Infinity, duration: 0.7, ease: 'easeInOut' }}
-                  />
-                  <motion.div
-                    aria-hidden
-                    className="absolute right-[10px] bottom-0 w-[22px] h-[12px] rounded-[1rem] bg-white shadow-md border border-slate-200/80"
-                    animate={{
-                      rotate:
-                        effectivePose === 'plant' || effectivePose === 'water'
-                          ? [3, -3, 3]
-                          : effectivePose === 'point' || effectivePose === 'wave'
-                            ? [2, -2, 2]
-                            : 0,
-                    }}
-                    transition={{ repeat: Infinity, duration: 0.7, ease: 'easeInOut', delay: 0.18 }}
+                    style={{ backgroundColor: 'rgba(59,130,246,0.14)' }}
                   />
 
                   <AnimatePresence>
                     {effectivePose === 'plant' && (
                       <motion.div
                         key="tool-plant"
-                        initial={{ opacity: 0, scale: 0.8, x: 8, y: -2 }}
-                        animate={{ opacity: 1, scale: 1, x: 10, y: 0, rotate: [-8, 8, -8] }}
-                        exit={{ opacity: 0, scale: 0.8 }}
+                        initial={{ opacity: 0, scale: 0.82, x: 6, y: -2 }}
+                        animate={{ opacity: 1, scale: 1, x: 10, y: 0, rotate: [-10, 10, -10] }}
+                        exit={{ opacity: 0, scale: 0.82 }}
                         transition={{ rotate: { repeat: Infinity, duration: 1.6, ease: 'easeInOut' } }}
-                        className="absolute right-0 top-[58px] text-slate-800"
+                        className="absolute right-0 top-[68px] text-slate-800"
                       >
                         <Shovel size={18} />
                       </motion.div>
@@ -486,10 +831,10 @@ const EnvMascotCard = memo(({
                     {effectivePose === 'water' && (
                       <motion.div
                         key="tool-water"
-                        initial={{ opacity: 0, scale: 0.85, x: 8, y: 0 }}
+                        initial={{ opacity: 0, scale: 0.86, x: 6, y: 0 }}
                         animate={{ opacity: 1, scale: 1, x: 10, y: 2 }}
-                        exit={{ opacity: 0, scale: 0.85 }}
-                        className="absolute right-0 top-[58px] text-blue-500"
+                        exit={{ opacity: 0, scale: 0.86 }}
+                        className="absolute right-0 top-[68px] text-blue-500"
                       >
                         <Droplets size={18} />
                       </motion.div>
@@ -497,10 +842,10 @@ const EnvMascotCard = memo(({
                     {effectivePose === 'point' && (
                       <motion.div
                         key="tool-point"
-                        initial={{ opacity: 0, scale: 0.85, x: -8, y: 0 }}
+                        initial={{ opacity: 0, scale: 0.86, x: -6, y: 0 }}
                         animate={{ opacity: 1, scale: 1, x: -10, y: -2 }}
-                        exit={{ opacity: 0, scale: 0.85 }}
-                        className="absolute left-0 top-[58px] text-emerald-700"
+                        exit={{ opacity: 0, scale: 0.86 }}
+                        className="absolute left-0 top-[68px] text-emerald-700"
                       >
                         <MapPin size={18} />
                       </motion.div>
@@ -508,12 +853,35 @@ const EnvMascotCard = memo(({
                     {effectivePose === 'guard' && (
                       <motion.div
                         key="tool-guard"
-                        initial={{ opacity: 0, scale: 0.85, y: -2 }}
+                        initial={{ opacity: 0, scale: 0.86, y: -2 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.85 }}
-                        className="absolute left-1/2 -translate-x-1/2 top-[54px] text-emerald-700"
+                        exit={{ opacity: 0, scale: 0.86 }}
+                        className="absolute left-1/2 -translate-x-1/2 top-[64px] text-emerald-700"
                       >
                         <ShieldCheck size={18} />
+                      </motion.div>
+                    )}
+                    {effectivePose === 'cheer' && (
+                      <motion.div
+                        key="tool-cheer"
+                        initial={{ opacity: 0, scale: 0.86, y: -2 }}
+                        animate={{ opacity: 1, scale: 1, y: 0, rotate: [-8, 8, -8] }}
+                        exit={{ opacity: 0, scale: 0.86 }}
+                        transition={{ rotate: { repeat: Infinity, duration: 1.4, ease: 'easeInOut' } }}
+                        className="absolute left-1/2 -translate-x-1/2 top-[64px] text-emerald-600"
+                      >
+                        <ThumbsUp size={18} />
+                      </motion.div>
+                    )}
+                    {effectivePose === 'worry' && (
+                      <motion.div
+                        key="tool-worry"
+                        initial={{ opacity: 0, scale: 0.86, y: -2 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.86 }}
+                        className="absolute left-1/2 -translate-x-1/2 top-[64px] text-red-600"
+                      >
+                        <Zap size={18} />
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -521,15 +889,32 @@ const EnvMascotCard = memo(({
                   <AnimatePresence>
                     <motion.div
                       key={`burst-${burstKey}`}
-                      initial={{ opacity: 0, scale: 0.6, y: 6 }}
-                      animate={{ opacity: [0, 1, 0], scale: [0.6, 1.15, 0.85], y: [6, -8, -14] }}
+                      initial={{ opacity: 0, scale: 0.7, y: 6 }}
+                      animate={{ opacity: [0, 1, 0], scale: [0.7, 1.12, 0.86], y: [6, -8, -14] }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.7 }}
-                      className="absolute left-1/2 -translate-x-1/2 top-[50px] text-yellow-400 pointer-events-none"
+                      className="absolute left-1/2 -translate-x-1/2 top-[56px] text-yellow-400 pointer-events-none"
                     >
                       <Sparkles size={22} />
                     </motion.div>
                   </AnimatePresence>
+
+                  <AnimatePresence>
+                    {actionFxId && actionFxKind === 'thumb' && (
+                      <motion.div
+                        key={`thumb-${actionFxId}`}
+                        initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                        animate={{ opacity: 1, scale: 1.12, y: -6 }}
+                        exit={{ opacity: 0, scale: 0.9, y: -14 }}
+                        transition={{ duration: 0.35, ease: 'easeOut' }}
+                        className="absolute left-1/2 -translate-x-1/2 top-[56px] text-emerald-600 pointer-events-none drop-shadow"
+                      >
+                        <ThumbsUp size={22} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-1 w-[62px] h-[12px] rounded-full bg-black/10 blur-[0.2px]" />
                 </div>
               </motion.div>
 
@@ -543,7 +928,7 @@ const EnvMascotCard = memo(({
                     className="absolute left-1/2 -translate-x-1/2 bottom-2 text-[9px] font-black uppercase tracking-widest text-slate-600"
                     style={{ textShadow: '0 1px 0 rgba(255,255,255,0.6)' }}
                   >
-                    Klik maskot
+                    Klik untuk tips
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -551,7 +936,7 @@ const EnvMascotCard = memo(({
           </div>
 
           <div className="flex-1 text-left">
-            <div className="text-[11px] font-black uppercase tracking-widest text-emerald-700/80">Maskot Gerakan Lingkungan</div>
+            <div className="text-[11px] font-black uppercase tracking-widest text-emerald-700/80">Pemandu Lingkungan</div>
             <div className="mt-1 text-base font-black text-slate-900 leading-tight">{copy.headline}</div>
             <div
               className={`mt-2 text-xs text-slate-600 leading-relaxed ${mode === 'compact' ? 'opacity-90' : ''}`}
@@ -563,7 +948,12 @@ const EnvMascotCard = memo(({
             <div className={`mt-3 flex items-center gap-2 flex-wrap ${mode === 'compact' ? 'hidden' : ''}`}>
               <motion.button
                 type="button"
-                onClick={() => setPoseAndBurst('plant')}
+                onClick={() => {
+                  send({ type: 'ACTION', now: Date.now(), pose: 'plant' });
+                  setActionFxKind('thumb');
+                  setActionFxId(Date.now());
+                  setBurstKey(k => k + 1);
+                }}
                 className={`px-2 py-1 rounded-full ${accent.chipBg} ${accent.chipText} text-[10px] font-black uppercase flex items-center gap-1 border border-white/60 shadow-sm active:scale-95 transition-transform`}
                 whileHover={{ y: -1 }}
               >
@@ -571,7 +961,12 @@ const EnvMascotCard = memo(({
               </motion.button>
               <motion.button
                 type="button"
-                onClick={() => setPoseAndBurst('water')}
+                onClick={() => {
+                  send({ type: 'ACTION', now: Date.now(), pose: 'water' });
+                  setActionFxKind('thumb');
+                  setActionFxId(Date.now());
+                  setBurstKey(k => k + 1);
+                }}
                 className="px-2 py-1 rounded-full bg-sky-100 text-sky-800 text-[10px] font-black uppercase flex items-center gap-1 border border-white/60 shadow-sm active:scale-95 transition-transform"
                 whileHover={{ y: -1 }}
               >
@@ -579,7 +974,12 @@ const EnvMascotCard = memo(({
               </motion.button>
               <motion.button
                 type="button"
-                onClick={() => setPoseAndBurst('guard')}
+                onClick={() => {
+                  send({ type: 'ACTION', now: Date.now(), pose: 'guard' });
+                  setActionFxKind('thumb');
+                  setActionFxId(Date.now());
+                  setBurstKey(k => k + 1);
+                }}
                 className="px-2 py-1 rounded-full bg-emerald-50 text-emerald-900 text-[10px] font-black uppercase flex items-center gap-1 border border-emerald-200/70 shadow-sm active:scale-95 transition-transform"
                 whileHover={{ y: -1 }}
               >
@@ -588,7 +988,8 @@ const EnvMascotCard = memo(({
               <motion.button
                 type="button"
                 onClick={() => {
-                  setPoseAndBurst('point');
+                  send({ type: 'ACTION', now: Date.now(), pose: 'point' });
+                  setBurstKey(k => k + 1);
                   onGuide();
                 }}
                 className="px-2 py-1 rounded-full bg-white text-slate-700 text-[10px] font-black uppercase flex items-center gap-1 border border-slate-200/70 shadow-sm active:scale-95 transition-transform"
@@ -635,10 +1036,10 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
         initial={false} 
         animate={{ 
           scale: stage >= 0 ? 1 : 0,
-          backgroundColor: stage >= 4 ? '#3e2723' : '#5d4037',
-          height: stage >= 3 ? '20%' : '15%',
+          backgroundColor: stage >= 4 ? '#2b1a16' : stage >= 1 ? '#3e2723' : '#5d4037',
+          height: stage >= 1 ? '22%' : '15%',
         }}
-        className="absolute bottom-0 w-3/4 rounded-[100%] blur-[1px] shadow-inner z-0"
+        className="absolute bottom-0 w-3/4 rounded-[100%] blur-[0.6px] shadow-inner z-0"
       >
         <div
           className="absolute inset-0 rounded-[100%]"
@@ -650,6 +1051,21 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
                 : moisture01 > 0.78
                   ? 'radial-gradient(circle at 40% 35%, rgba(255,255,255,0.18) 0 26px, transparent 52px), radial-gradient(circle at 65% 55%, rgba(59,130,246,0.12) 0 22px, transparent 44px)'
                   : 'radial-gradient(circle at 40% 35%, rgba(255,255,255,0.10) 0 22px, transparent 44px)',
+          }}
+        />
+        <motion.div
+          initial={false}
+          animate={{
+            opacity: stage >= 1 ? 1 : 0,
+            scale: stage >= 1 ? 1 : 0.9,
+          }}
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[68%] h-[58%] rounded-[100%]"
+          style={{
+            backgroundImage: [
+              'radial-gradient(circle at 50% 40%, rgba(0,0,0,0.55) 0 26%, rgba(0,0,0,0.86) 62%, rgba(0,0,0,0.92) 100%)',
+              'radial-gradient(circle at 35% 35%, rgba(255,255,255,0.10) 0 12%, transparent 34%)',
+            ].join(','),
+            boxShadow: 'inset 0 14px 30px rgba(0,0,0,0.55), inset 0 -6px 10px rgba(255,255,255,0.06), 0 10px 22px rgba(0,0,0,0.24)',
           }}
         />
         {/* Fertilizer bits */}
@@ -930,8 +1346,78 @@ const CharacterActionFX = ({ actionId, accent, toolIcon: ToolIcon }: { actionId:
   );
 };
 
-const HeldTool = ({ actionId, accent, icon: Icon }: { actionId: string, accent: string, icon?: React.ElementType }) => {
-  if (actionId === 'hole' || actionId === 'cover') {
+const HeldTool = ({ actionId, accent, icon: Icon, actionProgress }: { actionId: string, accent: string, icon?: React.ElementType, actionProgress?: number }) => {
+  const progress = actionProgress ?? 0;
+  const [hitTick, setHitTick] = useState(0);
+  const hitSegRef = useRef(-1);
+  const [plantTick, setPlantTick] = useState(0);
+  const plantDoneRef = useRef(false);
+
+  useEffect(() => {
+    if (actionId !== 'hole') return;
+    const seg = Math.floor(progress / 16);
+    if (seg !== hitSegRef.current) {
+      hitSegRef.current = seg;
+      setHitTick(v => v + 1);
+    }
+  }, [actionId, progress]);
+
+  useEffect(() => {
+    if (actionId !== 'plant') return;
+    if (progress >= 88) {
+      if (plantDoneRef.current) return;
+      plantDoneRef.current = true;
+      setPlantTick(v => v + 1);
+      return;
+    }
+    plantDoneRef.current = false;
+  }, [actionId, progress]);
+
+  if (actionId === 'hole') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, rotate: -16 }}
+        animate={{ opacity: 1, scale: [0.99, 1.01, 1], rotate: [-26, 6, -18], y: [0, 4, 1], x: [0, -1, 0] }}
+        transition={{ repeat: Infinity, duration: 0.48, ease: 'easeInOut' }}
+        className="relative w-8 h-8"
+      >
+        <div className="absolute left-3 top-1 w-1.5 h-8 bg-[#8b5a2b] rounded-full shadow-md rotate-[22deg] origin-top" />
+        <div className="absolute left-0 top-6 w-4 h-3 bg-[#9ca3af] rounded-sm shadow-md rotate-[22deg] border border-black/10" />
+        <div className="absolute left-1 top-7 w-3 h-1 bg-black/10 rounded-full rotate-[22deg]" />
+        <AnimatePresence>
+          {hitTick > 0 && (
+            <motion.div
+              key={hitTick}
+              initial={{ opacity: 0, scale: 0.7, x: 10, y: 18 }}
+              animate={{ opacity: 1, scale: 1, x: 10, y: 18 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.14 }}
+              className="absolute left-0 top-0"
+            >
+              {[...Array(7)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.6, x: 0, y: 0 }}
+                  animate={{
+                    opacity: [0, 1, 0],
+                    scale: [0.7, 1, 0.9],
+                    x: [-4 + (i % 4) * 3, -10 + (i % 4) * 6],
+                    y: [0, -10 - (i % 3) * 7],
+                    rotate: [-10, 20, -10],
+                  }}
+                  transition={{ duration: 0.42 + (i % 3) * 0.04, delay: 0.015 * i }}
+                  className="absolute rounded-full"
+                  style={{ width: 4 + (i % 3), height: 4 + (i % 3), backgroundColor: '#5d4037', filter: 'blur(0.2px)' }}
+                />
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    );
+  }
+
+  if (actionId === 'cover') {
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.9, rotate: -10 }}
@@ -960,6 +1446,43 @@ const HeldTool = ({ actionId, accent, icon: Icon }: { actionId: string, accent: 
         <div className="absolute right-0 top-5 w-3 h-3 flex items-center justify-center text-[#111827]">
           <div className="w-1 h-1 bg-[#111827] rounded-full" />
         </div>
+      </motion.div>
+    );
+  }
+
+  if (actionId === 'plant') {
+    const p01 = Math.max(0, Math.min(1, progress / 100));
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: [0.98, 1.02, 1] }}
+        transition={{ repeat: Infinity, duration: 0.9, ease: 'easeInOut' }}
+        className="relative w-8 h-8"
+      >
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-1 w-6 h-2 rounded-full bg-black/10 blur-[0.2px]" />
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-1.5 w-5 h-2 rounded-full bg-[#5d4037]/25 border border-black/10" />
+        <motion.div
+          animate={{ y: -2 + p01 * 10, rotate: p01 > 0.7 ? [0, 6, 0] : 0, scale: 1 - p01 * 0.12 }}
+          transition={{ type: 'spring', damping: 18, stiffness: 260 }}
+          className="absolute left-1/2 -translate-x-1/2 top-0"
+          style={{ color: accent }}
+        >
+          {Icon ? <Icon size={20} /> : <Sprout size={20} />}
+        </motion.div>
+        <AnimatePresence>
+          {plantTick > 0 && (
+            <motion.div
+              key={plantTick}
+              initial={{ opacity: 0, scale: 0.7, y: 6 }}
+              animate={{ opacity: [0, 1, 0], scale: [0.7, 1.1, 0.9], y: [6, -6, -10] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.65, ease: 'easeOut' }}
+              className="absolute left-1/2 -translate-x-1/2 bottom-2 text-yellow-400"
+            >
+              <Sparkles size={18} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     );
   }
@@ -1008,46 +1531,101 @@ const HeldTool = ({ actionId, accent, icon: Icon }: { actionId: string, accent: 
   );
 };
 
-const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent }: { isWalking: boolean, actionId: string | null, toolIcon?: React.ElementType, accent: string }) => {
+const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, actionProgress }: { isWalking: boolean, actionId: string | null, toolIcon?: React.ElementType, accent: string, actionProgress?: number }) => {
   const isActing = Boolean(actionId);
+  const isDigging = actionId === 'hole';
+  const isPlanting = actionId === 'plant';
+  const p01 = Math.max(0, Math.min(1, (actionProgress ?? 0) / 100));
+  const crouch = isPlanting ? (2 + p01 * 3) : 0;
+  const [blinkTick, setBlinkTick] = useState(0);
+  const blinkTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const schedule = () => {
+      const nextMs = 1800 + Math.random() * 2600;
+      blinkTimerRef.current = window.setTimeout(() => {
+        setBlinkTick(v => v + 1);
+        schedule();
+      }, nextMs);
+    };
+    schedule();
+    return () => {
+      if (blinkTimerRef.current) window.clearTimeout(blinkTimerRef.current);
+      blinkTimerRef.current = null;
+    };
+  }, []);
+
   return (
-    <div className="relative flex flex-col items-center">
-      {/* Head & Hat */}
+    <motion.div
+      animate={{
+        rotate: isDigging ? [-2.6, 0.8, -1.8] : isPlanting ? [-0.8, 0.8, -0.8] : isActing ? [-1.2, 1.2, -1.0] : isWalking ? [-0.8, 0.8, -0.8] : [-0.6, 0.6, -0.6],
+        y: isDigging ? [0, 1.2, 0] : isPlanting ? [crouch, crouch + 0.6, crouch] : isActing ? [0, 0.8, 0] : isWalking ? [0, -1.6, 0] : [0, 0.8, 0],
+      }}
+      transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 3.8, ease: 'easeInOut' }}
+      className="relative flex flex-col items-center origin-bottom"
+    >
       <motion.div 
-        animate={{ y: isActing ? [0, -2, 0] : isWalking ? [0, -4, 0] : [0, -1, 0] }}
-        transition={{ repeat: Infinity, duration: isActing ? 0.35 : 0.5 }}
+        animate={{ y: isDigging ? [0, -1.6, 0] : isPlanting ? [-0.6, -1.2, -0.6] : isActing ? [0, -1.2, 0] : isWalking ? [0, -2.6, 0] : [0, -1, 0] }}
+        transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 1.8, ease: 'easeInOut' }}
         className="relative z-20"
       >
-        {/* Hat */}
         <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-14 h-6 bg-[#ffeb3b] rounded-full border-2 border-[#fbc02d] shadow-sm" />
         <div className="absolute -top-7 left-1/2 -translate-x-1/2 w-8 h-4 bg-[#fbc02d] rounded-t-full" />
-        {/* Face/Head */}
-        <div className="w-10 h-10 bg-[#ffe0b2] rounded-full border-2 border-[#d7ccc8] flex items-end justify-center overflow-hidden">
-          <div className="flex gap-2 mb-3">
-            <div className="w-1 h-1 bg-black rounded-full" />
-            <div className="w-1 h-1 bg-black rounded-full" />
+        <div className="w-10 h-10 bg-[#ffe0b2] rounded-full border-2 border-[#d7ccc8] flex items-end justify-center overflow-hidden relative">
+          <div className="absolute left-1/2 top-[56%] -translate-x-1/2 w-7 h-3">
+            <motion.div
+              key={blinkTick}
+              initial={false}
+              animate={{ scaleY: [1, 1, 0.12, 1], scaleX: [1, 1.05, 1.05, 1] }}
+              transition={{ duration: 0.18, times: [0, 0.55, 0.7, 1] }}
+              className="absolute left-0 top-0 w-2.5 h-2.5 origin-center"
+            >
+              <div className="w-1.5 h-1.5 bg-black rounded-full" />
+            </motion.div>
+            <motion.div
+              key={`${blinkTick}-r`}
+              initial={false}
+              animate={{ scaleY: [1, 1, 0.12, 1], scaleX: [1, 1.05, 1.05, 1] }}
+              transition={{ duration: 0.18, times: [0, 0.55, 0.7, 1] }}
+              className="absolute right-0 top-0 w-2.5 h-2.5 origin-center"
+            >
+              <div className="w-1.5 h-1.5 bg-black rounded-full" />
+            </motion.div>
+          </div>
+          <div className="absolute left-1/2 bottom-[18%] -translate-x-1/2 w-4 h-2">
+            <motion.div
+              animate={{ scaleX: isActing ? [1, 1.2, 1] : [1, 1.06, 1] }}
+              transition={{ repeat: Infinity, duration: isActing ? 0.35 : 2.4, ease: 'easeInOut' }}
+              className="mx-auto w-3 h-1.5 rounded-full bg-[#d97706]/25"
+            />
           </div>
         </div>
       </motion.div>
 
-      {/* Body */}
       <motion.div 
         animate={{ 
-          rotate: isActing ? [-2, 3, -2] : isWalking ? [-5, 5, -5] : 0,
-          y: isActing ? [0, 2, 0] : isWalking ? [0, -2, 0] : 0
+          rotate: isDigging ? [-2.2, 1.2, -1.6] : isPlanting ? [-1, 1, -1] : isActing ? [-1.4, 1.8, -1.2] : isWalking ? [-1.2, 1.2, -1.2] : [-0.8, 0.8, -0.8],
+          y: isDigging ? [0, 2, 0] : isPlanting ? [2 + crouch * 0.6, 3 + crouch * 0.6, 2 + crouch * 0.6] : isActing ? [0, 1.5, 0] : isWalking ? [0, -1.2, 0] : [0, 0.6, 0],
+          scaleY: isDigging ? [1, 0.98, 1] : isPlanting ? [1, 0.985, 1] : isActing ? [1, 0.985, 1] : isWalking ? [1, 0.995, 1] : [1, 1.015, 1],
         }}
-        transition={{ repeat: Infinity, duration: isActing ? 0.38 : 0.5 }}
+        transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 2.4, ease: 'easeInOut' }}
         className="w-12 h-14 bg-[#3f51b5] rounded-xl border-2 border-[#303f9f] -mt-1 relative z-10 shadow-md"
       >
-        {/* Overalls detail */}
         <div className="absolute inset-x-2 top-0 bottom-4 border-x-4 border-[#303f9f] opacity-20" />
-        {/* Arms */}
         <motion.div 
-          animate={{ rotate: isActing ? [30, -30, 18] : isWalking ? [20, -20, 20] : 0, y: isActing ? [0, 2, 0] : 0 }}
+          animate={{
+            rotate: isDigging ? [34, -6, 22] : isPlanting ? [10, 6, 10] : isActing ? [18, -18, 12] : isWalking ? [14, -14, 14] : [4, -4, 4],
+            y: isDigging ? [0, 3, 0] : isPlanting ? [4 + p01 * 3, 5 + p01 * 3, 4 + p01 * 3] : isActing ? [0, 1.5, 0] : 0,
+          }}
+          transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 1.8, ease: 'easeInOut' }}
           className="absolute -left-3 top-2 w-4 h-8 bg-[#3f51b5] rounded-full border-2 border-[#303f9f] origin-top" 
         />
         <motion.div 
-          animate={{ rotate: isActing ? [-26, 26, -16] : isWalking ? [-20, 20, -20] : 0, y: isActing ? [0, 1, 0] : 0 }}
+          animate={{
+            rotate: isDigging ? [-6, 10, -4] : isPlanting ? [-10, -6, -10] : isActing ? [-14, 14, -10] : isWalking ? [-14, 14, -14] : [-4, 4, -4],
+            y: isDigging ? [1, 2, 1] : isPlanting ? [4 + p01 * 3, 5 + p01 * 3, 4 + p01 * 3] : isActing ? [0, 1, 0] : 0,
+          }}
+          transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 1.8, ease: 'easeInOut' }}
           className="absolute -right-3 top-2 w-4 h-8 bg-[#3f51b5] rounded-full border-2 border-[#303f9f] origin-top" 
         />
 
@@ -1058,33 +1636,45 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent }: { 
             transition={{ duration: 0.2 }}
             className="absolute -right-9 top-4 w-10 h-10 rounded-[1.15rem] bg-white/90 border border-black/10 shadow-2xl flex items-center justify-center"
           >
-            <HeldTool actionId={actionId ?? ''} accent={accent} icon={ToolIcon} />
+            <HeldTool actionId={actionId ?? ''} accent={accent} icon={ToolIcon} actionProgress={actionProgress} />
           </motion.div>
         )}
       </motion.div>
 
-      {/* Legs */}
       <div className="flex gap-1 -mt-1">
         <motion.div 
-          animate={{ y: isWalking ? [0, -5, 0] : 0 }}
-          transition={{ repeat: Infinity, duration: 0.5, delay: 0 }}
+          animate={{ y: isWalking ? [0, -3, 0] : isPlanting ? [0, 1, 0] : 0, rotate: isWalking ? [6, -6, 6] : 0 }}
+          transition={{ repeat: Infinity, duration: isWalking ? 0.55 : isPlanting ? 0.9 : 1, delay: 0, ease: 'easeInOut' }}
           className="w-5 h-6 bg-[#303f9f] rounded-b-lg border-2 border-[#1a237e]" 
         />
         <motion.div 
-          animate={{ y: isWalking ? [0, -5, 0] : 0 }}
-          transition={{ repeat: Infinity, duration: 0.5, delay: 0.25 }}
+          animate={{ y: isWalking ? [0, -3, 0] : isPlanting ? [0, 1, 0] : 0, rotate: isWalking ? [-6, 6, -6] : 0 }}
+          transition={{ repeat: Infinity, duration: isWalking ? 0.55 : isPlanting ? 0.9 : 1, delay: isWalking ? 0.275 : 0, ease: 'easeInOut' }}
           className="w-5 h-6 bg-[#303f9f] rounded-b-lg border-2 border-[#1a237e]" 
         />
       </div>
 
-      {/* Shadow */}
       <motion.div 
-        animate={{ scale: isActing ? [0.98, 0.9, 0.98] : isWalking ? [1, 0.9, 1] : 1 }}
+        animate={{ scale: isDigging ? [1, 0.92, 1] : isPlanting ? [1, 0.94, 1] : isActing ? [1, 0.94, 1] : isWalking ? [1, 0.93, 1] : [1, 0.95, 1] }}
+        transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 2.4, ease: 'easeInOut' }}
         className="w-12 h-3 bg-black/20 rounded-full blur-sm mt-1" 
       />
 
+      {!isActing && (
+        <motion.div
+          initial={false}
+          animate={{ opacity: 1, scale: [1, 1.05, 1], y: [0, -1, 0] }}
+          transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+          className="absolute -right-9 top-10 w-10 h-10 rounded-[1.15rem] bg-white/80 border border-black/10 shadow-xl flex items-center justify-center backdrop-blur-md"
+        >
+          <div className="w-8 h-8 rounded-[1rem] bg-white/70 border border-black/10 shadow-inner flex items-center justify-center" style={{ color: accent }}>
+            {ToolIcon ? <ToolIcon size={18} /> : <Sprout size={18} />}
+          </div>
+        </motion.div>
+      )}
+
       <CharacterActionFX actionId={actionId} accent={accent} toolIcon={ToolIcon} />
-    </div>
+    </motion.div>
   );
 };
 
@@ -1848,6 +2438,7 @@ const TreeGame: React.FC = () => {
   const [hoveredRegion, setHoveredRegion] = useState<Region | null>(null);
   const [mapFocusRegionId, setMapFocusRegionId] = useState<string | null>(null);
   const [mapFocusLock, setMapFocusLock] = useState(false);
+  const [showAnalysisMascot, setShowAnalysisMascot] = useState(true);
   const regionSelectTimerRef = useRef<number | null>(null);
   const [plantingStep, setPlantingStep] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -1862,6 +2453,22 @@ const TreeGame: React.FC = () => {
   const [plotHealth, setPlotHealth] = useState<Record<string, number>>({ p1: 75, p2: 75, p3: 75, p4: 75 });
   const [dayPhase, setDayPhase] = useState(0);
   const actionTimerRef = useRef<{ intervalId: number | null, timeoutId: number | null }>({ intervalId: null, timeoutId: null });
+  const [hoveredPlotId, setHoveredPlotId] = useState<string | null>(null);
+  const [pointerPos, setPointerPos] = useState<{ x: number, y: number } | null>(null);
+  const pointerRafRef = useRef<number | null>(null);
+  const footstepTimerRef = useRef<number | null>(null);
+  const digParticleTimerRef = useRef<number | null>(null);
+  const [floatTexts, setFloatTexts] = useState<Array<{ id: number, x: number, y: number, text: string, tone: 'xp' | 'good' | 'warn' }>>([]);
+  const [particles, setParticles] = useState<Array<{ id: number, x: number, y: number, kind: 'footstep' | 'dirt' }>>([]);
+  const [ripples, setRipples] = useState<Array<{ id: number, x: number, y: number, tone: 'soil' | 'plant' | 'water' | 'sun' | 'good' }>>([]);
+  const [screenFx, setScreenFx] = useState<{ id: number; intensity: number }>({ id: 0, intensity: 0 });
+  const [playerXP, setPlayerXP] = useState(0);
+  const [playerRank, setPlayerRank] = useState(1);
+  const [levelUpFxId, setLevelUpFxId] = useState<number | null>(null);
+  const [audioOn, setAudioOn] = useState(true);
+  const [audioVolume, setAudioVolume] = useState(0.55);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const ambienceRef = useRef<{ src?: AudioBufferSourceNode, gain?: GainNode } | null>(null);
   
   // Character Movement State
   const [charPos, setCharPos] = useState({ x: 100, y: 100 });
@@ -1869,9 +2476,21 @@ const TreeGame: React.FC = () => {
   const [isWalking, setIsWalking] = useState(false);
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const [gameAreaSize, setGameAreaSize] = useState({ width: 640, height: 460 });
+  const parallaxX = useMotionValue(0);
+  const parallaxY = useMotionValue(0);
+  const parallaxXS = useSpring(parallaxX, { stiffness: 160, damping: 26, mass: 0.7 });
+  const parallaxYS = useSpring(parallaxY, { stiffness: 160, damping: 26, mass: 0.7 });
+  const parallaxFarX = useTransform(parallaxXS, v => v * 0.55);
+  const parallaxFarY = useTransform(parallaxYS, v => v * 0.55);
+  const parallaxNearX = useTransform(parallaxXS, v => v * 0.95);
+  const parallaxNearY = useTransform(parallaxYS, v => v * 0.95);
+  const spotX = useMotionValue(gameAreaSize.width * 0.5);
+  const spotY = useMotionValue(gameAreaSize.height * 0.45);
+  const spotXS = useSpring(spotX, { stiffness: 220, damping: 30, mass: 0.6 });
+  const spotYS = useSpring(spotY, { stiffness: 220, damping: 30, mass: 0.6 });
 
   const level1Steps = [
-    { id: 'hole', title: 'Gali Lubang', icon: MapPin, text: 'Gunakan Sekop untuk menggali lubang tanam. Pastikan tanah cukup gembur untuk perkembangan akar.', edu: 'Lubang tanam yang cukup dalam membantu akar menyebar, meningkatkan stabilitas pohon dan daya serap air hujan.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
+    { id: 'hole', title: 'Gali Lubang', icon: Shovel, text: 'Gunakan Sekop untuk menggali lubang tanam. Pastikan tanah cukup gembur untuk perkembangan akar.', edu: 'Lubang tanam yang cukup dalam membantu akar menyebar, meningkatkan stabilitas pohon dan daya serap air hujan.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
     { id: 'fertilizer', title: 'Pupuk Dasar', icon: Thermometer, text: 'Taburkan pupuk organik. Nutrisi ini akan membantu bibit bertahan di fase awal penanaman.', edu: 'Pupuk organik memperbaiki struktur tanah dan meningkatkan mikroorganisme yang penting untuk kesehatan tanaman.', impact: { co2: 1, water: 2, temp: 0, bio: 2 } satisfies EnvImpact },
     { id: 'plant', title: 'Letakkan Bibit', icon: Trees, text: 'Letakkan bibit ke dalam lubang dengan hati-hati. Pastikan posisinya tegak lurus.', edu: 'Posisi bibit yang tegak mencegah akar patah dan membantu pertumbuhan batang lebih kuat.', impact: { co2: 2, water: 1, temp: 1, bio: 1 } satisfies EnvImpact },
     { id: 'cover', title: 'Tutup Tanah', icon: Sprout, text: 'Tutup kembali lubang dengan tanah dan tekan perlahan agar bibit tertanam kokoh.', edu: 'Menutup tanah rapat mengurangi kantong udara, menjaga kelembaban, dan melindungi akar dari panas berlebih.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
@@ -1880,7 +2499,7 @@ const TreeGame: React.FC = () => {
   ];
 
   const level2Steps = [
-    { id: 'hole', title: 'Gali Lubang (Lahan Luas)', icon: MapPin, text: 'Sekarang lahannya lebih luas. Gali lubang untuk pohon berikutnya di area target yang menyala.', edu: 'Menanam banyak pohon di lokasi yang tepat membantu mengurangi risiko erosi dan meningkatkan resapan air.', impact: { co2: 1, water: 3, temp: 1, bio: 1 } satisfies EnvImpact },
+    { id: 'hole', title: 'Gali Lubang (Lahan Luas)', icon: Shovel, text: 'Sekarang lahannya lebih luas. Gali lubang untuk pohon berikutnya di area target yang menyala.', edu: 'Menanam banyak pohon di lokasi yang tepat membantu mengurangi risiko erosi dan meningkatkan resapan air.', impact: { co2: 1, water: 3, temp: 1, bio: 1 } satisfies EnvImpact },
     { id: 'fertilizer', title: 'Pupuk Dasar', icon: Thermometer, text: 'Taburkan pupuk organik agar tanah siap menumbuhkan akar yang kuat.', edu: 'Tanah yang kaya bahan organik menyimpan air lebih lama dan mendukung jamur/mikroba baik di tanah.', impact: { co2: 1, water: 2, temp: 0, bio: 2 } satisfies EnvImpact },
     { id: 'plant', title: 'Letakkan Bibit', icon: Trees, text: 'Letakkan bibit ke dalam lubang dengan hati-hati. Pastikan posisinya tegak lurus.', edu: 'Bibit yang sehat dan tertanam benar punya peluang hidup lebih tinggi, sehingga restorasi lebih efektif.', impact: { co2: 2, water: 1, temp: 1, bio: 1 } satisfies EnvImpact },
     { id: 'cover', title: 'Tutup Tanah', icon: Sprout, text: 'Tutup kembali lubang dengan tanah dan tekan perlahan agar bibit tertanam kokoh.', edu: 'Penutupan tanah membantu mengurangi penguapan dan melindungi akar dari hujan deras yang bisa menggeser bibit.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
@@ -1889,6 +2508,35 @@ const TreeGame: React.FC = () => {
   ];
 
   const currentSteps = level === 1 ? level1Steps : level2Steps;
+  const activeStep = useMemo(() => currentSteps[Math.min(currentSteps.length - 1, plantingStep)], [currentSteps, plantingStep]);
+  const activeStepId = activeStep?.id ?? '';
+
+  const spotlight = useMemo(() => {
+    const c =
+      activeStepId === 'hole' || activeStepId === 'fertilizer' || activeStepId === 'cover'
+        ? { a: 'rgba(245,158,11,0.24)', b: 'rgba(245,158,11,0.08)' }
+        : activeStepId === 'plant'
+          ? { a: 'rgba(34,197,94,0.22)', b: 'rgba(34,197,94,0.07)' }
+          : activeStepId === 'water'
+            ? { a: 'rgba(59,130,246,0.22)', b: 'rgba(59,130,246,0.08)' }
+            : activeStepId === 'sun'
+              ? { a: 'rgba(250,204,21,0.22)', b: 'rgba(250,204,21,0.08)' }
+              : { a: 'rgba(255,255,255,0.20)', b: 'rgba(255,255,255,0.06)' };
+    return {
+      ring: `radial-gradient(circle, ${c.a} 0%, ${c.b} 22%, rgba(255,255,255,0) 64%)`,
+      dot: 'radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.0) 62%)',
+    };
+  }, [activeStepId]);
+
+  const getActionHint = (stepId: string) => {
+    if (stepId === 'hole') return 'Klik untuk menggali';
+    if (stepId === 'fertilizer') return 'Klik untuk memberi pupuk';
+    if (stepId === 'plant') return 'Klik untuk menanam';
+    if (stepId === 'cover') return 'Klik untuk menutup tanah';
+    if (stepId === 'water') return 'Klik untuk menyiram';
+    if (stepId === 'sun') return 'Klik untuk merawat';
+    return 'Klik untuk aksi';
+  };
 
   const overallProgress = useMemo(() => {
     if (level !== 2) return plantingStep / currentSteps.length;
@@ -1936,6 +2584,15 @@ const TreeGame: React.FC = () => {
     return activePlotId;
   }, [activePlotId, level]);
 
+  const requiredPlot = useMemo(() => plots.find(p => p.id === requiredPlotId) ?? null, [plots, requiredPlotId]);
+  const guide = useMemo(() => {
+    if (phase !== 'planting') return null;
+    if (!requiredPlot) return null;
+    const from = { x: charPos.x + 30, y: charPos.y + 40 };
+    const to = { x: requiredPlot.cx, y: requiredPlot.cy };
+    return { from, to };
+  }, [charPos.x, charPos.y, phase, requiredPlot]);
+
   const clampPos = (x: number, y: number) => {
     const margin = 10;
     const maxX = Math.max(margin, gameAreaSize.width - 60 - margin);
@@ -1955,6 +2612,146 @@ const TreeGame: React.FC = () => {
     setIsWalking(true);
     window.clearTimeout((moveCharacter as unknown as { t?: number }).t);
     (moveCharacter as unknown as { t?: number }).t = window.setTimeout(() => setIsWalking(false), 140);
+  };
+
+  const ensureAudioContext = () => {
+    if (!audioOn) return null;
+    if (!audioCtxRef.current) {
+      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Ctx) return null;
+      audioCtxRef.current = new Ctx();
+    }
+    if (audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().catch(() => {});
+    }
+    return audioCtxRef.current;
+  };
+
+  const playTone = (freq: number, durationMs: number, type: OscillatorType, gain01: number) => {
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    const now = ctx.currentTime;
+    const g0 = Math.max(0, Math.min(1, gain01)) * audioVolume;
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(g0, now + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + durationMs / 1000);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + durationMs / 1000 + 0.02);
+  };
+
+  const playNoise = (durationMs: number, gain01: number, lowpassHz: number, bandpassHz?: number) => {
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
+    const length = Math.max(1, Math.floor((ctx.sampleRate * durationMs) / 1000));
+    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i += 1) data[i] = (Math.random() * 2 - 1) * (1 - i / length);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const g = ctx.createGain();
+    const now = ctx.currentTime;
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0001, Math.min(1, gain01)) * audioVolume, now + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + durationMs / 1000);
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = lowpassHz;
+    if (bandpassHz) {
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = bandpassHz;
+      src.connect(bp).connect(lp).connect(g).connect(ctx.destination);
+    } else {
+      src.connect(lp).connect(g).connect(ctx.destination);
+    }
+    src.start(now);
+    src.stop(now + durationMs / 1000 + 0.02);
+  };
+
+  const playUiHover = () => playTone(540, 60, 'triangle', 0.05);
+  const playUiClick = () => playTone(330, 85, 'square', 0.06);
+  const playFootstep = () => playNoise(70, 0.18, 900, 170);
+  const playDig = () => playNoise(160, 0.32, 720, 140);
+  const playReward = () => {
+    playTone(660, 90, 'sine', 0.08);
+    window.setTimeout(() => playTone(990, 120, 'sine', 0.08), 70);
+  };
+
+  const startAmbience = () => {
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
+    if (ambienceRef.current?.src) return;
+
+    const length = ctx.sampleRate * 2;
+    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < length; i += 1) {
+      const white = Math.random() * 2 - 1;
+      last = (last + 0.02 * white) / 1.02;
+      data[i] = last * 0.9;
+    }
+
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 520;
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 70;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.06 * audioVolume;
+
+    src.connect(hp).connect(lp).connect(gain).connect(ctx.destination);
+    src.start();
+    ambienceRef.current = { src, gain };
+  };
+
+  const stopAmbience = () => {
+    if (!ambienceRef.current?.src) return;
+    try { ambienceRef.current.src.stop(); } catch { }
+    ambienceRef.current = null;
+  };
+
+  useEffect(() => {
+    if (phase !== 'planting') return;
+    if (!audioOn) {
+      stopAmbience();
+      return;
+    }
+    startAmbience();
+    return () => stopAmbience();
+  }, [audioOn, audioVolume, phase]);
+
+  const spawnFloatText = (x: number, y: number, text: string, tone: 'xp' | 'good' | 'warn') => {
+    const id = Date.now() + Math.floor(Math.random() * 9999);
+    setFloatTexts(prev => [...prev, { id, x, y, text, tone }]);
+    window.setTimeout(() => {
+      setFloatTexts(prev => prev.filter(t => t.id !== id));
+    }, 1100);
+  };
+
+  const spawnParticle = (x: number, y: number, kind: 'footstep' | 'dirt') => {
+    const id = Date.now() + Math.floor(Math.random() * 9999);
+    setParticles(prev => [...prev, { id, x, y, kind }]);
+    window.setTimeout(() => {
+      setParticles(prev => prev.filter(p => p.id !== id));
+    }, kind === 'dirt' ? 700 : 520);
+  };
+
+  const spawnRipple = (x: number, y: number, tone: 'soil' | 'plant' | 'water' | 'sun' | 'good') => {
+    const id = Date.now() + Math.floor(Math.random() * 9999);
+    setRipples(prev => [...prev, { id, x, y, tone }]);
+    window.setTimeout(() => {
+      setRipples(prev => prev.filter(r => r.id !== id));
+    }, 640);
   };
 
   const isNearTarget = () => {
@@ -1982,6 +2779,13 @@ const TreeGame: React.FC = () => {
     ro.observe(el);
     return () => ro.disconnect();
   }, [phase]);
+
+  useEffect(() => {
+    if (phase !== 'planting') return;
+    if (pointerPos) return;
+    spotX.set(gameAreaSize.width * 0.5);
+    spotY.set(gameAreaSize.height * 0.45);
+  }, [gameAreaSize.height, gameAreaSize.width, phase, pointerPos, spotX, spotY]);
 
   // Character Movement Logic
   useEffect(() => {
@@ -2025,6 +2829,46 @@ const TreeGame: React.FC = () => {
     };
   }, [actionPlotId, gameAreaSize.height, gameAreaSize.width, levelIntroOpen, phase]);
 
+  useEffect(() => {
+    if (phase !== 'planting') return;
+    if (!isWalking) {
+      if (footstepTimerRef.current) window.clearInterval(footstepTimerRef.current);
+      footstepTimerRef.current = null;
+      return;
+    }
+
+    if (footstepTimerRef.current) window.clearInterval(footstepTimerRef.current);
+    footstepTimerRef.current = window.setInterval(() => {
+      spawnParticle(charPos.x + 30, charPos.y + 68, 'footstep');
+      playFootstep();
+    }, 260);
+
+    return () => {
+      if (footstepTimerRef.current) window.clearInterval(footstepTimerRef.current);
+      footstepTimerRef.current = null;
+    };
+  }, [charPos.x, charPos.y, isWalking, phase]);
+
+  useEffect(() => {
+    if (phase !== 'planting') return;
+    if (isWalking) return;
+    if (actionPlotId) return;
+    if (!plots.length) return;
+
+    const charCenterX = charPos.x + 30;
+    const target =
+      (hoveredPlotId && plots.find(p => p.id === hoveredPlotId)) ||
+      plots.find(p => p.id === requiredPlotId) ||
+      plots.reduce((best, p) => {
+        const d = Math.hypot(charCenterX - p.cx, (charPos.y + 40) - p.cy);
+        return !best || d < best.d ? { p, d } : best;
+      }, null as null | { p: { id: string, cx: number, cy: number, size: number }, d: number })?.p;
+
+    if (!target) return;
+    const desired = charCenterX > target.cx ? 'left' : 'right';
+    if (desired !== charDirection) setCharDirection(desired);
+  }, [actionPlotId, charDirection, charPos.x, charPos.y, hoveredPlotId, isWalking, phase, plots, requiredPlotId]);
+
   const commitRegionSelect = (region: Region) => {
     if (region.status === 'hijau') return;
     setSelectedRegion(region);
@@ -2032,8 +2876,19 @@ const TreeGame: React.FC = () => {
   };
 
   const beginRegionSelect = (region: Region) => {
-    if (region.status === 'hijau') return;
     if (mapFocusLock) return;
+    if (region.status === 'hijau') {
+      setMapFocusLock(true);
+      setMapFocusRegionId(region.id);
+      setHoveredRegion(region);
+      if (regionSelectTimerRef.current) window.clearTimeout(regionSelectTimerRef.current);
+      regionSelectTimerRef.current = window.setTimeout(() => {
+        setMapFocusLock(false);
+        setMapFocusRegionId(null);
+        regionSelectTimerRef.current = null;
+      }, 520);
+      return;
+    }
     setMapFocusLock(true);
     setMapFocusRegionId(region.id);
     setHoveredRegion(region);
@@ -2065,26 +2920,87 @@ const TreeGame: React.FC = () => {
 
   const mascotAttention = useMemo<MascotAttention | null>(() => {
     if (phase !== 'selection') return null;
-    if (hoveredRegion) {
-      if (hoveredRegion.status === 'hijau') {
-        return {
-          pose: 'guard',
-          hint: 'Wilayah Aman',
-          message: 'Wilayah ini sudah terproteksi. Cari yang Oranye/Merah untuk mulai tanam.',
-        };
-      }
+    const region = hoveredRegion;
+    const kind: MascotAttention['kind'] =
+      region && mapFocusLock && mapFocusRegionId === region.id ? 'click' : region ? 'hover' : 'idle';
+
+    const seedFromText = (s: string) => {
+      let acc = 0;
+      for (let i = 0; i < s.length; i += 1) acc = (acc * 31 + s.charCodeAt(i)) >>> 0;
+      return acc;
+    };
+    const pick = <T,>(options: T[], seed: number) => options[Math.abs(seed) % options.length];
+    const seed =
+      seedFromText(region?.id ?? 'idle') +
+      (kind === 'click' ? 7 : kind === 'hover' ? 3 : 0) +
+      (region?.status === 'hijau' ? 11 : region?.status === 'kritis' ? 13 : region?.status === 'gersang' ? 17 : 0);
+
+    if (!region) {
       return {
+        kind: 'idle',
         pose: 'point',
-        hint: 'Klik Wilayah',
-        message: `Klik ${hoveredRegion.name} untuk mulai restorasi.`,
+        tone: 'neutral',
+        hint: 'Analisis',
+        message: pick(
+          [
+            'Hover wilayah di peta, lalu klik area Oranye/Merah untuk mulai restorasi.',
+            'Arahkan kursor ke peta, pilih wilayah yang butuh bantuan, lalu mulai aksi.',
+            'Klik wilayah Oranye/Merah untuk mulai pemulihan lahan.',
+          ],
+          seed,
+        ),
       };
     }
+
+    if (region.status === 'hijau') {
+      return {
+        kind,
+        pose: kind === 'click' ? 'cheer' : 'guard',
+        tone: 'happy',
+        hint: kind === 'click' ? 'Apresiasi' : 'Stabil',
+        message: pick(
+          [
+            `${region.name} sudah stabil. Lanjut bantu area lain ya.`,
+            `Bagus! ${region.name} terjaga. Cari wilayah Oranye/Merah untuk dipulihkan.`,
+            `Mantap, ${region.name} hijau dan aman. Ayo cari area yang perlu perhatian.`,
+          ],
+          seed,
+        ),
+      };
+    }
+
+    if (region.status === 'kritis') {
+      return {
+        kind,
+        pose: kind === 'click' ? 'plant' : 'point',
+        tone: 'neutral',
+        hint: kind === 'click' ? 'Mulai Aksi' : 'Saran',
+        message: pick(
+          [
+            `Klik ${region.name} untuk mulai restorasi bertahap.`,
+            `${region.name} butuh pemulihan. Mulai dari tanam dan rawat.`,
+            `Area ini perlu aksi. Klik ${region.name} untuk mulai.`,
+          ],
+          seed,
+        ),
+      };
+    }
+
     return {
-      pose: 'point',
-      hint: 'Pilih Wilayah',
-      message: 'Arahkan kursor ke peta kiri, lalu klik wilayah Oranye/Merah untuk mulai tanam.',
+      kind,
+      pose: 'worry',
+      tone: 'worried',
+      hint: 'Perhatian',
+      message: pick(
+        [
+          `Wilayah ${region.name} butuh perhatian 🌱`,
+          `${region.name} cukup gersang. Prioritaskan restorasi.`,
+          `Hati-hati, ${region.name} perlu pemulihan segera.`,
+        ],
+        seed,
+      ),
     };
-  }, [hoveredRegion, phase]);
+  }, [hoveredRegion, mapFocusLock, mapFocusRegionId, phase]);
 
   useEffect(() => {
     return () => {
@@ -2094,6 +3010,20 @@ const TreeGame: React.FC = () => {
       actionTimerRef.current.timeoutId = null;
       if (regionSelectTimerRef.current) window.clearTimeout(regionSelectTimerRef.current);
       regionSelectTimerRef.current = null;
+      if (pointerRafRef.current) window.cancelAnimationFrame(pointerRafRef.current);
+      pointerRafRef.current = null;
+      if (footstepTimerRef.current) window.clearInterval(footstepTimerRef.current);
+      footstepTimerRef.current = null;
+      if (digParticleTimerRef.current) window.clearInterval(digParticleTimerRef.current);
+      digParticleTimerRef.current = null;
+      if (ambienceRef.current?.src) {
+        try { ambienceRef.current.src.stop(); } catch { }
+      }
+      ambienceRef.current = null;
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+      }
+      audioCtxRef.current = null;
     };
   }, []);
 
@@ -2111,34 +3041,118 @@ const TreeGame: React.FC = () => {
       stepId === 'sun' ? 1600 :
       1100;
 
+    playUiClick();
     setActionPlotId(plotId);
     setActionProgress(0);
 
     const startAt = Date.now();
     if (actionTimerRef.current.intervalId) window.clearInterval(actionTimerRef.current.intervalId);
     if (actionTimerRef.current.timeoutId) window.clearTimeout(actionTimerRef.current.timeoutId);
+    if (digParticleTimerRef.current) window.clearInterval(digParticleTimerRef.current);
+    digParticleTimerRef.current = null;
 
+    const plot = plots.find(p => p.id === plotId);
+    if (plot) setCharDirection((charPos.x + 30) > plot.cx ? 'left' : 'right');
+    setIsWalking(false);
+    const fxX = plot?.cx ?? (charPos.x + 30);
+    const fxY = (plot?.cy ?? (charPos.y + 40)) + 18;
+    const baseTone: 'soil' | 'plant' | 'water' | 'sun' | 'good' =
+      stepId === 'hole' || stepId === 'cover' || stepId === 'fertilizer' ? 'soil'
+        : stepId === 'plant' ? 'plant'
+          : stepId === 'water' ? 'water'
+            : stepId === 'sun' ? 'sun'
+              : 'good';
+    const baseIntensity =
+      stepId === 'hole' ? 1
+        : stepId === 'plant' ? 0.8
+          : stepId === 'water' ? 0.7
+            : stepId === 'sun' ? 0.65
+              : 0.6;
+    setScreenFx({ id: Date.now(), intensity: baseIntensity });
+    spawnRipple(fxX, fxY, baseTone);
+    try { navigator.vibrate?.(stepId === 'hole' ? 18 : 12); } catch { }
+
+    if (stepId === 'hole') {
+      const originX = plot?.cx ?? (charPos.x + 30);
+      const originY = (plot?.cy ?? (charPos.y + 40)) + 26;
+      let tick = 0;
+      digParticleTimerRef.current = window.setInterval(() => {
+        const x = originX + (-18 + Math.random() * 36);
+        const y = originY + (-10 + Math.random() * 24);
+        spawnParticle(x, y, 'dirt');
+        tick += 1;
+        if (tick % 2 === 0) playDig();
+      }, 90);
+    }
+
+    let lastPulse = -1;
+    let plantedPulse = false;
+    let wateredPulse = false;
+    let sunPulse = false;
     actionTimerRef.current.intervalId = window.setInterval(() => {
       const p = Math.min(1, (Date.now() - startAt) / durationMs);
       setActionProgress(p * 100);
+      const seg = Math.floor((p * 100) / 20);
+      if (seg !== lastPulse) {
+        lastPulse = seg;
+        if (stepId === 'hole') {
+          setScreenFx({ id: Date.now() + seg, intensity: 0.7 });
+          spawnRipple(fxX + (-6 + Math.random() * 12), fxY + 10, 'soil');
+          try { navigator.vibrate?.(12); } catch { }
+        }
+      }
+      if (stepId === 'plant' && !plantedPulse && p > 0.68) {
+        plantedPulse = true;
+        setScreenFx({ id: Date.now(), intensity: 0.65 });
+        spawnRipple(fxX, fxY + 6, 'plant');
+        try { navigator.vibrate?.(10); } catch { }
+      }
+      if (stepId === 'water' && !wateredPulse && p > 0.52) {
+        wateredPulse = true;
+        setScreenFx({ id: Date.now(), intensity: 0.55 });
+        spawnRipple(fxX, fxY + 2, 'water');
+        try { navigator.vibrate?.(8); } catch { }
+      }
+      if (stepId === 'sun' && !sunPulse && p > 0.5) {
+        sunPulse = true;
+        setScreenFx({ id: Date.now(), intensity: 0.5 });
+        spawnRipple(fxX + 12, fxY - 18, 'sun');
+        try { navigator.vibrate?.(8); } catch { }
+      }
     }, 50);
 
     actionTimerRef.current.timeoutId = window.setTimeout(() => {
       if (actionTimerRef.current.intervalId) window.clearInterval(actionTimerRef.current.intervalId);
       actionTimerRef.current.intervalId = null;
+      if (digParticleTimerRef.current) window.clearInterval(digParticleTimerRef.current);
+      digParticleTimerRef.current = null;
       setActionProgress(100);
       window.setTimeout(() => {
         setActionProgress(0);
         setActionPlotId(null);
-        handleActionComplete();
+        handleActionComplete(plotId);
       }, 120);
     }, durationMs);
   };
 
-  const handleActionComplete = () => {
+  const handleActionComplete = (plotId: string) => {
     const completedStep = currentSteps[Math.min(currentSteps.length - 1, plantingStep)];
     const stepId = completedStep?.id ?? '';
     const impact = completedStep?.impact ?? ({ co2: 0, water: 0, temp: 0, bio: 0 } as EnvImpact);
+    const plot = plots.find(p => p.id === plotId) ?? plots.find(p => p.id === requiredPlotId);
+    const fxX = plot?.cx ?? (charPos.x + 30);
+    const fxY = (plot?.cy ?? (charPos.y + 40)) - 40;
+    const xpDelta =
+      stepId === 'hole' ? 10 :
+      stepId === 'fertilizer' ? 8 :
+      stepId === 'plant' ? 12 :
+      stepId === 'cover' ? 8 :
+      stepId === 'water' ? 10 :
+      stepId === 'sun' ? 10 :
+      6;
+
+    spawnFloatText(fxX, fxY, `+${xpDelta} XP`, 'xp');
+    spawnFloatText(fxX, fxY + 18, stepId === 'hole' ? 'Berhasil menggali' : 'Aksi berhasil', 'good');
     const moistureDelta =
       stepId === 'water' ? 24 :
       stepId === 'sun' ? -10 :
@@ -2168,6 +3182,8 @@ const TreeGame: React.FC = () => {
     const isTooDry = stepId === 'sun' && currentMoisture < 22;
     if (isTooWet) setToast({ id: Date.now(), title: 'Terlalu basah', subtitle: 'Akar bisa busuk, kurangi siram', tone: 'warn' });
     if (isTooDry) setToast({ id: Date.now(), title: 'Terlalu kering', subtitle: 'Tanaman stres panas, perlu air', tone: 'warn' });
+    if (isTooWet) spawnFloatText(fxX, fxY + 36, 'Terlalu basah', 'warn');
+    if (isTooDry) spawnFloatText(fxX, fxY + 36, 'Terlalu kering', 'warn');
     setPlotHealth(prev => {
       const goodWater = stepId === 'water' && currentMoisture < 55;
       const goodSun = stepId === 'sun' && currentMoisture >= 28;
@@ -2184,6 +3200,19 @@ const TreeGame: React.FC = () => {
         bonus;
       const next = Math.max(15, Math.min(100, (prev[healthId] ?? 75) + delta));
       return { ...prev, [healthId]: next };
+    });
+
+    playReward();
+    setPlayerXP(prevXP => {
+      const threshold = 60 + playerRank * 20;
+      const nextXP = prevXP + xpDelta;
+      if (nextXP >= threshold) {
+        setPlayerRank(r => r + 1);
+        setLevelUpFxId(Date.now());
+        spawnFloatText(fxX, fxY - 26, 'LEVEL UP!', 'good');
+        return nextXP - threshold;
+      }
+      return nextXP;
     });
 
     if (level === 1) {
@@ -2238,6 +3267,12 @@ const TreeGame: React.FC = () => {
     const t = window.setTimeout(() => setToast(null), 1800);
     return () => window.clearTimeout(t);
   }, [toast]);
+
+  useEffect(() => {
+    if (!levelUpFxId) return;
+    const t = window.setTimeout(() => setLevelUpFxId(null), 1300);
+    return () => window.clearTimeout(t);
+  }, [levelUpFxId]);
 
   return (
     <div className="min-h-screen py-3 sm:py-4 px-4 font-sans select-none overflow-hidden relative">
@@ -2345,20 +3380,35 @@ const TreeGame: React.FC = () => {
                         ) : null}
                       </AnimatePresence>
 
-                      <EnvMascotCard
-                        mode={hoveredRegion || selectedRegion ? 'compact' : 'full'}
-                        regionName={(hoveredRegion || selectedRegion)?.name}
-                        regionStatus={(hoveredRegion || selectedRegion)?.status ?? null}
-                        attention={mascotAttention}
-                        onGuide={() =>
-                          setToast({
-                            id: Date.now(),
-                            title: 'Ayo mulai dari peta',
-                            subtitle: 'Klik wilayah Oranye/Merah untuk mulai restorasi.',
-                            tone: 'info',
-                          })
-                        }
-                      />
+                      <div className="mt-auto sticky bottom-0 pt-3 -mx-6 px-6 pb-3 bg-gradient-to-t from-white/95 via-white/80 to-transparent">
+                        <div className="flex items-center justify-end mb-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowAnalysisMascot(v => !v)}
+                            className="px-3 py-1.5 rounded-full bg-white/80 border border-slate-200/70 shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-700 inline-flex items-center gap-2 active:scale-95 transition-transform"
+                          >
+                            {showAnalysisMascot ? <EyeOff size={14} /> : <Eye size={14} />}
+                            {showAnalysisMascot ? 'Sembunyikan' : 'Tampilkan'}
+                          </button>
+                        </div>
+
+                        {showAnalysisMascot && (
+                          <EnvMascotCard
+                            mode={hoveredRegion || selectedRegion ? 'compact' : 'full'}
+                            regionName={(hoveredRegion || selectedRegion)?.name}
+                            regionStatus={(hoveredRegion || selectedRegion)?.status ?? null}
+                            attention={mascotAttention}
+                            onGuide={() =>
+                              setToast({
+                                id: Date.now(),
+                                title: 'Ayo mulai dari peta',
+                                subtitle: 'Klik wilayah Oranye/Merah untuk mulai restorasi.',
+                                tone: 'info',
+                              })
+                            }
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2432,6 +3482,10 @@ const TreeGame: React.FC = () => {
                       <p className="text-[10px] font-black text-[#8b4513] uppercase leading-none">Misi Selesai</p>
                       <p className="text-xl font-black text-[#2e7d32] leading-none mt-1">{Math.round(overallProgress * 100)}%</p>
                     </div>
+                    <div className="text-right hidden sm:block">
+                      <p className="text-[10px] font-black text-[#8b4513] uppercase leading-none">Rank</p>
+                      <p className="text-xl font-black text-[#d97706] leading-none mt-1">{playerRank}</p>
+                    </div>
                     <div className="w-36">
                       <HDBar
                         value01={overallProgress}
@@ -2442,6 +3496,46 @@ const TreeGame: React.FC = () => {
                         rounded={7}
                         className="w-full"
                       />
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-[#8b4513]/80">
+                          <span>XP</span>
+                          <span>{playerXP}/{60 + playerRank * 20}</span>
+                        </div>
+                        <div className="mt-1 h-2 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
+                          <motion.div
+                            animate={{ width: `${Math.min(1, playerXP / (60 + playerRank * 20)) * 100}%` }}
+                            transition={{ type: 'spring', damping: 18, stiffness: 160 }}
+                            className="h-full bg-gradient-to-r from-amber-400 to-emerald-400"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 pl-2 border-l-2 border-[#d4a373]">
+                      <button
+                        type="button"
+                        onMouseEnter={() => playUiHover()}
+                        onClick={() => {
+                          ensureAudioContext();
+                          setAudioOn(v => !v);
+                        }}
+                        className="w-10 h-10 rounded-2xl bg-white/80 border border-black/10 shadow-md active:scale-95 transition-transform flex items-center justify-center text-[#8b4513]"
+                        aria-label="Audio"
+                      >
+                        {audioOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                      </button>
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        value={audioVolume}
+                        onChange={(e) => {
+                          ensureAudioContext();
+                          setAudioVolume(parseFloat(e.target.value));
+                          if (ambienceRef.current?.gain) ambienceRef.current.gain.gain.value = 0.06 * parseFloat(e.target.value);
+                        }}
+                        className="w-20 accent-emerald-500"
+                      />
                     </div>
                   </div>
               </div>
@@ -2451,6 +3545,33 @@ const TreeGame: React.FC = () => {
                   <div 
                     ref={gameAreaRef}
                     className="rounded-[2rem] relative flex-1 min-h-[420px] shadow-[inset_0_0_120px_rgba(0,0,0,0.25)] overflow-hidden border-4 border-[#558b2f]"
+                    onMouseDown={() => ensureAudioContext()}
+                    onTouchStart={() => ensureAudioContext()}
+                    onMouseMove={(e) => {
+                      const el = e.currentTarget;
+                      const rect = el.getBoundingClientRect();
+                      const x = e.clientX - rect.left;
+                      const y = e.clientY - rect.top;
+                      if (pointerRafRef.current) window.cancelAnimationFrame(pointerRafRef.current);
+                      pointerRafRef.current = window.requestAnimationFrame(() => {
+                        setPointerPos({ x, y });
+                        const nx = (x / Math.max(1, rect.width)) - 0.5;
+                        const ny = (y / Math.max(1, rect.height)) - 0.5;
+                        parallaxX.set(nx * 18);
+                        parallaxY.set(ny * 12);
+                        spotX.set(x);
+                        spotY.set(y);
+                        pointerRafRef.current = null;
+                      });
+                    }}
+                    onMouseLeave={() => {
+                      setPointerPos(null);
+                      setHoveredPlotId(null);
+                      parallaxX.set(0);
+                      parallaxY.set(0);
+                      spotX.set(gameAreaSize.width * 0.5);
+                      spotY.set(gameAreaSize.height * 0.45);
+                    }}
                     style={{ 
                       backgroundImage: [
                         'radial-gradient(circle at 12% 18%, rgba(255,235,59,0.18) 0 120px, transparent 160px)',
@@ -2461,16 +3582,58 @@ const TreeGame: React.FC = () => {
                         'linear-gradient(180deg, #8bc34a 0%, #7cb342 55%, #6aa336 100%)'
                       ].join(','),
                       backgroundSize: 'auto, auto, auto, 38px 38px, 38px 38px, auto',
-                      backgroundPosition: '0 0, 0 0, 0 0, 0 0, 19px 19px, 0 0'
+                      backgroundPosition: '0 0, 0 0, 0 0, 0 0, 19px 19px, 0 0',
+                      cursor: hoveredPlotId === requiredPlotId ? (activeStepId === 'hole' ? 'crosshair' : 'pointer') : 'default',
                     }}
                   >
-                  {[...Array(5)].map((_, i) => <Butterfly key={i} />)}
-                  <Cloud delay={0} top={10} size={220} opacity={0.35} />
-                  <Cloud delay={1.8} top={22} size={280} opacity={0.24} />
-                  <Cloud delay={3.2} top={6} size={180} opacity={0.22} />
-                  {[...Array(10)].map((_, i) => <FloatingLeaf key={i} seed={i + level * 11} />)}
+                  <motion.div
+                    key={screenFx.id}
+                    animate={{
+                      x: screenFx.intensity ? [0, -4 * screenFx.intensity, 4 * screenFx.intensity, -2 * screenFx.intensity, 0] : 0,
+                      y: screenFx.intensity ? [0, 2 * screenFx.intensity, -2 * screenFx.intensity, 1 * screenFx.intensity, 0] : 0,
+                      scale: screenFx.intensity ? [1, 1.008, 1] : 1,
+                      rotate: screenFx.intensity ? [0, -0.25 * screenFx.intensity, 0.22 * screenFx.intensity, 0] : 0,
+                    }}
+                    transition={{ duration: screenFx.intensity ? 0.24 : 0, ease: 'easeOut' }}
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ willChange: 'transform' }}
+                  >
+                    <motion.div className="absolute inset-0 pointer-events-none" style={{ x: parallaxFarX, y: parallaxFarY }}>
+                      {[...Array(5)].map((_, i) => <Butterfly key={i} />)}
+                      <Cloud delay={0} top={10} size={220} opacity={0.35} />
+                      <Cloud delay={1.8} top={22} size={280} opacity={0.24} />
+                      <Cloud delay={3.2} top={6} size={180} opacity={0.22} />
+                      {[...Array(10)].map((_, i) => <FloatingLeaf key={i} seed={i + level * 11} />)}
+                    </motion.div>
 
-                  <div className="absolute inset-0 pointer-events-none opacity-70">
+                  <motion.div
+                    className="absolute inset-0 pointer-events-none"
+                    animate={{
+                      opacity: dayPhase < 4 ? 0.12 : dayPhase < 6 ? 0.22 : 0.35,
+                    }}
+                    transition={{ duration: 0.8 }}
+                    style={{
+                      backgroundImage:
+                        dayPhase < 4
+                          ? 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 55%, rgba(0,0,0,0.08) 100%)'
+                          : dayPhase < 6
+                            ? 'linear-gradient(180deg, rgba(255,225,160,0.22) 0%, rgba(255,255,255,0) 55%, rgba(0,0,0,0.10) 100%)'
+                            : 'linear-gradient(180deg, rgba(251,146,60,0.20) 0%, rgba(59,130,246,0.08) 55%, rgba(0,0,0,0.16) 100%)',
+                    }}
+                  />
+
+                  <motion.div
+                    className="absolute inset-0 pointer-events-none opacity-40"
+                    animate={{ backgroundPositionX: ['0px', '64px', '0px'] }}
+                    transition={{ repeat: Infinity, duration: 6.2, ease: 'easeInOut' }}
+                    style={{
+                      backgroundImage:
+                        'repeating-linear-gradient(90deg, rgba(34,197,94,0.25) 0 2px, rgba(34,197,94,0) 2px 14px)',
+                      mixBlendMode: 'overlay',
+                    }}
+                  />
+
+                  <motion.div className="absolute inset-0 pointer-events-none opacity-70" style={{ x: parallaxNearX, y: parallaxNearY }}>
                     <div className="absolute -left-10 top-24 w-[240px] h-[90px] bg-[#8d6e63]/35 rounded-full blur-md rotate-[-12deg]" />
                     <div className="absolute -right-16 bottom-20 w-[300px] h-[110px] bg-[#8d6e63]/28 rounded-full blur-md rotate-[14deg]" />
                     <div className="absolute left-10 bottom-16 w-[220px] h-[140px] bg-[#2196f3]/20 rounded-[3rem] blur-sm border-2 border-[#bbdefb]/30" />
@@ -2481,7 +3644,7 @@ const TreeGame: React.FC = () => {
                     <div className="absolute left-10 top-10 w-16 h-16 bg-[#2e7d32]/20 rounded-full blur-md" />
                     <div className="absolute left-20 top-18 w-12 h-12 bg-[#2e7d32]/18 rounded-full blur-md" />
                     <div className="absolute left-12 top-26 w-9 h-9 bg-[#2e7d32]/15 rounded-full blur-md" />
-                  </div>
+                  </motion.div>
                   
                   {/* Decorative Pagar */}
                   <div className="absolute top-0 left-0 w-full h-8 flex justify-around pointer-events-none opacity-40">
@@ -2490,6 +3653,80 @@ const TreeGame: React.FC = () => {
                     ))}
                     <div className="absolute top-4 left-0 w-full h-2 bg-[#8b4513]" />
                   </div>
+
+                  </motion.div>
+
+                  <motion.div
+                    aria-hidden
+                    className="absolute inset-0 pointer-events-none z-10"
+                    animate={{ opacity: pointerPos ? 1 : 0.75 }}
+                    transition={{ duration: 0.25 }}
+                    style={{ mixBlendMode: 'soft-light' }}
+                  >
+                    <motion.div
+                      className="absolute w-[520px] h-[520px] rounded-full"
+                      style={{
+                        left: spotXS,
+                        top: spotYS,
+                        transform: 'translate(-50%, -50%)',
+                        backgroundImage: spotlight.ring,
+                        filter: 'blur(0.3px)',
+                      }}
+                      animate={{ scale: [0.98, 1.02, 0.98] }}
+                      transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut' }}
+                    />
+                    <motion.div
+                      className="absolute w-[220px] h-[220px] rounded-full"
+                      style={{
+                        left: spotXS,
+                        top: spotYS,
+                        transform: 'translate(-50%, -50%)',
+                        backgroundImage: spotlight.dot,
+                      }}
+                      animate={{ opacity: [0.6, 0.9, 0.6] }}
+                      transition={{ repeat: Infinity, duration: 1.9, ease: 'easeInOut' }}
+                    />
+                  </motion.div>
+
+                  <AnimatePresence>
+                    {guide && requiredPlot && !nearTargetNow && !levelIntroOpen && !actionPlotId && (
+                      <motion.svg
+                        key="guide-line"
+                        className="absolute inset-0 pointer-events-none z-20"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                      >
+                        <motion.line
+                          x1={guide.from.x}
+                          y1={guide.from.y}
+                          x2={guide.to.x}
+                          y2={guide.to.y}
+                          stroke="rgba(255,255,255,0.6)"
+                          strokeWidth={2}
+                          strokeDasharray="8 10"
+                          animate={{ strokeDashoffset: [0, -18] }}
+                          transition={{ repeat: Infinity, duration: 0.9, ease: 'linear' }}
+                        />
+                        <motion.circle
+                          cx={guide.to.x}
+                          cy={guide.to.y}
+                          r={10}
+                          fill="rgba(255,235,59,0.22)"
+                          stroke="rgba(255,235,59,0.9)"
+                          strokeWidth={2}
+                          animate={{ r: [10, 16, 10], opacity: [0.75, 1, 0.75] }}
+                          transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }}
+                        />
+                        <motion.circle
+                          r={3.5}
+                          fill="rgba(255,255,255,0.9)"
+                          animate={{ cx: [guide.from.x, guide.to.x], cy: [guide.from.y, guide.to.y], opacity: [0, 1, 0] }}
+                          transition={{ repeat: Infinity, duration: 0.95, ease: 'easeInOut' }}
+                        />
+                      </motion.svg>
+                    )}
+                  </AnimatePresence>
 
                   <div className="absolute top-4 right-4 z-40 hidden lg:block">
                     <div className="bg-[#fff9eb]/90 backdrop-blur-md px-4 py-3 rounded-2xl border-2 border-[#d4a373] shadow-xl text-left">
@@ -2517,16 +3754,22 @@ const TreeGame: React.FC = () => {
                     <motion.div
                       drag
                       dragSnapToOrigin
-                      onDragStart={() => setIsDragging(true)}
+                      onDragStart={() => {
+                        ensureAudioContext();
+                        playUiClick();
+                        setIsDragging(true);
+                      }}
                       onDragEnd={() => {
+                        ensureAudioContext();
                         setIsDragging(false);
                         if (levelIntroOpen) return;
-                        if (isNearTarget()) {
+                        if (!isNearTarget()) {
                           const plot = plots.find(p => p.id === requiredPlotId);
-                          if (plot) setCharDirection((charPos.x + 30) > plot.cx ? 'left' : 'right');
-                          setIsWalking(false);
-                          startAction(requiredPlotId);
+                          if (plot) spawnFloatText(plot.cx, plot.cy - 24, 'Dekati dulu', 'warn');
+                          playUiClick();
+                          return;
                         }
+                        startAction(requiredPlotId);
                       }}
                       whileDrag={{ scale: 1.2 }}
                       className="w-24 h-24 bg-[#fff9eb] rounded-2xl shadow-2xl flex flex-col items-center justify-center cursor-grab active:cursor-grabbing border-4 border-[#8b4513] text-[#8b4513] relative overflow-hidden"
@@ -2551,12 +3794,16 @@ const TreeGame: React.FC = () => {
                     <button
                       type="button"
                       disabled={!nearTargetNow || levelIntroOpen}
+                      onMouseEnter={() => playUiHover()}
                       onClick={() => {
+                        ensureAudioContext();
                         if (levelIntroOpen) return;
-                        if (!isNearTarget()) return;
-                        const plot = plots.find(p => p.id === requiredPlotId);
-                        if (plot) setCharDirection((charPos.x + 30) > plot.cx ? 'left' : 'right');
-                        setIsWalking(false);
+                        playUiClick();
+                        if (!isNearTarget()) {
+                          const plot = plots.find(p => p.id === requiredPlotId);
+                          if (plot) spawnFloatText(plot.cx, plot.cy - 24, 'Dekati dulu', 'warn');
+                          return;
+                        }
                         startAction(requiredPlotId);
                       }}
                       className={`mt-3 w-28 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl border-2 active:scale-95 transition-all ${
@@ -2601,6 +3848,142 @@ const TreeGame: React.FC = () => {
                     )}
                   </AnimatePresence>
 
+                  <AnimatePresence>
+                    {levelUpFxId && (
+                      <motion.div
+                        key={levelUpFxId}
+                        initial={{ opacity: 0, y: 14, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 14, scale: 0.98 }}
+                        className="absolute top-28 left-1/2 -translate-x-1/2 z-50"
+                      >
+                        <div className="px-6 py-4 rounded-[1.8rem] shadow-2xl border border-white/25 backdrop-blur-md bg-gradient-to-r from-amber-400/90 to-emerald-400/90 text-white">
+                          <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center">
+                              <Trophy size={18} />
+                            </div>
+                            <div className="text-left">
+                              <div className="text-[10px] font-black uppercase tracking-widest opacity-90">Level Up</div>
+                              <div className="text-lg font-black leading-tight">Rank {playerRank}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="absolute inset-0 pointer-events-none z-40">
+                    <AnimatePresence>
+                      {floatTexts.map(t => (
+                        <motion.div
+                          key={t.id}
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: -18, scale: 1 }}
+                          exit={{ opacity: 0, y: -28, scale: 0.98 }}
+                          transition={{ duration: 0.5 }}
+                          className={`absolute text-[11px] font-black uppercase tracking-widest drop-shadow ${
+                            t.tone === 'xp'
+                              ? 'text-amber-200'
+                              : t.tone === 'warn'
+                                ? 'text-red-100'
+                                : 'text-emerald-100'
+                          }`}
+                          style={{
+                            left: t.x,
+                            top: t.y,
+                            transform: 'translate(-50%, -50%)',
+                            textShadow: '0 10px 18px rgba(0,0,0,0.35)',
+                          }}
+                        >
+                          {t.text}
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+
+                    <AnimatePresence>
+                      {ripples.map(r => {
+                        const ring =
+                          r.tone === 'soil' ? { c: 'rgba(245,158,11,0.85)', g: 'rgba(245,158,11,0.25)' }
+                            : r.tone === 'plant' ? { c: 'rgba(34,197,94,0.85)', g: 'rgba(34,197,94,0.22)' }
+                              : r.tone === 'water' ? { c: 'rgba(59,130,246,0.8)', g: 'rgba(59,130,246,0.20)' }
+                                : r.tone === 'sun' ? { c: 'rgba(250,204,21,0.85)', g: 'rgba(250,204,21,0.20)' }
+                                  : { c: 'rgba(255,255,255,0.8)', g: 'rgba(255,255,255,0.15)' };
+                        return (
+                          <motion.div
+                            key={r.id}
+                            initial={{ opacity: 0, scale: 0.6 }}
+                            animate={{ opacity: [0, 0.7, 0], scale: [0.6, 1.3, 1.7] }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.62, ease: 'easeOut' }}
+                            className="absolute"
+                            style={{
+                              left: r.x,
+                              top: r.y,
+                              transform: 'translate(-50%, -50%)',
+                            }}
+                          >
+                            <div
+                              className="rounded-full"
+                              style={{
+                                width: 28,
+                                height: 28,
+                                border: `2px solid ${ring.c}`,
+                                boxShadow: `0 0 0 6px ${ring.g}`,
+                                filter: 'blur(0.2px)',
+                              }}
+                            />
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+
+                    <AnimatePresence>
+                      {particles.map(p => (
+                        <motion.div
+                          key={p.id}
+                          initial={{ opacity: 0, scale: 0.7, y: 0, x: 0, rotate: -8 }}
+                          animate={{
+                            opacity: [0, 1, 0],
+                            scale: p.kind === 'dirt' ? [0.7, 1.1, 0.8] : [0.8, 1, 0.9],
+                            y: p.kind === 'dirt' ? [-2, -18 - Math.random() * 10] : [0, -6],
+                            x: p.kind === 'dirt' ? [-8 + Math.random() * 16] : [-4 + Math.random() * 8],
+                            rotate: p.kind === 'dirt' ? [-12, 18] : [-6, 6],
+                          }}
+                          transition={{ duration: p.kind === 'dirt' ? 0.65 : 0.5, ease: 'easeOut' }}
+                          className="absolute"
+                          style={{
+                            left: p.x,
+                            top: p.y,
+                            transform: 'translate(-50%, -50%)',
+                          }}
+                        >
+                          {p.kind === 'dirt' ? (
+                            <div
+                              className="rounded-full"
+                              style={{
+                                width: 6 + (p.id % 4),
+                                height: 6 + (p.id % 4),
+                                background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.14) 0 30%, rgba(93,64,55,0.95) 70%)',
+                                boxShadow: '0 10px 18px rgba(0,0,0,0.25)',
+                              }}
+                            />
+                          ) : (
+                            <div
+                              className="rounded-full"
+                              style={{
+                                width: 10,
+                                height: 6,
+                                background: 'linear-gradient(180deg, rgba(34,197,94,0.65) 0%, rgba(22,163,74,0.35) 100%)',
+                                boxShadow: '0 10px 16px rgba(0,0,0,0.18)',
+                                filter: 'blur(0.2px)',
+                              }}
+                            />
+                          )}
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+
                   {/* Character */}
                   <motion.div
                     animate={{ 
@@ -2617,6 +4000,7 @@ const TreeGame: React.FC = () => {
                       actionId={actionPlotId === requiredPlotId ? currentSteps[plantingStep]?.id ?? null : null}
                       toolIcon={plantingStep === 2 ? selectedSeedling.icon : currentSteps[plantingStep].icon}
                       accent={selectedSeedling.color}
+                      actionProgress={actionPlotId === requiredPlotId ? actionProgress : 0}
                     />
                   </motion.div>
 
@@ -2624,6 +4008,7 @@ const TreeGame: React.FC = () => {
                     {plots.map((plot, idx) => {
                       const isRequired = plot.id === requiredPlotId;
                       const near = isRequired && isNearTarget();
+                      const hovered = hoveredPlotId === plot.id;
                       const stage = level === 1 ? plantingStep : (level2Stages[plot.id] ?? 0);
                       const size = Math.max(120, plot.size - 24);
                       const moisture = plotMoisture[plot.id] ?? 45;
@@ -2634,15 +4019,38 @@ const TreeGame: React.FC = () => {
                         <motion.div
                           key={plot.id}
                           animate={{
-                            scale: isRequired ? (near ? 1.05 : 1.02) : 0.98,
-                            opacity: isRequired ? 1 : 0.72,
+                            scale: isRequired ? (near ? 1.06 : hovered ? 1.035 : 1.02) : hovered ? 1.01 : 0.98,
+                            opacity: isRequired ? 1 : hovered ? 0.85 : 0.72,
                             boxShadow: isRequired
                               ? (near
-                                  ? '0 0 0 3px rgba(255,235,59,0.95), 0 0 40px rgba(255,235,59,0.45)'
-                                  : '0 0 0 3px rgba(62,39,35,0.7), 0 0 26px rgba(255,235,59,0.25)')
-                              : '0 0 0 2px rgba(62,39,35,0.25)'
+                                  ? '0 0 0 3px rgba(255,235,59,0.95), 0 0 44px rgba(255,235,59,0.52), 0 28px 28px rgba(0,0,0,0.18)'
+                                  : hovered
+                                    ? '0 0 0 3px rgba(255,235,59,0.75), 0 0 30px rgba(255,235,59,0.32), 0 24px 24px rgba(0,0,0,0.16)'
+                                    : '0 0 0 3px rgba(62,39,35,0.7), 0 0 26px rgba(255,235,59,0.25), 0 22px 22px rgba(0,0,0,0.14)')
+                              : hovered ? '0 0 0 2px rgba(62,39,35,0.35), 0 18px 18px rgba(0,0,0,0.12)' : '0 0 0 2px rgba(62,39,35,0.25)',
                           }}
-                          className="absolute rounded-[2.5rem] flex items-center justify-center transition-all duration-300"
+                          whileHover={{ y: isRequired ? -3 : -1.5 }}
+                          whileTap={{ scale: isRequired ? 1.02 : 0.98, y: 0 }}
+                          onMouseEnter={() => {
+                            setHoveredPlotId(plot.id);
+                            if (plot.id === requiredPlotId) playUiHover();
+                          }}
+                          onMouseLeave={() => {
+                            setHoveredPlotId(prev => (prev === plot.id ? null : prev));
+                          }}
+                          onClick={() => {
+                            ensureAudioContext();
+                            if (levelIntroOpen) return;
+                            if (actionPlotId) return;
+                            if (plot.id !== requiredPlotId) return;
+                            if (!isNearTarget()) {
+                              spawnFloatText(plot.cx, plot.cy - 24, 'Dekati dulu', 'warn');
+                              playUiClick();
+                              return;
+                            }
+                            startAction(plot.id);
+                          }}
+                          className="absolute rounded-[2.5rem] flex items-center justify-center transition-all duration-300 cursor-pointer"
                           style={{
                             left: plot.cx - plot.size / 2,
                             top: plot.cy - plot.size / 2,
@@ -2650,6 +4058,41 @@ const TreeGame: React.FC = () => {
                             height: plot.size
                           }}
                         >
+                          {isRequired && (
+                            <motion.div
+                              className="absolute inset-1 rounded-[2.35rem] pointer-events-none"
+                              animate={{
+                                opacity: near ? [0.55, 0.9, 0.55] : hovered ? [0.35, 0.65, 0.35] : [0.25, 0.45, 0.25],
+                                scale: near ? [0.98, 1.02, 0.98] : [0.99, 1.01, 0.99],
+                              }}
+                              transition={{ repeat: Infinity, duration: near ? 1.2 : 1.6, ease: 'easeInOut' }}
+                              style={{
+                                background:
+                                  'radial-gradient(circle at 50% 50%, rgba(255,235,59,0.22) 0 45%, rgba(255,235,59,0) 72%)',
+                              }}
+                            />
+                          )}
+
+                          <AnimatePresence>
+                            {isRequired && isDragging && !levelIntroOpen && (
+                              <motion.div
+                                key="drop-hint"
+                                initial={{ opacity: 0, scale: 0.98 }}
+                                animate={{ opacity: near ? 1 : 0.55, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.98 }}
+                                className="absolute inset-0 rounded-[2.5rem] pointer-events-none flex items-center justify-center"
+                              >
+                                <div
+                                  className={`px-4 py-2 rounded-full border-2 shadow-xl text-[10px] font-black uppercase tracking-widest ${
+                                    near ? 'bg-emerald-600/90 text-white border-emerald-200' : 'bg-red-600/90 text-white border-red-200'
+                                  }`}
+                                >
+                                  {near ? 'Lepas untuk gunakan' : 'Dekati target'}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
                           <div
                             className="absolute inset-2 rounded-[2.1rem] border-4 border-[#3e2723]/30 shadow-[inset_0_0_40px_rgba(0,0,0,0.25)]"
                             style={{
@@ -2689,7 +4132,11 @@ const TreeGame: React.FC = () => {
                               <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
                                 <div className="bg-[#fff9eb]/90 backdrop-blur-md px-4 py-2 rounded-full border-2 border-[#d4a373] shadow-xl">
                                   <div className="w-44 h-2 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
-                                    <motion.div animate={{ width: `${actionProgress}%` }} className="h-full bg-emerald-500" />
+                                    <motion.div
+                                      animate={{ width: `${actionProgress}%` }}
+                                      transition={{ type: 'spring', damping: 20, stiffness: 170 }}
+                                      className="h-full bg-emerald-500"
+                                    />
                                   </div>
                                   <div className="mt-1 text-[9px] font-black uppercase tracking-widest text-[#8b4513] text-center">
                                     {currentSteps[plantingStep]?.title}
@@ -2740,6 +4187,34 @@ const TreeGame: React.FC = () => {
                       );
                     })}
                   </div>
+
+                  <AnimatePresence>
+                    {pointerPos && hoveredPlotId === requiredPlotId && !actionPlotId && !levelIntroOpen && (
+                      <motion.div
+                        key="plot-tooltip"
+                        initial={{ opacity: 0, scale: 0.96, y: 6 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.98, y: 6 }}
+                        transition={{ duration: 0.16 }}
+                        className="absolute z-50 pointer-events-none"
+                        style={{
+                          left: Math.max(18, Math.min(gameAreaSize.width - 18, pointerPos.x)),
+                          top: Math.max(18, Math.min(gameAreaSize.height - 18, pointerPos.y)),
+                          transform: 'translate(12px, -12px)',
+                        }}
+                      >
+                        <div className="px-4 py-2 rounded-2xl border border-black/10 shadow-2xl bg-white/85 backdrop-blur-md">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-[#8b4513]">
+                            {isNearTarget() ? getActionHint(activeStepId) : 'Dekati target dulu'}
+                          </div>
+                          <div className="mt-1 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-[#5d4037]/70">
+                            <Sparkles size={12} />
+                            <span>{activeStep?.title ?? 'Aksi'}</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   {/* Proximity Warning */}
                   <AnimatePresence>
