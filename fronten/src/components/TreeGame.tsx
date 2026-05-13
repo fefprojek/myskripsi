@@ -1895,7 +1895,19 @@ const RegionItem = memo(({ region, isHovered, isFocused, focusActive, hoverActiv
         ? 'rgba(245,158,11,0.60)'
         : 'rgba(239,68,68,0.62)';
   const isDimmed = (focusActive && !isFocused) || (hoverActive && !isHovered && !isFocused);
+  const depth = isFocused ? 2.6 : isHovered ? 2.1 : 1.2;
+  const texFill = `url(#tex-${region.status})`;
+  const texBaseOpacity =
+    region.status === 'hijau'
+      ? 0.14
+      : region.status === 'kritis'
+        ? 0.20
+        : 0.22;
+  const texOpacity = isDimmed ? 0.05 : (isHovered || isFocused ? texBaseOpacity * 1.65 : texBaseOpacity);
   const strokeColor = isHovered || isFocused ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.32)';
+  const pulseAttention = !isHijau && !isHovered && !isFocused && !isDimmed;
+  const targetScale = isFocused ? 1.065 : isHovered ? 1.045 : 1;
+  const innerGlowFilter = `url(#innerGlow-${region.status})`;
   const labelLinesFull = useMemo(() => {
     const cleaned = region.name.replace(/\s*\(.*?\)\s*/g, '').replace(/^Kota\s+/i, '').trim();
     const parts = cleaned.split('&').map(s => s.trim()).filter(Boolean);
@@ -1956,27 +1968,78 @@ const RegionItem = memo(({ region, isHovered, isFocused, focusActive, hoverActiv
       onMouseLeave={() => onHover(null)}
       onClick={() => onClick(region)}
       className={!isHijau ? 'cursor-pointer' : 'cursor-default'}
-      animate={{ 
-        scale: isFocused ? 1.055 : isHovered ? 1.04 : 1,
+      animate={{
+        scale: pulseAttention ? [1, region.status === 'gersang' ? 1.016 : 1.013, 1] : targetScale,
         opacity: isDimmed ? 0.12 : 1,
-        filter: isFocused
+        filter: isDimmed
+          ? 'blur(1.2px) saturate(0.72) brightness(0.65)'
+          : isFocused
           ? `drop-shadow(0px 10px 18px rgba(0,0,0,0.38)) drop-shadow(0px 0px 26px ${glowColor})`
           : isHovered
             ? `drop-shadow(0px 8px 14px rgba(0,0,0,0.34)) drop-shadow(0px 0px 20px ${glowColor})`
             : 'drop-shadow(0px 2px 4px rgba(0,0,0,0.22))',
       }}
-      transition={{ duration: 0.38, ease: 'easeInOut' }}
+      transition={{
+        scale: pulseAttention
+          ? { repeat: Infinity, duration: region.status === 'gersang' ? 1.35 : 1.8, ease: 'easeInOut' }
+          : { duration: 0.28, ease: 'easeOut' },
+        opacity: { duration: 0.28, ease: 'easeOut' },
+        filter: { duration: 0.28, ease: 'easeOut' },
+      }}
       style={{ transformOrigin: `${region.x}px ${region.y}px` }}
     >
-      {/* Main Surface */}
+      <path
+        d={region.path}
+        fill="rgba(0,0,0,0.40)"
+        opacity={isDimmed ? 0.08 : 0.26}
+        transform={`translate(0 ${depth})`}
+        className="pointer-events-none"
+      />
+      <path
+        d={region.path}
+        fill="transparent"
+        stroke="rgba(255,255,255,0.14)"
+        strokeWidth={isHovered || isFocused ? 0.9 : 0.55}
+        opacity={isDimmed ? 0.06 : 0.55}
+        transform={`translate(0 ${-0.65})`}
+        strokeLinejoin="round"
+        className="pointer-events-none"
+      />
       <path
         d={region.path}
         fill={fillUrl}
         fillOpacity={isDimmed ? 0.35 : (isHovered || isFocused ? 1 : 0.86)}
         stroke={strokeColor}
-        strokeWidth={isHovered || isFocused ? 0.9 : 0.35}
+        strokeWidth={isHovered || isFocused ? 0.7 : 0.25}
         strokeLinejoin="round"
+        filter={isDimmed ? undefined : innerGlowFilter}
       />
+      {region.status === 'gersang' && !isDimmed && (
+        <path
+          d={region.path}
+          fill="rgba(2,6,23,0.18)"
+          opacity={isHovered || isFocused ? 0.48 : 0.34}
+          filter="url(#heatHazeDust)"
+          className="pointer-events-none"
+        />
+      )}
+      {region.status === 'hijau' && !isDimmed && (
+        <path
+          d={region.path}
+          fill="url(#sunGlint)"
+          opacity={isHovered || isFocused ? 0.26 : 0.15}
+          filter="url(#softFog)"
+          className="pointer-events-none"
+        />
+      )}
+      {region.status === 'kritis' && !isDimmed && (
+        <path
+          d={region.path}
+          fill="rgba(255,255,255,0.10)"
+          opacity={isHovered || isFocused ? 0.22 : 0.10}
+          className="pointer-events-none"
+        />
+      )}
       <path
         d={region.path}
         fill="transparent"
@@ -1986,11 +2049,29 @@ const RegionItem = memo(({ region, isHovered, isFocused, focusActive, hoverActiv
         strokeLinejoin="round"
         className="pointer-events-none"
       />
-      {/* Texture Overlay */}
-      <path
+      <motion.path
         d={region.path}
-        fill="url(#pattern-dots)"
-        opacity={isDimmed ? 0.06 : (isHovered || isFocused ? 0.22 : 0.10)}
+        fill={texFill}
+        initial={false}
+        animate={{
+          opacity: (isHovered || isFocused) && !isDimmed ? [texOpacity * 0.92, texOpacity * 1.08, texOpacity * 0.92] : texOpacity,
+        }}
+        transition={{ repeat: (isHovered || isFocused) && !isDimmed ? Infinity : 0, duration: region.status === 'hijau' ? 3.6 : region.status === 'kritis' ? 2.4 : 2.1, ease: 'easeInOut' }}
+        className="pointer-events-none"
+      />
+      <motion.path
+        d={region.path}
+        fill="transparent"
+        stroke={region.status === 'hijau' ? 'rgba(255,255,255,0.26)' : 'rgba(255,255,255,0.32)'}
+        strokeWidth={0.6}
+        strokeDasharray={region.status === 'hijau' ? '0 999' : region.status === 'kritis' ? '3 10' : '2 8'}
+        animate={
+          isDimmed
+            ? { opacity: 0 }
+            : (region.status === 'hijau' ? { opacity: isHovered || isFocused ? 0.22 : 0.12 } : { strokeDashoffset: [0, -28], opacity: isHovered || isFocused ? 0.34 : 0.18 })
+        }
+        transition={region.status === 'hijau' ? { duration: 0.25 } : { repeat: Infinity, duration: region.status === 'kritis' ? 1.2 : 0.95, ease: 'linear' }}
+        strokeLinejoin="round"
         className="pointer-events-none"
       />
       
@@ -2089,6 +2170,7 @@ const InteractiveMap = memo(({
   const smoothX = useSpring(mouseX, { damping: 25, stiffness: 200 });
   const smoothY = useSpring(mouseY, { damping: 25, stiffness: 200 });
   const [filters, setFilters] = useState<{ hijau: boolean; kritis: boolean; gersang: boolean }>({ hijau: true, kritis: true, gersang: true });
+  const [legendOpen, setLegendOpen] = useState(false);
   const focusActive = Boolean(focusedRegionId);
   const hoverActive = Boolean(hoveredRegion);
   const [ripple, setRipple] = useState<{ id: string; key: number } | null>(null);
@@ -2210,6 +2292,22 @@ const InteractiveMap = memo(({
     const raw = y + dy;
     return Math.max(pad, Math.min(h - th - pad, raw));
   });
+  const cursorMascotX = useTransform(smoothX, (x) => {
+    const w = Math.max(1, containerSize.w);
+    const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+    return clamp(x, 34, w - 34);
+  });
+  const cursorMascotY = useTransform(smoothY, (y) => {
+    const h = Math.max(1, containerSize.h);
+    const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+    return clamp(y, 58, h - 18);
+  });
+  const cursorMascotLine = useMemo(() => {
+    if (!hoveredRegion) return null;
+    if (hoveredRegion.status === 'hijau') return 'Lestari: jaga tutupan hijau & rawat rutin.';
+    if (hoveredRegion.status === 'kritis') return 'Kritis: tambah pohon & kurangi polusi.';
+    return 'Gersang: butuh penanganan cepat & banyak penanaman.';
+  }, [hoveredRegion]);
 
   return (
     <div 
@@ -2227,63 +2325,191 @@ const InteractiveMap = memo(({
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#334155 2px, transparent 2px), linear-gradient(90deg, #334155 2px, transparent 2px)', backgroundSize: '100px 100px' }} />
       </div>
 
-      <div className="absolute top-4 left-4 z-20 space-y-2 bg-white/6 p-3 rounded-2xl border border-white/10 backdrop-blur-md text-[10px] font-black uppercase text-slate-200 shadow-xl pointer-events-auto">
-        <div className="flex items-center justify-between gap-2">
-          <div className="tracking-widest text-slate-200/80">Filter</div>
-          <button
+      <div className="absolute top-4 left-4 z-20 pointer-events-auto">
+        <div
+          className="relative"
+          onMouseEnter={() => setLegendOpen(true)}
+          onMouseLeave={() => setLegendOpen(false)}
+        >
+          <motion.button
             type="button"
-            onClick={() => setFilters({ hijau: true, kritis: true, gersang: true })}
-            className="px-2 py-1 rounded-xl bg-white/10 border border-white/10 text-[9px] tracking-widest text-slate-200/80 hover:bg-white/15 active:scale-95 transition-all"
+            aria-label="Legenda status wilayah"
+            onFocus={() => setLegendOpen(true)}
+            onBlur={() => setLegendOpen(false)}
+            onClick={() => setLegendOpen(v => !v)}
+            whileTap={{ scale: 0.96 }}
+            className="w-10 h-10 rounded-2xl bg-white/8 border border-white/14 backdrop-blur-xl shadow-[0_20px_46px_rgba(0,0,0,0.55)] hover:bg-white/10 transition-all overflow-hidden"
+            style={{
+              backgroundImage:
+                'radial-gradient(circle at 25% 30%, rgba(34,197,94,0.22) 0 16px, transparent 34px), radial-gradient(circle at 72% 42%, rgba(245,158,11,0.22) 0 16px, transparent 34px), radial-gradient(circle at 60% 78%, rgba(239,68,68,0.18) 0 18px, transparent 40px), linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.18) 100%)',
+            }}
           >
-            Reset
-          </button>
+            <div className="absolute inset-0 opacity-60" style={{ backgroundImage: 'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.14) 0 12px, transparent 34px)' }} />
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1">
+              <span className="w-[7px] h-[7px] rounded-full bg-gradient-to-br from-[#34d399] to-[#059669] shadow-[0_0_10px_rgba(16,185,129,0.55)]" />
+              <span className="w-[7px] h-[7px] rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] shadow-[0_0_10px_rgba(245,158,11,0.55)]" />
+              <span className="w-[7px] h-[7px] rounded-full bg-gradient-to-br from-[#f87171] to-[#dc2626] shadow-[0_0_10px_rgba(239,68,68,0.55)]" />
+            </div>
+          </motion.button>
+
+          <AnimatePresence>
+            {legendOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                transition={{ duration: 0.16, ease: 'easeOut' }}
+                className="absolute left-0 mt-2 w-[248px] bg-white/6 p-3 rounded-2xl border border-white/12 backdrop-blur-2xl text-[10px] font-black uppercase text-slate-100 shadow-[0_26px_60px_rgba(0,0,0,0.55)] overflow-hidden"
+                style={{
+                  backgroundImage:
+                    'radial-gradient(circle at 18% 22%, rgba(34,197,94,0.10) 0 70px, rgba(0,0,0,0.0) 150px), radial-gradient(circle at 80% 35%, rgba(245,158,11,0.10) 0 80px, rgba(0,0,0,0.0) 170px), radial-gradient(circle at 78% 78%, rgba(239,68,68,0.08) 0 90px, rgba(0,0,0,0.0) 190px), linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 55%, rgba(0,0,0,0.26) 100%)',
+                }}
+              >
+                <div className="absolute inset-0 pointer-events-none opacity-70" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.14) 0 70px, rgba(255,255,255,0.02) 160px), radial-gradient(circle at 12% 70%, rgba(16,185,129,0.10) 0 90px, transparent 220px)' }} />
+                <div className="flex items-center justify-between gap-2">
+                  <div className="tracking-widest text-slate-200/80">Legenda</div>
+                  <button
+                    type="button"
+                    onClick={() => setFilters({ hijau: true, kritis: true, gersang: true })}
+                    className="px-2 py-1 rounded-xl bg-white/10 border border-white/10 text-[9px] tracking-widest text-slate-200/80 hover:bg-white/15 active:scale-95 transition-all"
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                <div className="mt-2 grid grid-cols-1 gap-2 text-[9px] font-extrabold tracking-wider normal-case">
+                  <div className="flex items-start gap-2">
+                    <span className="mt-[3px] w-3 h-3 rounded-full bg-gradient-to-br from-[#34d399] to-[#059669] shadow-[0_0_10px_rgba(16,185,129,0.55)]" />
+                    <div>
+                      <div className="uppercase tracking-widest text-slate-100">Hijau • Lestari</div>
+                      <div className="text-slate-200/70">Vegetasi baik, kondisi stabil.</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="mt-[3px] w-3 h-3 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] shadow-[0_0_10px_rgba(245,158,11,0.55)]" />
+                    <div>
+                      <div className="uppercase tracking-widest text-slate-100">Kuning • Kritis</div>
+                      <div className="text-slate-200/70">Perlu perhatian & aksi.</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="mt-[3px] w-3 h-3 rounded-full bg-gradient-to-br from-[#f87171] to-[#dc2626] shadow-[0_0_10px_rgba(239,68,68,0.55)]" />
+                    <div>
+                      <div className="uppercase tracking-widest text-slate-100">Merah • Gersang</div>
+                      <div className="text-slate-200/70">Butuh penanganan cepat.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-col gap-2">
+                  <motion.button
+                    type="button"
+                    onClick={() => setFilters(p => ({ ...p, hijau: !p.hijau }))}
+                    whileTap={{ scale: 0.98 }}
+                    className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 border transition-all ${
+                      filters.hijau ? 'bg-white/8 border-white/12' : 'bg-white/3 border-white/8 opacity-60'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#34d399] to-[#059669] shadow-[0_0_10px_rgba(16,185,129,0.55)]" />
+                      Lestari
+                    </span>
+                    <span className="text-[9px] tracking-widest text-slate-200/70">{filters.hijau ? 'ON' : 'OFF'}</span>
+                  </motion.button>
+                  <motion.button
+                    type="button"
+                    onClick={() => setFilters(p => ({ ...p, kritis: !p.kritis }))}
+                    whileTap={{ scale: 0.98 }}
+                    className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 border transition-all ${
+                      filters.kritis ? 'bg-white/8 border-white/12' : 'bg-white/3 border-white/8 opacity-60'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] shadow-[0_0_10px_rgba(245,158,11,0.55)]" />
+                      Kritis
+                    </span>
+                    <span className="text-[9px] tracking-widest text-slate-200/70">{filters.kritis ? 'ON' : 'OFF'}</span>
+                  </motion.button>
+                  <motion.button
+                    type="button"
+                    onClick={() => setFilters(p => ({ ...p, gersang: !p.gersang }))}
+                    whileTap={{ scale: 0.98 }}
+                    className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 border transition-all ${
+                      filters.gersang ? 'bg-white/8 border-white/12' : 'bg-white/3 border-white/8 opacity-60'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#f87171] to-[#dc2626] shadow-[0_0_10px_rgba(239,68,68,0.55)]" />
+                      Gersang
+                    </span>
+                    <span className="text-[9px] tracking-widest text-slate-200/70">{filters.gersang ? 'ON' : 'OFF'}</span>
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-        <div className="flex flex-col gap-2">
-          <motion.button
-            type="button"
-            onClick={() => setFilters(p => ({ ...p, hijau: !p.hijau }))}
-            whileTap={{ scale: 0.98 }}
-            className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 border transition-all ${
-              filters.hijau ? 'bg-white/8 border-white/12' : 'bg-white/3 border-white/8 opacity-60'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#34d399] to-[#059669] shadow-[0_0_10px_rgba(16,185,129,0.55)]" />
-              Lestari
-            </span>
-            <span className="text-[9px] tracking-widest text-slate-200/70">{filters.hijau ? 'ON' : 'OFF'}</span>
-          </motion.button>
-          <motion.button
-            type="button"
-            onClick={() => setFilters(p => ({ ...p, kritis: !p.kritis }))}
-            whileTap={{ scale: 0.98 }}
-            className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 border transition-all ${
-              filters.kritis ? 'bg-white/8 border-white/12' : 'bg-white/3 border-white/8 opacity-60'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] shadow-[0_0_10px_rgba(245,158,11,0.55)]" />
-              Kritis
-            </span>
-            <span className="text-[9px] tracking-widest text-slate-200/70">{filters.kritis ? 'ON' : 'OFF'}</span>
-          </motion.button>
-          <motion.button
-            type="button"
-            onClick={() => setFilters(p => ({ ...p, gersang: !p.gersang }))}
-            whileTap={{ scale: 0.98 }}
-            className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 border transition-all ${
-              filters.gersang ? 'bg-white/8 border-white/12' : 'bg-white/3 border-white/8 opacity-60'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#f87171] to-[#dc2626] shadow-[0_0_10px_rgba(239,68,68,0.55)]" />
-              Gersang
-            </span>
-            <span className="text-[9px] tracking-widest text-slate-200/70">{filters.gersang ? 'ON' : 'OFF'}</span>
-          </motion.button>
-        </div>
-        <div className="text-[9px] tracking-widest text-slate-200/60">Hover untuk detail • Klik untuk fokus</div>
       </div>
+
+      <AnimatePresence>
+        {hoveredRegion && cursorMascotLine && (
+          <motion.div
+            className="absolute z-30 pointer-events-none"
+            style={{ left: cursorMascotX, top: cursorMascotY, transform: 'translate(-50%, -100%)' }}
+            initial={{ opacity: 0, scale: 0.92, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.94, y: 8 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+          >
+            <div className="mb-2 px-3 py-2 rounded-2xl border border-white/12 backdrop-blur-xl text-[10px] font-black text-white/90 shadow-[0_18px_34px_rgba(0,0,0,0.45)]"
+              style={{
+                backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 55%, rgba(0,0,0,0.20) 100%)',
+                maxWidth: 220,
+              }}
+            >
+              <div className="uppercase tracking-widest text-white/75">{hoveredRegion.name}</div>
+              <div className="mt-1 text-white/90 normal-case font-extrabold tracking-normal">{cursorMascotLine}</div>
+            </div>
+            <motion.div
+              aria-hidden
+              className="relative w-[72px] h-[72px]"
+              initial={false}
+              animate={{ rotate: hoveredRegion.status === 'gersang' ? [-3, 3, -3] : [-2, 2, -2], y: [0, -2, 0] }}
+              transition={{ repeat: Infinity, duration: hoveredRegion.status === 'hijau' ? 1.6 : hoveredRegion.status === 'kritis' ? 1.3 : 1.0, ease: 'easeInOut' }}
+            >
+              <div className="absolute inset-0 rounded-[1.6rem] border border-white/14 shadow-[0_22px_44px_rgba(0,0,0,0.55)] overflow-hidden"
+                style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(0,0,0,0.22) 100%)' }}
+              />
+              <div className="absolute left-1/2 -translate-x-1/2 top-[10px] w-[46px] h-[40px] rounded-[999px] border border-black/10 shadow-inner"
+                style={{ background: 'linear-gradient(180deg, rgba(251,218,186,0.98) 0%, rgba(242,198,167,0.96) 100%)' }}
+              />
+              <div className="absolute left-[14px] top-[14px] w-[14px] h-[14px] rounded-full bg-white/95 border border-black/10 shadow-inner" />
+              <div className="absolute right-[14px] top-[14px] w-[14px] h-[14px] rounded-full bg-white/95 border border-black/10 shadow-inner" />
+              <div className="absolute left-[18px] top-[18px] w-[6px] h-[6px] rounded-full bg-slate-900" />
+              <div className="absolute right-[18px] top-[18px] w-[6px] h-[6px] rounded-full bg-slate-900" />
+              <div className="absolute left-1/2 -translate-x-1/2 top-[32px] w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[7px] border-t-amber-500/95 drop-shadow" />
+              <div className="absolute left-1/2 -translate-x-1/2 top-[38px] w-[18px] h-[8px] border-b-[3px] border-b-rose-500/80 rounded-b-full" />
+              <motion.div
+                aria-hidden
+                className="absolute left-[4px] top-[36px] w-[44px] h-[14px]"
+                initial={false}
+                animate={{ rotate: hoveredRegion.status === 'hijau' ? [-16, -28, -16] : [-18, -34, -18] }}
+                transition={{ repeat: Infinity, duration: hoveredRegion.status === 'hijau' ? 1.1 : 0.9, ease: 'easeInOut' }}
+                style={{ transformOrigin: '85% 50%' }}
+              >
+                <div className="absolute left-0 top-[4px] w-[34px] h-[10px] rounded-[999px] border border-black/10 shadow-[0_10px_14px_rgba(0,0,0,0.20)]" style={{ background: 'linear-gradient(180deg, rgba(101,67,33,0.96) 0%, rgba(74,43,23,0.94) 100%)' }} />
+                <div className="absolute right-0 top-0 w-[14px] h-[14px] rounded-full border border-black/10 shadow-[0_8px_12px_rgba(0,0,0,0.18)]" style={{ background: 'linear-gradient(180deg, rgba(251,218,186,0.96) 0%, rgba(242,198,167,0.94) 100%)' }} />
+              </motion.div>
+              <div className="absolute right-[6px] top-[34px] w-7 h-7 rounded-2xl border border-white/70 shadow-xl overflow-hidden" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(236,253,245,0.72) 100%)' }}>
+                <div className="absolute inset-0 opacity-70" style={{ backgroundImage: 'radial-gradient(circle at 30% 30%, rgba(34,197,94,0.22) 0 10px, transparent 26px), radial-gradient(circle at 70% 65%, rgba(250,204,21,0.16) 0 10px, transparent 28px)' }} />
+                <div className="absolute left-1/2 -translate-x-1/2 top-[7px] w-[3px] h-[9px] rounded-full" style={{ background: 'linear-gradient(180deg, #34d399 0%, #059669 100%)' }} />
+                <div className="absolute left-[6px] top-[8px] w-[8px] h-[5px] rounded-full rotate-[-22deg]" style={{ background: 'linear-gradient(180deg, rgba(52,211,153,0.95) 0%, rgba(5,150,105,0.85) 100%)' }} />
+                <div className="absolute right-[6px] top-[9px] w-[8px] h-[5px] rounded-full rotate-[22deg]" style={{ background: 'linear-gradient(180deg, rgba(52,211,153,0.95) 0%, rgba(5,150,105,0.85) 100%)' }} />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {focusActive && onResetFocus && (
         <motion.button
@@ -2301,22 +2527,166 @@ const InteractiveMap = memo(({
       <svg viewBox="0 0 120 100" preserveAspectRatio="xMidYMid meet" className="w-full h-full drop-shadow-2xl">
         <defs>
           <linearGradient id="grad-hijau" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#34d399" />
-            <stop offset="100%" stopColor="#059669" />
+            <stop offset="0%" stopColor="#4ade80" stopOpacity="0.95" />
+            <stop offset="52%" stopColor="#166534" stopOpacity="0.98" />
+            <stop offset="100%" stopColor="#064e3b" stopOpacity="1" />
           </linearGradient>
           <linearGradient id="grad-kritis" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#fbbf24" />
-            <stop offset="100%" stopColor="#d97706" />
+            <stop offset="0%" stopColor="#fef3c7" stopOpacity="0.95" />
+            <stop offset="55%" stopColor="#d97706" stopOpacity="0.98" />
+            <stop offset="100%" stopColor="#92400e" stopOpacity="1" />
           </linearGradient>
           <linearGradient id="grad-gersang" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#f87171" />
-            <stop offset="100%" stopColor="#dc2626" />
+            <stop offset="0%" stopColor="#fecaca" stopOpacity="0.9" />
+            <stop offset="55%" stopColor="#b91c1c" stopOpacity="0.98" />
+            <stop offset="100%" stopColor="#450a0a" stopOpacity="1" />
           </linearGradient>
-          <pattern id="pattern-dots" x="0" y="0" width="3" height="3" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="0.5" fill="#ffffff" />
+
+          <filter id="texNoiseFine" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="8" />
+            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.35 0" />
+          </filter>
+          <filter id="texNoiseMed" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.32" numOctaves="3" seed="11" />
+            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.55 0" />
+          </filter>
+
+          <pattern id="tex-hijau" x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">
+            <rect width="22" height="22" fill="rgba(2,6,23,0.0)" />
+            <g opacity="0.9">
+              <circle cx="6" cy="7" r="6" fill="rgba(255,255,255,0.08)" />
+              <circle cx="16" cy="9" r="5" fill="rgba(0,0,0,0.10)" />
+              <circle cx="10" cy="17" r="5" fill="rgba(255,255,255,0.06)" />
+              <path d="M 5 7 C 7 3 11 3 13 7 C 11 11 7 11 5 7 Z" fill="rgba(255,255,255,0.10)" />
+              <path d="M 14 16 C 16 13 19 13 20 16 C 18 19 15 19 14 16 Z" fill="rgba(255,255,255,0.08)" />
+              <circle cx="4" cy="16" r="1.2" fill="rgba(255,255,255,0.10)" />
+              <circle cx="18" cy="4" r="1.0" fill="rgba(255,255,255,0.10)" />
+            </g>
+            <path
+              d="M -2 6 C 3 3 7 6 12 4 C 16 2 18 6 24 4"
+              stroke="rgba(56,189,248,0.26)"
+              strokeWidth="1.5"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity="0.85"
+            />
+            <path
+              d="M -1 14 C 4 12 6 16 10 14 C 15 12 16 16 24 14"
+              stroke="rgba(56,189,248,0.20)"
+              strokeWidth="1.2"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity="0.85"
+            />
+            <rect width="22" height="22" filter="url(#texNoiseMed)" opacity="0.55" />
           </pattern>
+          <pattern id="tex-kritis" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+            <rect width="24" height="24" fill="rgba(2,6,23,0.0)" />
+            <path d="M 1 10 L 6 6 L 10 9 L 14 5 L 22 12" stroke="rgba(0,0,0,0.20)" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 2 18 L 8 14 L 12 16 L 18 13 L 23 16" stroke="rgba(255,255,255,0.10)" strokeWidth="1.0" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 6 3 C 7 5 7 7 6 9" stroke="rgba(34,197,94,0.12)" strokeWidth="1.0" strokeLinecap="round" />
+            <path d="M 19 6 C 20 8 20 10 19 12" stroke="rgba(34,197,94,0.10)" strokeWidth="0.9" strokeLinecap="round" />
+            <circle cx="5" cy="21" r="1.0" fill="rgba(0,0,0,0.14)" />
+            <circle cx="21" cy="4" r="0.9" fill="rgba(255,255,255,0.10)" />
+            <rect width="24" height="24" filter="url(#texNoiseFine)" opacity="0.7" />
+          </pattern>
+          <pattern id="tex-gersang" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+            <rect width="30" height="30" fill="rgba(2,6,23,0.0)" />
+            <path d="M 2 12 L 8 6 L 12 10 L 16 5 L 22 9 L 28 4" stroke="rgba(0,0,0,0.26)" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 3 24 L 10 18 L 14 21 L 18 16 L 24 20 L 28 17" stroke="rgba(0,0,0,0.22)" strokeWidth="1.35" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 9 30 L 9 22" stroke="rgba(0,0,0,0.22)" strokeWidth="1.2" strokeLinecap="round" />
+            <path d="M 18 30 L 18 23" stroke="rgba(255,255,255,0.09)" strokeWidth="0.9" strokeLinecap="round" />
+            <path d="M 24 13 L 29 10" stroke="rgba(255,255,255,0.08)" strokeWidth="1.0" strokeLinecap="round" />
+            <path d="M 0 9 C 6 6 10 10 16 7 C 20 5 24 8 30 6" stroke="rgba(255,255,255,0.07)" strokeWidth="1.0" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 0 19 C 7 16 12 20 18 17 C 22 15 24 18 30 16" stroke="rgba(0,0,0,0.12)" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="7" cy="15" r="1.1" fill="rgba(0,0,0,0.14)" />
+            <circle cx="23" cy="26" r="1.0" fill="rgba(0,0,0,0.12)" />
+            <rect width="30" height="30" filter="url(#texNoiseMed)" opacity="0.75" />
+          </pattern>
+          <pattern id="tex-outside" x="0" y="0" width="36" height="36" patternUnits="userSpaceOnUse">
+            <rect width="36" height="36" fill="rgba(2,6,23,0.0)" />
+            <path d="M 0 12 C 8 7 14 14 22 10 C 28 7 30 11 36 8" stroke="rgba(34,197,94,0.10)" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+            <path d="M 0 26 C 9 22 14 28 22 24 C 28 21 30 25 36 22" stroke="rgba(245,158,11,0.08)" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+            <rect width="36" height="36" filter="url(#texNoiseMed)" opacity="0.55" />
+          </pattern>
+
           <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="0" dy="4" stdDeviation="2" floodColor="#000000" floodOpacity="0.4" />
+          </filter>
+          <filter id="heatHazeDust" x="-35%" y="-35%" width="170%" height="170%">
+            <feTurbulence type="turbulence" baseFrequency="0.012 0.035" numOctaves="2" seed="3">
+              <animate attributeName="baseFrequency" dur="2.2s" values="0.010 0.032;0.015 0.040;0.010 0.032" repeatCount="indefinite" />
+            </feTurbulence>
+            <feDisplacementMap in="SourceGraphic" scale="6" />
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="dust" />
+            <feColorMatrix in="dust" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.18 0" />
+            <feComposite operator="in" in2="SourceAlpha" />
+            <feGaussianBlur stdDeviation="0.45" />
+            <feMerge>
+              <feMergeNode />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <filter id="softFog" x="-35%" y="-35%" width="170%" height="170%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" seed="12" result="n">
+              <animate attributeName="baseFrequency" dur="6.5s" values="0.012;0.018;0.012" repeatCount="indefinite" />
+            </feTurbulence>
+            <feColorMatrix in="n" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.18 0" result="m" />
+            <feGaussianBlur in="m" stdDeviation="1.15" result="b" />
+            <feComposite in="b" in2="SourceAlpha" operator="in" result="fog" />
+            <feMerge>
+              <feMergeNode in="fog" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <linearGradient id="sunGlint" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.0)" />
+            <stop offset="45%" stopColor="rgba(255,255,255,0.0)" />
+            <stop offset="52%" stopColor="rgba(255,255,255,0.24)" />
+            <stop offset="58%" stopColor="rgba(255,255,255,0.0)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0.0)" />
+            <animateTransform attributeName="gradientTransform" type="translate" dur="3.4s" values="-120 0;120 0;-120 0" repeatCount="indefinite" />
+          </linearGradient>
+          <filter id="innerGlow-hijau" x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="1.2" result="b" />
+            <feOffset in="b" dx="0" dy="1.1" result="o" />
+            <feComposite in="o" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="is" />
+            <feColorMatrix in="is" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.40 0" result="shadow" />
+            <feColorMatrix in="b" type="matrix" values="0 0 0 0 0.0627  0 0 0 0 0.7255  0 0 0 0 0.5059  0 0 0 0.75 0" result="c" />
+            <feComposite in="c" in2="SourceAlpha" operator="in" result="g" />
+            <feMerge>
+              <feMergeNode in="SourceGraphic" />
+              <feMergeNode in="shadow" />
+              <feMergeNode in="g" />
+            </feMerge>
+          </filter>
+          <filter id="innerGlow-kritis" x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="1.15" result="b" />
+            <feOffset in="b" dx="0" dy="1.1" result="o" />
+            <feComposite in="o" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="is" />
+            <feColorMatrix in="is" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.42 0" result="shadow" />
+            <feColorMatrix in="b" type="matrix" values="0 0 0 0 0.9569  0 0 0 0 0.6196  0 0 0 0 0.0431  0 0 0 0.78 0" result="c" />
+            <feComposite in="c" in2="SourceAlpha" operator="in" result="g" />
+            <feMerge>
+              <feMergeNode in="SourceGraphic" />
+              <feMergeNode in="shadow" />
+              <feMergeNode in="g" />
+            </feMerge>
+          </filter>
+          <filter id="innerGlow-gersang" x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="1.2" result="b" />
+            <feOffset in="b" dx="0" dy="1.1" result="o" />
+            <feComposite in="o" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="is" />
+            <feColorMatrix in="is" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.45 0" result="shadow" />
+            <feColorMatrix in="b" type="matrix" values="0 0 0 0 0.9373  0 0 0 0 0.2667  0 0 0 0 0.2667  0 0 0 0.82 0" result="c" />
+            <feComposite in="c" in2="SourceAlpha" operator="in" result="g" />
+            <feMerge>
+              <feMergeNode in="SourceGraphic" />
+              <feMergeNode in="shadow" />
+              <feMergeNode in="g" />
+            </feMerge>
           </filter>
         </defs>
 
@@ -2326,7 +2696,7 @@ const InteractiveMap = memo(({
           transition={{ duration: 0.42, ease: 'easeInOut' }}
         >
           <g filter="url(#softShadow)">
-            <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="rgba(148,163,184,0.12)" />
+            <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="url(#tex-outside)" opacity="0.95" />
           </g>
           {visibleRegions.map(r => (
             <RegionItem
