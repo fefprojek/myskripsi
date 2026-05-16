@@ -7,91 +7,169 @@ import { useNavigate } from 'react-router-dom';
 
 const DecorativePlot = ({ x, y }: { x: number, y: number }) => (
   <div className="absolute pointer-events-none" style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }}>
-    {/* Main Soil Area */}
-    <div className="w-48 h-32 bg-[#3e2723]/40 rounded-[100%] blur-sm" />
+    {/* Main Soil Area - More textured */}
+    <div className="w-56 h-36 bg-[#3e2723]/30 rounded-[100%] blur-md" />
     <div className="absolute inset-0 flex items-center justify-center">
-      <div className="w-40 h-24 bg-[#2b1a16]/60 rounded-[100%] blur-[2px] shadow-inner" />
+      <div className="w-44 h-28 bg-[#2b1a16]/50 rounded-[100%] blur-[3px] shadow-2xl" />
+      <div className="absolute w-36 h-20 bg-[#1a0f0d]/40 rounded-[100%] blur-[1px]" />
     </div>
     
-    {/* Decorative Stones */}
-    {[...Array(6)].map((_, i) => (
+    {/* Decorative Stones with varied sizes */}
+    {[...Array(8)].map((_, i) => (
       <motion.div
         key={`stone-${i}`}
-        className="absolute w-4 h-3 bg-slate-400 rounded-full shadow-md"
+        className="absolute rounded-full shadow-lg border border-black/5"
+        initial={{ scale: 0.8 }}
+        animate={{ scale: [0.8, 0.85, 0.8] }}
+        transition={{ duration: 3 + i, repeat: Infinity }}
         style={{
-          left: 40 + Math.cos(i * (Math.PI / 3)) * 80,
-          top: 20 + Math.sin(i * (Math.PI / 3)) * 50,
-          rotate: i * 45,
-          backgroundColor: i % 2 === 0 ? '#94a3b8' : '#64748b'
+          width: 4 + (i % 4) * 2,
+          height: 3 + (i % 3) * 2,
+          left: 40 + Math.cos(i * (Math.PI / 4)) * 90,
+          top: 20 + Math.sin(i * (Math.PI / 4)) * 60,
+          rotate: i * 35,
+          backgroundColor: i % 3 === 0 ? '#94a3b8' : i % 3 === 1 ? '#64748b' : '#475569',
+          filter: 'contrast(1.1) brightness(0.9)'
         }}
       />
     ))}
 
-    {/* Grass Patches */}
-    {[...Array(8)].map((_, i) => (
-      <div
+    {/* Enhanced Grass Blades with Sway */}
+    {[...Array(12)].map((_, i) => (
+      <motion.div
         key={`grass-${i}`}
-        className="absolute w-6 h-4 flex gap-0.5"
+        className="absolute flex flex-col items-center"
         style={{
-          left: 60 + Math.cos(i * (Math.PI / 4)) * 60,
-          top: 30 + Math.sin(i * (Math.PI / 4)) * 40,
+          left: 60 + Math.cos(i * (Math.PI / 6)) * 75,
+          top: 30 + Math.sin(i * (Math.PI / 6)) * 45,
         }}
       >
-        <div className="w-1 h-3 bg-emerald-600 rounded-full rotate-[-15deg]" />
-        <div className="w-1 h-4 bg-emerald-500 rounded-full" />
-        <div className="w-1 h-3 bg-emerald-600 rounded-full rotate-[15deg]" />
-      </div>
+        <div className="flex gap-0.5">
+          {[...Array(3)].map((_, j) => (
+            <motion.div
+              key={j}
+              animate={{ 
+                rotate: [-15 + j * 15, 15 + j * 15, -15 + j * 15],
+                skewX: [-5, 5, -5]
+              }}
+              transition={{ 
+                duration: 2 + Math.random() * 2, 
+                repeat: Infinity, 
+                ease: "easeInOut",
+                delay: i * 0.1
+              }}
+              className="w-1 rounded-full origin-bottom"
+              style={{ 
+                height: 10 + Math.random() * 8,
+                backgroundColor: j % 2 === 0 ? '#10b981' : '#059669',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+            />
+          ))}
+        </div>
+      </motion.div>
+    ))}
+
+    {/* Little Flowers */}
+    {[...Array(4)].map((_, i) => (
+      <motion.div
+        key={`flower-${i}`}
+        className="absolute w-2 h-2 rounded-full"
+        animate={{ scale: [1, 1.2, 1] }}
+        transition={{ duration: 4, repeat: Infinity, delay: i }}
+        style={{
+          left: 50 + Math.cos(i * (Math.PI / 2)) * 40,
+          top: 20 + Math.sin(i * (Math.PI / 2)) * 30,
+          backgroundColor: i % 2 === 0 ? '#fbbf24' : '#f87171',
+          boxShadow: '0 0 10px rgba(255,255,255,0.3)'
+        }}
+      >
+        <div className="absolute inset-0.5 bg-white/40 rounded-full" />
+      </motion.div>
     ))}
   </div>
+);
+
+const Bird = () => (
+  <motion.div
+    initial={{ x: -100, y: Math.random() * 500 }}
+    animate={{ 
+      x: 3100,
+      y: [null, Math.random() * 500, Math.random() * 500],
+    }}
+    transition={{ duration: 15 + Math.random() * 10, ease: "linear", repeat: Infinity }}
+    className="absolute pointer-events-none z-[70]"
+  >
+    <div className="relative flex gap-1">
+      <motion.div 
+        animate={{ rotateZ: [-30, 30, -30] }}
+        transition={{ repeat: Infinity, duration: 0.2 }}
+        className="w-4 h-1 bg-slate-800 rounded-full origin-right"
+      />
+      <div className="w-2 h-2 bg-slate-900 rounded-full" />
+      <motion.div 
+        animate={{ rotateZ: [30, -30, 30] }}
+        transition={{ repeat: Infinity, duration: 0.2 }}
+        className="w-4 h-1 bg-slate-800 rounded-full origin-left"
+      />
+    </div>
+  </motion.div>
 );
 
 const SeedlingIcon = ({ type }: { type: string }) => {
   if (type === 'Mahoni') {
     return (
-      <svg viewBox="0 0 120 120" className="w-28 h-28 transform transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3 drop-shadow-xl z-10">
+      <svg viewBox="0 0 120 120" className="w-28 h-28 transform transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3 drop-shadow-2xl z-10">
         <defs>
           <linearGradient id="mahoniGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#4ade80" />
+            <stop offset="50%" stopColor="#22c55e" />
             <stop offset="100%" stopColor="#14532d" />
           </linearGradient>
           <linearGradient id="trunkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#78350f" />
             <stop offset="100%" stopColor="#451a03" />
           </linearGradient>
+          <filter id="leafShadow">
+            <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.3" />
+          </filter>
         </defs>
-        <ellipse cx="60" cy="105" rx="35" ry="8" fill="rgba(0,0,0,0.15)" />
+        <ellipse cx="60" cy="105" rx="35" ry="8" fill="rgba(0,0,0,0.2)" />
         <path d="M52 105 C52 80 45 60 45 60 L75 60 C75 60 68 80 68 105 Z" fill="url(#trunkGrad)" />
         <path d="M60 65 L40 40 M60 60 L80 35" fill="none" stroke="url(#trunkGrad)" strokeWidth="6" strokeLinecap="round" />
-        <circle cx="60" cy="35" r="28" fill="url(#mahoniGrad)" />
-        <circle cx="40" cy="45" r="22" fill="url(#mahoniGrad)" />
-        <circle cx="80" cy="45" r="22" fill="url(#mahoniGrad)" />
-        <circle cx="50" cy="20" r="18" fill="#22c55e" />
-        <circle cx="70" cy="20" r="18" fill="#22c55e" />
+        <g filter="url(#leafShadow)">
+          <circle cx="60" cy="35" r="28" fill="url(#mahoniGrad)" />
+          <circle cx="40" cy="45" r="22" fill="url(#mahoniGrad)" />
+          <circle cx="80" cy="45" r="22" fill="url(#mahoniGrad)" />
+          <circle cx="50" cy="20" r="18" fill="#4ade80" opacity="0.8" />
+          <circle cx="70" cy="20" r="18" fill="#4ade80" opacity="0.8" />
+        </g>
       </svg>
     );
   }
   if (type === 'Jati') {
     return (
-      <svg viewBox="0 0 120 120" className="w-28 h-28 transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 drop-shadow-xl z-10">
+      <svg viewBox="0 0 120 120" className="w-28 h-28 transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 drop-shadow-2xl z-10">
         <defs>
           <linearGradient id="jatiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#a3e635" />
+            <stop offset="0%" stopColor="#bef264" />
+            <stop offset="50%" stopColor="#a3e635" />
             <stop offset="100%" stopColor="#4d7c0f" />
           </linearGradient>
         </defs>
-        <ellipse cx="60" cy="105" rx="30" ry="6" fill="rgba(0,0,0,0.15)" />
-        <path d="M60 105 C60 90 55 80 55 80" fill="none" stroke="#78350f" strokeWidth="6" strokeLinecap="round" />
-        <path d="M55 80 C20 70 5 30 60 10 C115 30 100 70 55 80 Z" fill="url(#jatiGrad)" />
-        <path d="M55 80 C60 50 60 20 60 10 M58 65 C45 55 30 50 30 50 M58 65 C70 55 85 50 85 50 M59 45 C45 35 35 30 35 30 M59 45 C75 35 85 30 85 30 M60 25 C50 20 45 15 45 15 M60 25 C70 20 75 15 75 15" fill="none" stroke="#3f6212" strokeWidth="3" strokeLinecap="round" />
+        <ellipse cx="60" cy="105" rx="30" ry="6" fill="rgba(0,0,0,0.2)" />
+        <path d="M60 105 C60 90 55 80 55 80" fill="none" stroke="#78350f" strokeWidth="7" strokeLinecap="round" />
+        <path d="M55 80 C20 70 5 30 60 10 C115 30 100 70 55 80 Z" fill="url(#jatiGrad)" stroke="#365314" strokeWidth="1" />
+        <path d="M55 80 C60 50 60 20 60 10 M58 65 C45 55 30 50 30 50 M58 65 C70 55 85 50 85 50 M59 45 C45 35 35 30 35 30 M59 45 C75 35 85 30 85 30 M60 25 C50 20 45 15 45 15 M60 25 C70 20 75 15 75 15" fill="none" stroke="#3f6212" strokeWidth="3" strokeLinecap="round" opacity="0.6" />
       </svg>
     );
   }
   if (type === 'Pinus') {
     return (
-      <svg viewBox="0 0 120 120" className="w-28 h-28 transform transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3 drop-shadow-xl z-10">
+      <svg viewBox="0 0 120 120" className="w-28 h-28 transform transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3 drop-shadow-2xl z-10">
         <defs>
           <linearGradient id="pinusGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#34d399" />
+            <stop offset="0%" stopColor="#6ee7b7" />
             <stop offset="100%" stopColor="#059669" />
           </linearGradient>
           <linearGradient id="pinusGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -103,8 +181,8 @@ const SeedlingIcon = ({ type }: { type: string }) => {
             <stop offset="100%" stopColor="#064e3b" />
           </linearGradient>
         </defs>
-        <ellipse cx="60" cy="105" rx="35" ry="8" fill="rgba(0,0,0,0.15)" />
-        <path d="M55 105 L65 105 L62 70 L58 70 Z" fill="#78350f" />
+        <ellipse cx="60" cy="105" rx="35" ry="8" fill="rgba(0,0,0,0.2)" />
+        <path d="M55 105 L65 105 L62 70 L58 70 Z" fill="#451a03" />
         <path d="M25 80 Q60 70 95 80 L60 30 Z" fill="url(#pinusGrad3)" />
         <path d="M30 60 Q60 50 90 60 L60 15 Z" fill="url(#pinusGrad2)" />
         <path d="M35 40 Q60 30 85 40 L60 5 Z" fill="url(#pinusGrad1)" />
@@ -1118,11 +1196,29 @@ const EnvMascotCard = memo(({
 
 EnvMascotCard.displayName = 'EnvMascotCard';
 
-const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health, moisture }: { size: number, color: string, stage: number, actionProgress: number, icon?: React.ElementType, health: number, moisture: number }) => {
+const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health, moisture, yPos }: { size: number, color: string, stage: number, actionProgress: number, icon?: React.ElementType, health: number, moisture: number, yPos: number }) => {
   const health01 = Math.max(0, Math.min(1, health / 100));
   const moisture01 = Math.max(0, Math.min(1, moisture / 100));
   return (
-    <div className="relative flex flex-col items-center justify-end" style={{ width: size, height: size }}>
+    <motion.div 
+      className="relative flex flex-col items-center justify-end" 
+      style={{ width: size, height: size, zIndex: Math.floor(yPos) }}
+      animate={{ 
+        rotate: stage >= 4 ? [-0.8, 0.8, -0.8] : [0, 0, 0],
+        skewX: stage >= 4 ? [-0.4, 0.4, -0.4] : [0, 0, 0]
+      }}
+      transition={{ 
+        duration: 4 + Math.random() * 2, 
+        repeat: Infinity, 
+        ease: "easeInOut" 
+      }}
+    >
+      {/* Shadow for Depth */}
+      <div 
+        className="absolute bottom-[-5px] w-[80%] h-[15%] bg-black/20 rounded-[100%] blur-md" 
+        style={{ transform: 'scale(' + (0.5 + stage * 0.1) + ')' }}
+      />
+
       {/* Hole / Soil Base - Enhanced with texture */}
       <motion.div 
         initial={false} 
@@ -1240,10 +1336,8 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
               scale: stage === 4 ? 0.9 : stage === 5 ? 1.15 : 1.3, 
               y: 0, 
               opacity: 1,
-              rotate: [-0.5, 0.5, -0.5]
             }}
             transition={{ 
-              rotate: { repeat: Infinity, duration: 5, ease: "easeInOut" },
               scale: { type: 'spring', damping: 15 }
             }}
             className="relative z-10 mb-2"
@@ -1265,14 +1359,14 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
               {stage >= 5 && (
                 <>
                   <motion.div 
-                    animate={{ y: [0, -3, 0], x: [0, 2, 0] }}
+                    animate={{ y: [0, -3, 0], x: [0, 2, 0], rotate: [-2, 2, -2] }}
                     transition={{ repeat: Infinity, duration: 4 }}
                     className="absolute -top-6 -right-4"
                   >
                     <Trees size={56} style={{ color: color + 'EE' }} />
                   </motion.div>
                   <motion.div 
-                    animate={{ y: [0, 3, 0], x: [0, -2, 0] }}
+                    animate={{ y: [0, 3, 0], x: [0, -2, 0], rotate: [2, -2, 2] }}
                     transition={{ repeat: Infinity, duration: 5, delay: 0.5 }}
                     className="absolute -top-2 -left-8"
                   >
@@ -1359,9 +1453,37 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 };
+
+const AmbientDust = () => (
+  <div className="absolute inset-0 pointer-events-none z-[65] overflow-hidden">
+    {[...Array(20)].map((_, i) => (
+      <motion.div
+        key={i}
+        className="absolute w-1 h-1 bg-white/20 rounded-full blur-[1px]"
+        initial={{ 
+          x: Math.random() * 3000, 
+          y: Math.random() * 3000,
+          opacity: 0 
+        }}
+        animate={{ 
+          y: [null, Math.random() * 3000, Math.random() * 3000],
+          x: [null, Math.random() * 3000, Math.random() * 3000],
+          opacity: [0, 0.5, 0],
+          scale: [0, 1.5, 0]
+        }}
+        transition={{ 
+          duration: 10 + Math.random() * 20, 
+          repeat: Infinity, 
+          ease: "linear",
+          delay: Math.random() * 10
+        }}
+      />
+    ))}
+  </div>
+);
 
 const CharacterActionFX = ({ actionId, accent, toolIcon: ToolIcon }: { actionId: string | null, accent: string, toolIcon?: React.ElementType }) => {
   if (!actionId) return null;
@@ -1626,7 +1748,7 @@ const HeldTool = ({ actionId, accent, icon: Icon, actionProgress }: { actionId: 
   );
 };
 
-const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, actionProgress }: { isWalking: boolean, actionId: string | null, toolIcon?: React.ElementType, accent: string, actionProgress?: number }) => {
+const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, actionProgress, direction }: { isWalking: boolean, actionId: string | null, toolIcon?: React.ElementType, accent: string, actionProgress?: number, direction: 'left' | 'right' }) => {
   const isActing = Boolean(actionId);
   const isDigging = actionId === 'hole';
   const isPlanting = actionId === 'plant';
@@ -1657,10 +1779,13 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
         y: isDigging ? [0, 1.2, 0] : isPlanting ? [crouch, crouch + 0.6, crouch] : isActing ? [0, 0.8, 0] : isWalking ? [0, -1.6, 0] : [0, 0.8, 0],
       }}
       transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 3.8, ease: 'easeInOut' }}
-      className="relative flex flex-col items-center origin-bottom"
+      className={`relative flex flex-col items-center origin-bottom transition-transform duration-300 ${direction === 'left' ? '-scale-x-100' : 'scale-x-100'}`}
     >
       <motion.div 
-        animate={{ y: isDigging ? [0, -1.6, 0] : isPlanting ? [-0.6, -1.2, -0.6] : isActing ? [0, -1.2, 0] : isWalking ? [0, -2.6, 0] : [0, -1, 0] }}
+        animate={{ 
+          y: isDigging ? [0, -1.6, 0] : isPlanting ? [-0.6, -1.2, -0.6] : isActing ? [0, -1.2, 0] : isWalking ? [0, -2.6, 0] : [0, -1, 0],
+          rotate: isWalking ? [-2, 2, -2] : 0
+        }}
         transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 1.8, ease: 'easeInOut' }}
         className="relative z-20"
       >
@@ -3034,6 +3159,8 @@ const TreeGame: React.FC = () => {
   const regionSelectTimerRef = useRef<number | null>(null);
   const [plantingStep, setPlantingStep] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [actionId, setActionId] = useState<string | null>(null);
+  const [charDirection, setCharDirection] = useState<'left' | 'right'>('right');
   const [actionProgress, setActionProgress] = useState(0);
   const [actionPlotId, setActionPlotId] = useState<string | null>(null);
   const [levelIntroOpen, setLevelIntroOpen] = useState(false);
@@ -3076,31 +3203,53 @@ const TreeGame: React.FC = () => {
     "Selamat! Kamu telah menyelesaikan tutorial. Sekarang pulihkan seluruh wilayah!"
   ];
 
-  // Character Movement State
-  const [charPos, setCharPos] = useState({ x: 320, y: 230 });
-  const charPosRef = useRef(charPos);
-  
-  // Sync ref with state for logic access
-  useEffect(() => {
-    charPosRef.current = charPos;
-  }, [charPos]);
-
-  const [charDirection, setCharDirection] = useState<'left' | 'right'>('right');
-  const [isWalking, setIsWalking] = useState(false);
-  const keysPressed = useRef<Set<string>>(new Set());
-  const gameLoopRef = useRef<number | null>(null);
+  // --- 1. CORE PHYSICS & STATE ---
+  const [charPos, setCharPos] = useState({ x: 500, y: 500 });
+  const charPosRef = useRef({ x: 500, y: 500 });
+  const velocityRef = useRef({ x: 0, y: 0 });
   const [cameraPos, setCameraPos] = useState({ x: 0, y: 0 });
-  const gameAreaRef = useRef<HTMLDivElement>(null);
+  const cameraRef = useRef({ x: 0, y: 0 });
+  const gameLoopRef = useRef<number | null>(null);
+  const [isWalking, setIsWalking] = useState(false);
+  const [activeParticles, setActiveParticles] = useState<any[]>([]);
   const [gameAreaSize, setGameAreaSize] = useState({ width: 1280, height: 720 });
-  const spotX = useMotionValue(0);
-  const spotY = useMotionValue(0);
-  const spotXS = useSpring(spotX, { stiffness: 220, damping: 30, mass: 0.6 });
-  const spotYS = useSpring(spotY, { stiffness: 220, damping: 30, mass: 0.6 });
+  const gameAreaRef = useRef<HTMLDivElement>(null);
 
-  // Input Handling
+  // --- 2. PARTICLE SYSTEM ---
+  const spawnActionParticles = (x: number, y: number, color: string, count: number = 8) => {
+    const newParticles = Array.from({ length: count }).map(() => ({
+      id: Math.random(),
+      x,
+      y,
+      vx: (Math.random() - 0.5) * 10,
+      vy: (Math.random() - 0.5) * 10 - 5,
+      life: 1.0,
+      color,
+      size: 4 + Math.random() * 6
+    }));
+    setActiveParticles(prev => [...prev, ...newParticles]);
+  };
+
   useEffect(() => {
-    if (phase !== 'planting') return;
+    const timer = setInterval(() => {
+      setActiveParticles(prev => prev
+        .map(p => ({
+          ...p,
+          x: p.x + p.vx,
+          y: p.y + p.vy,
+          vy: p.vy + 0.5, // Gravity
+          life: p.life - 0.02
+        }))
+        .filter(p => p.life > 0)
+      );
+    }, 16);
+    return () => clearInterval(timer);
+  }, []);
 
+  const keysPressed = useRef<Set<string>>(new Set());
+
+  // --- Input Handling ---
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       keysPressed.current.add(e.code);
       if (e.code === 'KeyE') {
@@ -3117,37 +3266,15 @@ const TreeGame: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [phase, tutorialActive, tutorialStep]); // Removed charPos dependency
+  }, [phase, tutorialActive, tutorialStep, activeTrees, energy, water, selectedSeedling]);
 
-  // Opening focus effect
-  useEffect(() => {
-    if (phase === 'planting' && tutorialActive && tutorialStep === 0) {
-      // Set initial camera to center on tutorial spot
-      setCameraPos({
-        x: -tutorialSpot.x + window.innerWidth / 2,
-        y: -tutorialSpot.y + window.innerHeight / 2
-      });
-      setCharPos({ x: tutorialSpot.x - 150, y: tutorialSpot.y }); // Start near but not on spot
-      
-      const timer = setTimeout(() => {
-        setTutorialStep(1);
-        playReward();
-        // Shift camera to char pos after initial focus
-        setCameraPos({
-          x: -(tutorialSpot.x - 150) + window.innerWidth / 2,
-          y: -tutorialSpot.y + window.innerHeight / 2
-        });
-      }, 2500);
-      return () => clearTimeout(timer);
-    }
-  }, [phase]);
-
-  // Game Loop (Movement & Camera)
+  // --- 3. PHYSICS LOOP (LERP & VELOCITY) ---
   useEffect(() => {
     if (phase !== 'planting') return;
-    if (tutorialActive && tutorialStep === 0) return; // Wait for opening scene
+    if (tutorialActive && tutorialStep === 0) return;
 
-    const moveSpeed = 4.5;
+    const moveSpeed = 0.8;
+    const friction = 0.85;
     const worldWidth = 3000;
     const worldHeight = 3000;
 
@@ -3162,39 +3289,35 @@ const TreeGame: React.FC = () => {
 
       if (dx !== 0 || dy !== 0) {
         const length = Math.sqrt(dx * dx + dy * dy);
-        const nx = dx / length;
-        const ny = dy / length;
-
-        const nextX = Math.max(50, Math.min(2950, charPosRef.current.x + nx * moveSpeed));
-        const nextY = Math.max(50, Math.min(2950, charPosRef.current.y + ny * moveSpeed));
-        
-        setCharPos({ x: nextX, y: nextY });
-        if (nx < 0) setCharDirection('left');
-        if (nx > 0) setCharDirection('right');
+        velocityRef.current.x += (dx / length) * moveSpeed;
+        velocityRef.current.y += (dy / length) * moveSpeed;
         setIsWalking(true);
+        
+        if (dx < 0) setCharDirection('left');
+        else if (dx > 0) setCharDirection('right');
 
-        // Tutorial progression
         if (tutorialActive && tutorialStep === 1) {
-          const distToSpot = Math.sqrt(Math.pow(nextX - tutorialSpot.x, 2) + Math.pow(nextY - tutorialSpot.y, 2));
+          const distToSpot = Math.sqrt(Math.pow(charPosRef.current.x - tutorialSpot.x, 2) + Math.pow(charPosRef.current.y - tutorialSpot.y, 2));
           if (distToSpot < 80) {
-            setTimeout(() => {
-              setTutorialStep(2);
-              playReward();
-            }, 10);
+            setTutorialStep(2);
+            playReward();
           }
-        }
-
-        if (Math.random() < 0.1) {
-          spawnParticle(nextX, nextY + 40, 'footstep');
-          if (audioOn && Math.random() < 0.3) playFootstep();
         }
       } else {
         setIsWalking(false);
       }
 
-      // Camera follow logic
-      const targetX = -charPosRef.current.x + window.innerWidth / 2;
-      const targetY = -charPosRef.current.y + window.innerHeight / 2;
+      velocityRef.current.x *= friction;
+      velocityRef.current.y *= friction;
+
+      const nextX = Math.max(50, Math.min(worldWidth - 50, charPosRef.current.x + velocityRef.current.x));
+      const nextY = Math.max(50, Math.min(worldHeight - 50, charPosRef.current.y + velocityRef.current.y));
+
+      charPosRef.current = { x: nextX, y: nextY };
+      setCharPos({ x: nextX, y: nextY });
+
+      const targetX = -nextX + window.innerWidth / 2;
+      const targetY = -nextY + window.innerHeight / 2;
       
       setCameraPos(prev => ({
         x: prev.x + (targetX - prev.x) * 0.1,
@@ -3208,65 +3331,160 @@ const TreeGame: React.FC = () => {
     return () => {
       if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
     };
-  }, [phase, tutorialActive, tutorialStep, audioOn]); // Removed charPos dependency
+  }, [phase, tutorialActive, tutorialStep]);
 
+  // --- 4. ENHANCED INTERACTION ---
   const handleInteraction = () => {
     if (phase !== 'planting') return;
     const currentPos = charPosRef.current;
-    
-    // Tutorial Logic
+
     if (tutorialActive) {
       if (tutorialStep === 2) {
-        // Step 2: Planting
         const dist = Math.sqrt(Math.pow(currentPos.x - tutorialSpot.x, 2) + Math.pow(currentPos.y - tutorialSpot.y, 2));
-        if (dist < 80) {
-          handleFreePlant(tutorialSpot.x, tutorialSpot.y);
-          setTutorialStep(3);
-          playReward();
-        } else {
-          spawnFloatText(currentPos.x, currentPos.y, 'Terlalu jauh dari titik!', 'warn');
+        if (dist < 120) {
+          spawnActionParticles(tutorialSpot.x, tutorialSpot.y, '#5d4037', 15);
+          setActionId('hole');
+          setActionProgress(0);
+          const interval = setInterval(() => {
+            setActionProgress(prev => {
+              if (prev >= 100) {
+                clearInterval(interval);
+                setActionId(null);
+                setTutorialStep(3);
+                // Add the hole to activeTrees
+                setActiveTrees([{
+                  id: Date.now(),
+                  x: tutorialSpot.x,
+                  y: tutorialSpot.y,
+                  type: selectedSeedling?.name || 'Mahoni',
+                  stage: 0,
+                  health: 100,
+                  moisture: 100,
+                  growth: 0,
+                  lastTicked: Date.now()
+                }]);
+                return 0;
+              }
+              if (prev % 20 === 0) spawnActionParticles(tutorialSpot.x, tutorialSpot.y, '#5d4037', 5);
+              return prev + 5;
+            });
+          }, 50);
         }
         return;
       }
       if (tutorialStep === 3) {
-        // Step 3: Watering
-        const nearTree = activeTrees.find(tree => {
-          const dist = Math.sqrt(Math.pow(currentPos.x - tree.x, 2) + Math.pow(currentPos.y - tree.y, 2));
-          return dist < 80;
-        });
-        if (nearTree) {
-          handleWaterTree(nearTree.id);
-          setTutorialStep(4);
-          playReward();
-          // Finish tutorial after delay
-          setTimeout(() => {
-            setTutorialActive(false);
-            setUnlockedRadius(2500); // Open full map
-            setToast({ id: Date.now(), title: 'TUTORIAL SELESAI', subtitle: 'Misi baru: Tanam 3 pohon lagi!', tone: 'good' });
-          }, 3000);
+        const dist = Math.sqrt(Math.pow(currentPos.x - tutorialSpot.x, 2) + Math.pow(currentPos.y - tutorialSpot.y, 2));
+        if (dist < 120) {
+          setActionId('plant');
+          setActionProgress(0);
+          const interval = setInterval(() => {
+            setActionProgress(prev => {
+              if (prev >= 100) {
+                clearInterval(interval);
+                setActionId(null);
+                setTutorialStep(4);
+                // Update hole to seedling
+                setActiveTrees(prevTrees => prevTrees.map(t => 
+                  (t.x === tutorialSpot.x && t.y === tutorialSpot.y) 
+                  ? { ...t, stage: 2 } 
+                  : t
+                ));
+                return 0;
+              }
+              return prev + 5;
+            });
+          }, 50);
         }
         return;
       }
-      return; // Block other interactions during specific tutorial steps
-    }
-
-    // 1. Check if near any existing tree to water
-    const nearTree = activeTrees.find(tree => {
-      const dist = Math.sqrt(Math.pow(currentPos.x - tree.x, 2) + Math.pow(currentPos.y - tree.y, 2));
-      return dist < 80;
-    });
-
-    if (nearTree) {
-      handleWaterTree(nearTree.id);
+      if (tutorialStep === 4) {
+        const nearTree = activeTrees.find(tree => {
+          const dist = Math.sqrt(Math.pow(currentPos.x - tree.x, 2) + Math.pow(currentPos.y - tree.y, 2));
+          return dist < 120;
+        });
+        if (nearTree) {
+          spawnActionParticles(nearTree.x, nearTree.y, '#3b82f6', 15);
+          setTutorialActive(false);
+          setUnlockedRadius(2500);
+          setToast({ id: Date.now(), title: 'TUTORIAL SELESAI', subtitle: 'Misi baru: Tanam 3 pohon lagi!', tone: 'good' });
+          // Update to sprout
+          setActiveTrees(prevTrees => prevTrees.map(t => 
+            t.id === nearTree.id ? { ...t, stage: 3, moisture: 100 } : t
+          ));
+        }
+        return;
+      }
       return;
     }
 
-    // 2. Otherwise, plant a new tree
-    if (energy >= 20) {
-      handleFreePlant(currentPos.x, currentPos.y + 20);
-    } else {
-      spawnFloatText(currentPos.x, currentPos.y, 'Energi Habis!', 'warn');
+    const nearestPlot = plots.find(p => {
+      const dist = Math.sqrt(Math.pow(currentPos.x - p.cx, 2) + Math.pow(currentPos.y - p.cy, 2));
+      return dist < 120;
+    });
+
+    if (nearestPlot) {
+      const existingTree = activeTrees.find(t => t.x === nearestPlot.cx && t.y === nearestPlot.cy);
+      if (!existingTree) {
+        if (energy >= 20) {
+          setActionId('hole');
+          setActionProgress(0);
+          const interval = setInterval(() => {
+            setActionProgress(prev => {
+              if (prev >= 100) {
+                clearInterval(interval);
+                setActionId(null);
+                handleFreePlant(nearestPlot.cx, nearestPlot.cy);
+                return 0;
+              }
+              if (prev % 20 === 0) spawnActionParticles(nearestPlot.cx, nearestPlot.cy, '#5d4037', 5);
+              return prev + 5;
+            });
+          }, 50);
+        } else {
+          spawnFloatText(currentPos.x, currentPos.y, 'Energi Habis!', 'warn');
+        }
+      } else {
+        spawnActionParticles(nearestPlot.cx, nearestPlot.cy, '#3b82f6', 10);
+        handleWaterTree(existingTree.id);
+      }
     }
+  };
+
+  const handleFreePlant = (x: number, y: number) => {
+    if (energy < 20) {
+      spawnFloatText(x, y, 'Energi Habis!', 'warn');
+      return;
+    }
+    setEnergy(prev => Math.max(0, prev - 20));
+    setActiveTrees(prev => [...prev, {
+      id: Date.now(),
+      x,
+      y,
+      type: selectedSeedling?.name || 'Mahoni',
+      stage: 1,
+      health: 100,
+      moisture: 100,
+      growth: 0,
+      lastTicked: Date.now()
+    }]);
+    spawnActionParticles(x, y, '#10b981', 15);
+    spawnFloatText(x, y - 40, '-20 Energi', 'warn');
+    playReward();
+  };
+
+  const handleWaterTree = (id: number) => {
+    if (water < 10) {
+      const tree = activeTrees.find(t => t.id === id);
+      if (tree) spawnFloatText(tree.x, tree.y, 'Air Habis!', 'warn');
+      setToast({ id: Date.now(), title: 'Air Habis!', tone: 'warn' });
+      return;
+    }
+    setWater(prev => Math.max(0, prev - 10));
+    setActiveTrees(prev => prev.map(t => 
+      t.id === id ? { ...t, moisture: Math.min(100, t.moisture + 30) } : t
+    ));
+    spawnFloatText(charPosRef.current.x, charPosRef.current.y - 40, '-10 Air', 'warn');
+    playReward();
   };
 
   // --- Real-time Game Loop ---
@@ -3672,57 +3890,6 @@ const TreeGame: React.FC = () => {
     setIsWalking(true);
     // Auto stop walking animation after delay
     setTimeout(() => setIsWalking(false), 200);
-  };
-
-  const handleFreePlant = (x: number, y: number) => {
-    if (energy < 20) {
-      spawnFloatText(x, y, 'Energi Habis!', 'warn');
-      return;
-    }
-    
-    setEnergy(prev => Math.max(0, prev - 20));
-    
-    // Spawn dirt particles
-    for (let i = 0; i < 8; i++) {
-      window.setTimeout(() => spawnParticle(x, y, 'dirt'), i * 50);
-    }
-    spawnRipple(x, y, 'soil');
-
-    const newTree: ActiveTree = {
-      id: Date.now(),
-      x,
-      y,
-      type: selectedSeedling?.name || 'Mahoni',
-      stage: 0,
-      health: 100,
-      moisture: 100,
-      growth: 0,
-      lastTicked: Date.now(),
-    };
-    
-    setActiveTrees(prev => [...prev, newTree]);
-    spawnFloatText(x, y - 40, '-20 Energy', 'warn');
-    playDig();
-  };
-
-  const handleWaterTree = (treeId: number) => {
-    if (water < 10) {
-      const tree = activeTrees.find(t => t.id === treeId);
-      if (tree) spawnFloatText(tree.x, tree.y, 'Air Habis!', 'warn');
-      setToast({ id: Date.now(), title: 'Air Habis!', tone: 'warn' });
-      return;
-    }
-    
-    setWater(prev => Math.max(0, prev - 10));
-    setActiveTrees(prev => prev.map(t => {
-      if (t.id === treeId) {
-        spawnRipple(t.x, t.y, 'water');
-        spawnFloatText(t.x, t.y - 40, '+40 Moisture', 'good');
-        return { ...t, moisture: Math.min(100, t.moisture + 40) };
-      }
-      return t;
-    }));
-    playTone(440, 100, 'sine', 0.1);
   };
 
   const beginRegionSelect = (region: Region) => {
@@ -4479,6 +4646,12 @@ const TreeGame: React.FC = () => {
                   {/* Grid Lines (Blueprint feel) */}
                   <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '100px 100px' }} />
 
+                  {/* Ambient Life & Dust */}
+                  <AmbientDust />
+                  {[...Array(5)].map((_, i) => (
+                    <Bird key={`bird-${i}`} />
+                  ))}
+
                   {/* Decorative Elements for World */}
                   <DecorativePlot x={tutorialSpot.x} y={tutorialSpot.y} />
                   {plots.map(p => (
@@ -4486,17 +4659,18 @@ const TreeGame: React.FC = () => {
                   ))}
 
                   {/* Random Decorative Elements */}
-                  {[...Array(15)].map((_, i) => (
+                  {[...Array(25)].map((_, i) => (
                     <div 
                       key={`random-decor-${i}`}
-                      className="absolute opacity-40 pointer-events-none"
+                      className="absolute pointer-events-none"
                       style={{ 
-                        left: 200 + (i * 180) % 2600, 
-                        top: 200 + (i * 240) % 2600,
-                        transform: 'scale(0.8)'
+                        left: 100 + (i * 157) % 2800, 
+                        top: 100 + (i * 213) % 2800,
+                        transform: `scale(${0.6 + Math.random() * 0.4})`
                       }}
                     >
-                      <div className="w-4 h-4 bg-emerald-800/30 rounded-full blur-md" />
+                      <div className="w-6 h-4 bg-emerald-900/10 rounded-full blur-md" />
+                      <div className="absolute top-0 left-1 w-1 h-3 bg-emerald-600/20 rounded-full rotate-[-10deg]" />
                     </div>
                   ))}
 
@@ -4583,6 +4757,7 @@ const TreeGame: React.FC = () => {
                                 health={tree.health}
                                 moisture={tree.moisture}
                                 icon={s.icon}
+                                yPos={tree.y}
                               />
                             );
                           })()}
@@ -4614,75 +4789,33 @@ const TreeGame: React.FC = () => {
 
                   {/* Player Character (Interactive Monkey) */}
                   <motion.div
-                    className="absolute z-50 origin-bottom"
+                    className="absolute origin-bottom"
                     animate={{ 
                       x: charPos.x, 
                       y: charPos.y,
                       scale: isWalking ? [1, 1.05, 1] : 1,
                     }}
-                    style={{ transform: 'translate(-50%, -100%)' }}
+                    style={{ transform: 'translate(-50%, -100%)', zIndex: Math.floor(charPos.y) }}
                     transition={{ type: 'spring', stiffness: 200, damping: 20 }}
                   >
                     <div className="relative flex flex-col items-center">
-                      {/* Shadow */}
-                      <div className="w-12 h-4 bg-black/20 rounded-full blur-sm absolute bottom-0" />
-                      
-                      {/* Monkey Visual */}
-                      <div className={`transition-transform duration-200 ${charDirection === 'left' ? '-scale-x-100' : 'scale-x-100'}`}>
-                        <div className="relative w-16 h-20">
-                          {/* Body */}
-                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-10 h-12 bg-amber-800 rounded-2xl shadow-inner border-2 border-amber-900" />
-                          {/* Head */}
-                          <motion.div 
-                            className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-amber-800 rounded-full border-2 border-amber-900 shadow-md"
-                            animate={{ y: isWalking ? [0, -4, 0] : [0, -2, 0] }}
-                            transition={{ repeat: Infinity, duration: 0.6 }}
-                          >
-                            {/* Ears */}
-                            <div className="absolute -left-2 top-2 w-4 h-4 bg-amber-900 rounded-full" />
-                            <div className="absolute -right-2 top-2 w-4 h-4 bg-amber-900 rounded-full" />
-                            {/* Face */}
-                            <div className="absolute inset-2 bg-orange-200/90 rounded-full overflow-hidden flex items-center justify-center">
-                              <div className="flex gap-2">
-                                <div className="w-1.5 h-1.5 bg-slate-900 rounded-full" />
-                                <div className="w-1.5 h-1.5 bg-slate-900 rounded-full" />
-                              </div>
-                            </div>
-                          </motion.div>
-                          {/* Arms */}
-                          <motion.div 
-                            className="absolute top-10 -left-2 w-3 h-8 bg-amber-800 rounded-full border border-amber-900 origin-top"
-                            animate={{ rotate: isWalking ? [30, -30, 30] : 0 }}
-                          />
-                          <motion.div 
-                            className="absolute top-10 -right-2 w-3 h-8 bg-amber-800 rounded-full border border-amber-900 origin-top"
-                            animate={{ rotate: isWalking ? [-30, 30, -30] : 0 }}
-                          />
-                          {/* Legs */}
-                          <motion.div 
-                            className="absolute bottom-0 left-1 w-4 h-6 bg-amber-800 rounded-full border border-amber-900 origin-top"
-                            animate={{ rotate: isWalking ? [-20, 20, -20] : 0 }}
-                          />
-                          <motion.div 
-                            className="absolute bottom-0 right-1 w-4 h-6 bg-amber-800 rounded-full border border-amber-900 origin-top"
-                            animate={{ rotate: isWalking ? [20, -20, 20] : 0 }}
-                          />
-                          {/* Tail */}
-                          <motion.div 
-                            className="absolute -left-6 bottom-6 w-8 h-2 bg-amber-900 rounded-full origin-right"
-                            animate={{ rotate: [10, -10, 10] }}
-                            transition={{ repeat: Infinity, duration: 2 }}
-                          />
-                        </div>
-                      </div>
+                      {/* Character Sprite with integrated animations */}
+                      <CharacterSprite 
+                        isWalking={isWalking} 
+                        actionId={actionId} 
+                        toolIcon={actionId === 'hole' ? Shovel : actionId === 'plant' ? Trees : undefined}
+                        accent="#7d4a27"
+                        actionProgress={actionProgress}
+                        direction={charDirection}
+                      />
 
                       {/* Interaction Hint */}
                       <AnimatePresence>
-                        {!isWalking && (
+                        {!isWalking && !actionId && (
                           <motion.div 
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="absolute -top-12 bg-white text-slate-950 px-3 py-1 rounded-full text-[10px] font-black uppercase shadow-xl border-2 border-emerald-500"
+                            className="absolute -top-24 bg-white text-slate-950 px-4 py-1.5 rounded-full text-[11px] font-black uppercase shadow-2xl border-2 border-emerald-500 whitespace-nowrap z-[100]"
                           >
                             Tekan [E] Aksi
                           </motion.div>
@@ -4693,19 +4826,19 @@ const TreeGame: React.FC = () => {
 
                   {/* Effects Layer */}
                   <AnimatePresence>
-                    {particles.map(p => (
+                    {activeParticles.map(p => (
                       <motion.div
                         key={p.id}
-                        className={`absolute rounded-full pointer-events-none z-30 ${p.kind === 'dirt' ? 'w-3 h-3 bg-amber-900/80' : 'w-2 h-2 bg-white/20'}`}
-                        initial={{ x: p.x, y: p.y, scale: 1 }}
+                        className="absolute rounded-full pointer-events-none z-[100]"
+                        style={{ backgroundColor: p.color, width: p.size, height: p.size }}
+                        initial={{ x: p.x, y: p.y, opacity: 1, scale: 1 }}
                         animate={{ 
-                          y: p.y - 60 - Math.random() * 40, 
-                          x: p.x + (Math.random() - 0.5) * 80, 
-                          scale: 0, 
+                          x: p.x + p.vx * 15,
+                          y: p.y + p.vy * 15,
                           opacity: 0,
-                          rotate: 360
+                          scale: 0 
                         }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
                       />
                     ))}
                     {ripples.map(r => (
