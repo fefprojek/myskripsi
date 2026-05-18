@@ -5,15 +5,15 @@ const Hero: React.FC = () => {
   return (
     <div className="relative bg-gray-900 h-[500px] overflow-hidden">
       <div className="absolute inset-0">
-        <img
-          className="w-full h-full object-cover"
-          src="https://dishut.jabarprov.go.id/img/hero-bg.jpg"
-          alt="Forest in West Java"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1951&q=80';
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-950 via-slate-950 to-black" />
+        <div
+          className="absolute inset-0 opacity-60"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 18% 22%, rgba(16,185,129,0.22) 0 220px, transparent 520px), radial-gradient(circle at 82% 30%, rgba(245,158,11,0.18) 0 260px, transparent 620px), radial-gradient(circle at 50% 80%, rgba(255,255,255,0.06) 0 240px, transparent 700px), repeating-linear-gradient(35deg, rgba(255,255,255,0.06) 0 2px, rgba(0,0,0,0) 2px 18px)',
           }}
         />
-        <div className="absolute inset-0 bg-black opacity-40"></div>
+        <div className="absolute inset-0 bg-black opacity-35"></div>
       </div>
       <div className="relative max-w-7xl mx-auto py-24 px-4 sm:py-32 sm:px-6 lg:px-8 h-full flex items-center">
         <div className="max-w-2xl">

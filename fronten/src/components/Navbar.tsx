@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Menu, Globe } from 'lucide-react';
+import { Search, Menu, Globe, Leaf } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   return (
@@ -8,11 +8,9 @@ const Navbar: React.FC = () => {
         <div className="flex justify-between h-20">
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center space-x-3">
-              <img 
-                className="h-12 w-auto" 
-                src="https://dishut.jabarprov.go.id/img/logo-jabar.png" 
-                alt="Logo Jabar" 
-              />
+              <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <Leaf className="h-7 w-7" />
+              </div>
               <div className="border-l border-gray-300 h-10 mx-2"></div>
               <div className="flex flex-col">
                 <span className="text-primary font-bold text-sm leading-tight uppercase">Dinas Kehutanan</span>

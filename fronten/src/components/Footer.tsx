@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Phone, Mail, Instagram, Facebook, Youtube, X } from 'lucide-react';
+import { MapPin, Phone, Mail, Instagram, Facebook, Youtube, X, Leaf } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
@@ -7,7 +7,9 @@ const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
         <div className="space-y-6">
           <div className="flex items-center space-x-3 bg-white p-3 rounded-xl inline-flex">
-            <img className="h-10 w-auto" src="https://dishut.jabarprov.go.id/img/logo-jabar.png" alt="Logo Jabar" />
+            <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <Leaf className="h-6 w-6" />
+            </div>
             <div className="border-l border-gray-300 h-8 mx-2"></div>
             <div className="flex flex-col">
               <span className="text-primary font-bold text-xs uppercase">Dinas Kehutanan</span>
