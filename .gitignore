@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Trae debugger artifacts
+.dbg/
+debug-*.md

@@ -5,89 +5,508 @@ import { useNavigate } from 'react-router-dom';
 
 // --- Realistic Visual Components ---
 
-const DecorativePlot = ({ x, y }: { x: number, y: number }) => (
-  <div className="absolute pointer-events-none" style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }}>
-    {/* Main Soil Area - More textured */}
-    <div className="w-56 h-36 bg-[#3e2723]/30 rounded-[100%] blur-md" />
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="w-44 h-28 bg-[#2b1a16]/50 rounded-[100%] blur-[3px] shadow-2xl" />
-      <div className="absolute w-36 h-20 bg-[#1a0f0d]/40 rounded-[100%] blur-[1px]" />
-    </div>
-    
-    {/* Decorative Stones with varied sizes */}
-    {[...Array(8)].map((_, i) => (
-      <motion.div
-        key={`stone-${i}`}
-        className="absolute rounded-full shadow-lg border border-black/5"
-        initial={{ scale: 0.8 }}
-        animate={{ scale: [0.8, 0.85, 0.8] }}
-        transition={{ duration: 3 + i, repeat: Infinity }}
-        style={{
-          width: 4 + (i % 4) * 2,
-          height: 3 + (i % 3) * 2,
-          left: 40 + Math.cos(i * (Math.PI / 4)) * 90,
-          top: 20 + Math.sin(i * (Math.PI / 4)) * 60,
-          rotate: i * 35,
-          backgroundColor: i % 3 === 0 ? '#94a3b8' : i % 3 === 1 ? '#64748b' : '#475569',
-          filter: 'contrast(1.1) brightness(0.9)'
-        }}
-      />
-    ))}
+const DecorativePlot = ({ x, y, highlight }: { x: number, y: number, highlight?: boolean }) => {
+  const seed = Math.floor(x * 13 + y * 17);
+  const rand = (n: number) => {
+    const v = Math.sin((seed + n) * 999.123) * 10000;
+    return v - Math.floor(v);
+  };
+  const tools = highlight ? 3 : 2;
 
-    {/* Enhanced Grass Blades with Sway */}
-    {[...Array(12)].map((_, i) => (
-      <motion.div
-        key={`grass-${i}`}
-        className="absolute flex flex-col items-center"
-        style={{
-          left: 60 + Math.cos(i * (Math.PI / 6)) * 75,
-          top: 30 + Math.sin(i * (Math.PI / 6)) * 45,
-        }}
-      >
-        <div className="flex gap-0.5">
-          {[...Array(3)].map((_, j) => (
+  return (
+    <div className="absolute pointer-events-none" style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }}>
+      <div className="w-56 h-36 bg-[#3e2723]/30 rounded-[100%] blur-md" />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-44 h-28 bg-[#2b1a16]/50 rounded-[100%] blur-[3px] shadow-2xl" />
+        <div className="absolute w-36 h-20 bg-[#1a0f0d]/40 rounded-[100%] blur-[1px]" />
+        <div className="absolute w-28 h-14 rounded-[100%] bg-black/25 blur-[10px]" />
+      </div>
+
+      {highlight && (
+        <motion.div
+          className="absolute inset-0 rounded-[100%]"
+          animate={{ opacity: [0.15, 0.32, 0.15], scale: [0.98, 1.05, 0.98] }}
+          transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+          style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.18) 0 90px, rgba(245,158,11,0.06) 140px, transparent 200px)' }}
+        />
+      )}
+
+      {[...Array(10)].map((_, i) => (
+        <motion.div
+          key={`stone-${i}`}
+          className="absolute rounded-full shadow-lg border border-black/5"
+          initial={{ scale: 0.8 }}
+          animate={{ scale: [0.8, 0.88, 0.8] }}
+          transition={{ duration: 2.8 + i * 0.2, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            width: 4 + Math.floor(rand(i + 1) * 7),
+            height: 3 + Math.floor(rand(i + 11) * 6),
+            left: 38 + Math.cos(i * (Math.PI / 5)) * (82 + rand(i + 21) * 18),
+            top: 18 + Math.sin(i * (Math.PI / 5)) * (56 + rand(i + 31) * 12),
+            rotate: i * 28,
+            backgroundColor: i % 3 === 0 ? '#94a3b8' : i % 3 === 1 ? '#64748b' : '#475569',
+            filter: highlight ? 'contrast(1.15) brightness(1.02)' : 'contrast(1.1) brightness(0.95)',
+          }}
+        />
+      ))}
+
+      {[...Array(14)].map((_, i) => (
+        <motion.div
+          key={`grass-${i}`}
+          className="absolute flex flex-col items-center"
+          style={{
+            left: 58 + Math.cos(i * (Math.PI / 7)) * (74 + rand(i + 41) * 10),
+            top: 26 + Math.sin(i * (Math.PI / 7)) * (46 + rand(i + 51) * 8),
+          }}
+        >
+          <div className="flex gap-0.5">
+            {[...Array(3)].map((_, j) => (
+              <motion.div
+                key={j}
+                animate={{ rotate: [-14 + j * 14, 14 + j * 14, -14 + j * 14], skewX: [-5, 5, -5] }}
+                transition={{
+                  duration: 1.6 + rand(i * 9 + j + 61) * 1.8,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: i * 0.06,
+                }}
+                className="w-1 rounded-full origin-bottom"
+                style={{
+                  height: 10 + rand(i * 7 + j + 71) * 10,
+                  backgroundColor: j % 2 === 0 ? '#10b981' : '#059669',
+                  boxShadow: highlight ? '0 2px 6px rgba(0,0,0,0.14)' : '0 2px 4px rgba(0,0,0,0.1)',
+                }}
+              />
+            ))}
+          </div>
+        </motion.div>
+      ))}
+
+      {[...Array(highlight ? 6 : 4)].map((_, i) => (
+        <motion.div
+          key={`flower-${i}`}
+          className="absolute w-2 h-2 rounded-full"
+          animate={{ scale: [1, 1.22, 1] }}
+          transition={{ duration: 3.6, repeat: Infinity, delay: i * 0.35, ease: 'easeInOut' }}
+          style={{
+            left: 52 + Math.cos(i * (Math.PI / 3)) * (42 + rand(i + 81) * 10),
+            top: 18 + Math.sin(i * (Math.PI / 3)) * (30 + rand(i + 91) * 8),
+            backgroundColor: i % 3 === 0 ? '#fbbf24' : i % 3 === 1 ? '#f87171' : '#34d399',
+            boxShadow: highlight ? '0 0 16px rgba(255,255,255,0.22)' : '0 0 10px rgba(255,255,255,0.18)',
+          }}
+        >
+          <div className="absolute inset-0.5 bg-white/40 rounded-full" />
+        </motion.div>
+      ))}
+
+      {[...Array(tools)].map((_, i) => {
+        const t = rand(i + 121);
+        const left = 26 + rand(i + 131) * 160;
+        const top = 12 + rand(i + 141) * 96;
+        const rot = -18 + rand(i + 151) * 36;
+
+        if (t < 0.34) {
+          return (
             <motion.div
-              key={j}
-              animate={{ 
-                rotate: [-15 + j * 15, 15 + j * 15, -15 + j * 15],
-                skewX: [-5, 5, -5]
-              }}
-              transition={{ 
-                duration: 2 + Math.random() * 2, 
-                repeat: Infinity, 
-                ease: "easeInOut",
-                delay: i * 0.1
-              }}
-              className="w-1 rounded-full origin-bottom"
-              style={{ 
-                height: 10 + Math.random() * 8,
-                backgroundColor: j % 2 === 0 ? '#10b981' : '#059669',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}
-            />
-          ))}
+              key={`tool-shovel-${i}`}
+              className="absolute"
+              style={{ left, top, rotate: rot }}
+              animate={{ y: [0, -2, 0] }}
+              transition={{ repeat: Infinity, duration: 1.8 + rand(i + 161) * 1.4, ease: 'easeInOut' }}
+            >
+              <div className="w-1 h-10 rounded-full bg-[#8b5a2b] shadow-[0_8px_16px_rgba(0,0,0,0.25)]" />
+              <div className="absolute -top-1 -left-2 w-5 h-2 rounded-full bg-[#a16207] shadow-[0_6px_12px_rgba(0,0,0,0.2)]" />
+              <div className="absolute bottom-0 -left-1 w-3 h-4 rounded-b-lg bg-slate-300 border border-slate-400/40 shadow-[0_8px_16px_rgba(0,0,0,0.25)]" />
+            </motion.div>
+          );
+        }
+
+        if (t < 0.68) {
+          return (
+            <motion.div
+              key={`tool-can-${i}`}
+              className="absolute"
+              style={{ left, top, rotate: rot }}
+              animate={{ y: [0, -1.5, 0], rotate: [rot, rot + 1.6, rot] }}
+              transition={{ repeat: Infinity, duration: 2.2 + rand(i + 171) * 1.2, ease: 'easeInOut' }}
+            >
+              <div className="relative w-8 h-6 rounded-xl bg-blue-500/40 border border-blue-300/30 shadow-[0_10px_18px_rgba(0,0,0,0.22)]">
+                <div className="absolute -right-3 top-2 w-4 h-2 rounded-full bg-blue-300/40 border border-blue-200/20" />
+                <div className="absolute -right-5 top-1 w-3 h-3 rounded-full bg-blue-200/25 border border-blue-200/20" />
+                <div className="absolute -left-2 top-1 w-3 h-4 rounded-full border-2 border-blue-200/25" />
+                <div className="absolute inset-0 rounded-xl bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.18),transparent_60%)]" />
+              </div>
+            </motion.div>
+          );
+        }
+
+        return (
+          <motion.div
+            key={`tool-bag-${i}`}
+            className="absolute"
+            style={{ left, top, rotate: rot }}
+            animate={{ y: [0, -1.8, 0] }}
+            transition={{ repeat: Infinity, duration: 2 + rand(i + 181) * 1.6, ease: 'easeInOut' }}
+          >
+            <div className="relative w-9 h-10 rounded-2xl bg-emerald-500/18 border border-emerald-300/20 shadow-[0_10px_18px_rgba(0,0,0,0.22)]">
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-7 h-3 rounded-xl bg-emerald-200/12 border border-emerald-200/20" />
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 w-7 h-6 rounded-xl bg-white/6 border border-white/10 flex items-center justify-center text-emerald-200/70">
+                <Leaf size={14} />
+              </div>
+            </div>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+};
+
+type WorldWeather = 'sunny' | 'rainy' | 'drought' | 'polluted';
+
+type AdrenalineEventType = 'HEATWAVE' | 'RAINSTORM' | 'PESTS' | 'POLLUTION_SPIKE';
+
+type ActiveAdrenalineEvent = {
+  id: number;
+  type: AdrenalineEventType;
+  startedAt: number;
+  endsAt: number;
+};
+
+type PollutionSource = {
+  id: string;
+  x: number;
+  y: number;
+  strength: number;
+};
+
+type RestorationPatch = {
+  id: number;
+  x: number;
+  y: number;
+  bornAt: number;
+  intensity: number;
+};
+
+type RestoreWave = {
+  id: number;
+  x: number;
+  y: number;
+};
+
+const FALLEN_TREE_SPOTS: Array<{ id: string; x: number; y: number; rot: number; scale: number }> = [
+  { id: 'ft-1', x: 420, y: 620, rot: 18, scale: 0.92 },
+  { id: 'ft-2', x: 2480, y: 540, rot: -22, scale: 0.9 },
+  { id: 'ft-3', x: 640, y: 2360, rot: -14, scale: 1.02 },
+  { id: 'ft-4', x: 2460, y: 2440, rot: 16, scale: 0.96 },
+];
+
+const LEAF_LITTER_SPOTS: Array<{ id: string; x: number; y: number; rot: number; scale: number; density: number }> = Array.from(
+  { length: 42 },
+  (_, i) => {
+    const x = 190 + ((i * 233) % 2620);
+    const y = 220 + ((i * 367) % 2560);
+    const rot = ((i * 47) % 70) - 35;
+    const scale = 0.72 + (((i * 13) % 34) / 100);
+    const density = 5 + (i % 5);
+    return { id: `leaf-${i}`, x, y, rot, scale, density };
+  }
+);
+
+const FallenTree = memo(
+  ({ x, y, rot, scale, weather }: { x: number; y: number; rot: number; scale: number; weather: WorldWeather }) => {
+    const tone =
+      weather === 'drought' ? { trunkA: '#7c2d12', trunkB: '#3f1d12', leaf: 'rgba(202, 138, 4, 0.35)' } :
+      weather === 'polluted' ? { trunkA: '#475569', trunkB: '#1f2937', leaf: 'rgba(148, 163, 184, 0.24)' } :
+      weather === 'rainy' ? { trunkA: '#92400e', trunkB: '#3f1d12', leaf: 'rgba(16, 185, 129, 0.32)' } :
+      { trunkA: '#a16207', trunkB: '#3f1d12', leaf: 'rgba(34, 197, 94, 0.28)' };
+
+    return (
+      <div
+        className="absolute pointer-events-none z-[12]"
+        style={{ left: x, top: y, transform: `translate(-50%, -50%) rotate(${rot}deg) scale(${scale})` }}
+      >
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-10 rounded-full bg-black/20 blur-xl" />
+        <div className="relative w-64 h-20">
+          <div
+            className="absolute left-6 top-9 h-6 w-56 rounded-full border border-black/10 shadow-[0_14px_30px_rgba(0,0,0,0.22)]"
+            style={{ background: `linear-gradient(90deg, ${tone.trunkA}, ${tone.trunkB})` }}
+          />
+          <div
+            className="absolute left-2 top-7 w-14 h-14 rounded-full border border-black/15 shadow-[0_18px_38px_rgba(0,0,0,0.22)]"
+            style={{ background: `radial-gradient(circle at 35% 35%, rgba(255,255,255,0.22), transparent 60%), linear-gradient(135deg, ${tone.trunkA}, ${tone.trunkB})` }}
+          />
+          <div className="absolute left-14 top-4 w-20 h-4 rounded-full bg-black/15 blur-md" />
+          <div
+            className="absolute left-44 top-2 h-4 w-16 rounded-full border border-black/10"
+            style={{ background: `linear-gradient(90deg, ${tone.trunkB}, ${tone.trunkA})`, rotate: '-18deg' }}
+          />
+          <div
+            className="absolute h-4 rounded-full border border-black/10"
+            style={{
+              left: 160,
+              top: 72,
+              width: 72,
+              background: `linear-gradient(90deg, ${tone.trunkB}, ${tone.trunkA})`,
+              rotate: '22deg',
+            }}
+          />
+          <div className="absolute left-44 top-0 w-36 h-16 rounded-[40px] blur-[10px]" style={{ background: tone.leaf }} />
+          <div className="absolute top-2 text-emerald-200/40" style={{ left: 192, rotate: '12deg' }}>
+            <Leaf size={18} />
+          </div>
+          <div className="absolute top-14 text-emerald-200/35" style={{ left: 214, rotate: '-20deg' }}>
+            <Leaf size={16} />
+          </div>
+          <div className="absolute top-10 text-emerald-200/30" style={{ left: 168, rotate: '28deg' }}>
+            <Leaf size={14} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+);
+
+const LeafLitter = memo(
+  ({
+    x,
+    y,
+    rot,
+    scale,
+    density,
+    weather,
+  }: {
+    x: number;
+    y: number;
+    rot: number;
+    scale: number;
+    density: number;
+    weather: WorldWeather;
+  }) => {
+    const seed = Math.floor(x * 7 + y * 11);
+    const rand = (n: number) => {
+      const v = Math.sin((seed + n) * 741.927) * 10000;
+      return v - Math.floor(v);
+    };
+
+    const base =
+      weather === 'drought' ? 'rgba(202, 138, 4, 0.32)' :
+      weather === 'polluted' ? 'rgba(148, 163, 184, 0.22)' :
+      weather === 'rainy' ? 'rgba(16, 185, 129, 0.26)' :
+      'rgba(34, 197, 94, 0.22)';
+
+    return (
+      <motion.div
+        className="absolute pointer-events-none z-[11]"
+        style={{ left: x, top: y, transform: `translate(-50%, -50%) rotate(${rot}deg) scale(${scale})` }}
+        animate={{ y: [0, -1.5, 0] }}
+        transition={{ repeat: Infinity, duration: 3.6 + rand(9) * 2.4, ease: 'easeInOut' }}
+      >
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-10 rounded-full bg-black/18 blur-xl" />
+        <div className="relative w-24 h-16">
+          <div className="absolute inset-0 rounded-[40px] blur-[10px]" style={{ background: base }} />
+          {Array.from({ length: density }, (_, i) => {
+            const lx = 6 + rand(i + 1) * 76;
+            const ly = 8 + rand(i + 11) * 42;
+            const r = -55 + rand(i + 21) * 110;
+            const s = 0.75 + rand(i + 31) * 0.55;
+            const o = 0.22 + rand(i + 41) * 0.28;
+            const size = 12 + Math.floor(rand(i + 51) * 8);
+            const tint =
+              weather === 'polluted'
+                ? `rgba(148, 163, 184, ${o})`
+                : weather === 'drought'
+                  ? `rgba(217, 119, 6, ${o})`
+                  : `rgba(52, 211, 153, ${o})`;
+            return (
+              <motion.div
+                key={i}
+                className="absolute"
+                style={{ left: lx, top: ly, rotate: `${r}deg`, scale: s, color: tint, filter: 'drop-shadow(0 10px 14px rgba(0,0,0,0.16))' }}
+                animate={{ rotate: [`${r}deg`, `${r + 6}deg`, `${r}deg`] }}
+                transition={{ repeat: Infinity, duration: 2.6 + rand(i + 61) * 2.2, ease: 'easeInOut', delay: i * 0.05 }}
+              >
+                <Leaf size={size} />
+              </motion.div>
+            );
+          })}
         </div>
       </motion.div>
-    ))}
+    );
+  }
+);
 
-    {/* Little Flowers */}
-    {[...Array(4)].map((_, i) => (
-      <motion.div
-        key={`flower-${i}`}
-        className="absolute w-2 h-2 rounded-full"
-        animate={{ scale: [1, 1.2, 1] }}
-        transition={{ duration: 4, repeat: Infinity, delay: i }}
+const RestorationPatchSprite = memo(({ x, y, intensity }: { x: number; y: number; intensity: number }) => {
+  const seed = Math.floor(x * 9 + y * 5);
+  const rand = (n: number) => {
+    const v = Math.sin((seed + n) * 913.551) * 10000;
+    return v - Math.floor(v);
+  };
+  const grassCount = 10 + Math.floor(rand(1) * 10);
+  const glow = Math.max(0.18, Math.min(0.55, 0.22 + intensity * 0.22));
+
+  return (
+    <motion.div
+      className="absolute pointer-events-none z-[9]"
+      style={{ left: x, top: y, transform: 'translate(-50%, -50%)' }}
+      animate={{ opacity: [0.78, 0.95, 0.78], scale: [0.995, 1.01, 0.995] }}
+      transition={{ repeat: Infinity, duration: 3.8 + rand(2) * 2.4, ease: 'easeInOut' }}
+    >
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
-          left: 50 + Math.cos(i * (Math.PI / 2)) * 40,
-          top: 20 + Math.sin(i * (Math.PI / 2)) * 30,
-          backgroundColor: i % 2 === 0 ? '#fbbf24' : '#f87171',
-          boxShadow: '0 0 10px rgba(255,255,255,0.3)'
+          width: 720,
+          height: 720,
+          background:
+            `radial-gradient(circle, rgba(34,197,94,${0.12 + glow}) 0 130px, rgba(16,185,129,${0.10 + glow * 0.55}) 240px, rgba(34,197,94,0.06) 360px, transparent 520px)`,
+          mixBlendMode: 'screen',
+          filter: 'blur(0.2px)',
         }}
-      >
-        <div className="absolute inset-0.5 bg-white/40 rounded-full" />
-      </motion.div>
-    ))}
-  </div>
+      />
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{
+          width: 420,
+          height: 420,
+          background: 'radial-gradient(circle, rgba(16,185,129,0.20) 0 120px, rgba(16,185,129,0.06) 220px, transparent 320px)',
+          mixBlendMode: 'overlay',
+          filter: 'blur(0.4px)',
+        }}
+      />
+      <div className="relative w-64 h-64">
+        {Array.from({ length: grassCount }, (_, i) => {
+          const a = (i / Math.max(1, grassCount)) * Math.PI * 2;
+          const rr = 70 + rand(i + 10) * 70;
+          const bx = 128 + Math.cos(a) * rr;
+          const by = 132 + Math.sin(a) * (rr * 0.74);
+          const h = 10 + rand(i + 30) * 22;
+          const w = 1 + rand(i + 40) * 1.2;
+          const r = -18 + rand(i + 50) * 36;
+          const g = 0.24 + rand(i + 60) * 0.34;
+          return (
+            <motion.div
+              key={i}
+              className="absolute origin-bottom rounded-full"
+              style={{
+                left: bx,
+                top: by,
+                width: w,
+                height: h,
+                background: `linear-gradient(180deg, rgba(34,197,94,${g}) 0%, rgba(16,185,129,${g * 0.85}) 60%, rgba(6,95,70,${g * 0.6}) 100%)`,
+                rotate: `${r}deg`,
+                filter: 'drop-shadow(0 10px 16px rgba(0,0,0,0.22))',
+              }}
+              animate={{ rotate: [`${r - 10}deg`, `${r + 10}deg`, `${r - 10}deg`] }}
+              transition={{ repeat: Infinity, duration: 1.6 + rand(i + 80) * 2.2, ease: 'easeInOut', delay: i * 0.03 }}
+            />
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+});
+
+const PollutionSourceSprite = memo(({ x, y, strength }: { x: number; y: number; strength: number }) => {
+  const scale = 0.92 + Math.min(0.25, strength * 0.08);
+  return (
+    <motion.div
+      className="absolute pointer-events-none z-[25]"
+      style={{ left: x, top: y, transform: `translate(-50%, -50%) scale(${scale})` }}
+      animate={{ y: [0, -2, 0] }}
+      transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
+    >
+      <motion.div
+        className="absolute -top-24 left-1/2 -translate-x-1/2 w-44 h-32 rounded-[999px]"
+        animate={{ opacity: [0.15, 0.35, 0.15], x: [-18, 18, -18] }}
+        transition={{ repeat: Infinity, duration: 3.8, ease: 'easeInOut' }}
+        style={{ background: 'radial-gradient(circle at 30% 60%, rgba(148,163,184,0.25), rgba(15,23,42,0.0) 65%)', filter: 'blur(10px)' }}
+      />
+      <div className="relative w-24 h-24">
+        <motion.div
+          className="absolute inset-0 rounded-full"
+          animate={{ opacity: [0.22, 0.42, 0.22], scale: [0.96, 1.08, 0.96] }}
+          transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }}
+          style={{ background: 'radial-gradient(circle, rgba(239,68,68,0.18) 0 22px, rgba(239,68,68,0.06) 50px, transparent 70px)' }}
+        />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-16 rounded-3xl bg-slate-900/70 border border-white/10 shadow-2xl" />
+        <div className="absolute left-1/2 top-[46%] -translate-x-1/2 w-10 h-8 rounded-2xl bg-slate-800/70 border border-white/10" />
+        <div className="absolute left-1/2 top-[18%] -translate-x-1/2 w-8 h-7 rounded-2xl bg-slate-950/70 border border-white/10" />
+        <div className="absolute left-1/2 top-[18%] -translate-x-1/2 w-8 h-7 rounded-2xl bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.14),transparent_60%)]" />
+        <motion.div
+          className="absolute left-1/2 -translate-x-1/2 -top-1 text-red-300"
+          animate={{ y: [0, -6, 0], opacity: [0.6, 1, 0.6] }}
+          transition={{ repeat: Infinity, duration: 1.0, ease: 'easeInOut' }}
+        >
+          <AlertTriangle size={18} />
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+});
+
+const AdrenalineEventFX = memo(
+  ({ event }: { event: ActiveAdrenalineEvent | null }) => {
+    if (!event) return null;
+    if (event.type === 'HEATWAVE') {
+      return (
+        <div className="absolute inset-0 pointer-events-none z-[42]">
+          <motion.div
+            className="absolute inset-[-10%]"
+            animate={{ opacity: [0.22, 0.42, 0.22], rotate: [0, 1.2, 0] }}
+            transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut' }}
+            style={{ background: 'radial-gradient(circle at 50% 30%, rgba(251,146,60,0.16), transparent 65%)', filter: 'blur(0.6px)' }}
+          />
+          <motion.div
+            className="absolute inset-0 mix-blend-overlay opacity-[0.08]"
+            animate={{ x: [-80, 80, -80] }}
+            transition={{ repeat: Infinity, duration: 5.5, ease: 'linear' }}
+            style={{ backgroundImage: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.10) 0 1px, transparent 1px 12px)' }}
+          />
+        </div>
+      );
+    }
+    if (event.type === 'RAINSTORM') {
+      return (
+        <div className="absolute inset-0 pointer-events-none z-[42]">
+          <motion.div
+            className="absolute inset-0"
+            animate={{ opacity: [0.08, 0.2, 0.08] }}
+            transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+            style={{ background: 'radial-gradient(circle at 50% 20%, rgba(59,130,246,0.18), transparent 65%)' }}
+          />
+          <motion.div
+            className="absolute inset-0"
+            animate={{ opacity: [0.12, 0.24, 0.12] }}
+            transition={{ repeat: Infinity, duration: 1.0, ease: 'easeInOut' }}
+            style={{ background: 'linear-gradient(180deg, rgba(15,23,42,0.08), rgba(2,6,23,0.24))' }}
+          />
+        </div>
+      );
+    }
+    if (event.type === 'PESTS') {
+      return (
+        <div className="absolute inset-0 pointer-events-none z-[42]">
+          <motion.div
+            className="absolute inset-0"
+            animate={{ opacity: [0.06, 0.18, 0.06] }}
+            transition={{ repeat: Infinity, duration: 0.85, ease: 'easeInOut' }}
+            style={{ background: 'radial-gradient(circle at 50% 50%, rgba(239,68,68,0.10), transparent 62%)' }}
+          />
+          <div className="absolute inset-0 shadow-[inset_0_0_180px_rgba(239,68,68,0.12)]" />
+        </div>
+      );
+    }
+    return (
+      <div className="absolute inset-0 pointer-events-none z-[42]">
+        <motion.div
+          className="absolute inset-[-10%] bg-slate-900/35"
+          animate={{ x: [-140, 140, -140], opacity: [0.25, 0.5, 0.25] }}
+          transition={{ repeat: Infinity, duration: 10.5, ease: 'easeInOut' }}
+          style={{ filter: 'blur(12px)' }}
+        />
+        <div className="absolute inset-0 opacity-[0.10] mix-blend-overlay" style={{ backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 10px)' }} />
+      </div>
+    );
+  }
 );
 
 const Bird = () => (
@@ -1652,6 +2071,8 @@ const CharacterActionFX = ({ actionId, accent, toolIcon: ToolIcon }: { actionId:
   const isPlant = actionId === 'plant';
   const isWater = actionId === 'water';
   const isSun = actionId === 'sun';
+  const isClean = actionId === 'clean';
+  const isPest = actionId === 'pest';
 
   return (
     <div className="absolute inset-0 pointer-events-none">
@@ -1717,6 +2138,64 @@ const CharacterActionFX = ({ actionId, accent, toolIcon: ToolIcon }: { actionId:
         >
           <Sun size={34} />
         </motion.div>
+      )}
+
+      {isClean && (
+        <div className="absolute inset-0">
+          <motion.div
+            className="absolute -left-6 -top-10 w-24 h-24 rounded-full"
+            animate={{ opacity: [0.18, 0.45, 0.18], scale: [0.9, 1.2, 0.9] }}
+            transition={{ repeat: Infinity, duration: 0.8, ease: 'easeInOut' }}
+            style={{ background: 'radial-gradient(circle, rgba(34,197,94,0.28) 0 22px, rgba(16,185,129,0.12) 50px, transparent 72px)' }}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 2 }}
+            animate={{ opacity: 1, scale: [0.9, 1.05, 0.98], y: [2, -2, 1] }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+            className="absolute left-6 top-4 text-emerald-300"
+          >
+            <ShieldCheck size={22} />
+          </motion.div>
+          {[...Array(8)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.6, x: 0, y: 0 }}
+              animate={{ opacity: [0, 1, 0], scale: [0.6, 1, 0.8], x: [-6 + (i % 4) * 6, -10 + (i % 4) * 8], y: [0, -14 - (i % 3) * 8] }}
+              transition={{ duration: 0.55 + (i % 3) * 0.05, delay: 0.03 * i }}
+              className="absolute left-6 top-10 rounded-full"
+              style={{ width: 4 + (i % 3), height: 4 + (i % 3), backgroundColor: '#34d399', filter: 'blur(0.2px)' }}
+            />
+          ))}
+        </div>
+      )}
+
+      {isPest && (
+        <div className="absolute inset-0">
+          <motion.div
+            className="absolute -left-8 -top-12 w-28 h-28 rounded-full"
+            animate={{ opacity: [0.14, 0.34, 0.14], scale: [0.92, 1.18, 0.92] }}
+            transition={{ repeat: Infinity, duration: 0.65, ease: 'easeInOut' }}
+            style={{ background: 'radial-gradient(circle, rgba(239,68,68,0.22) 0 24px, rgba(249,115,22,0.12) 54px, transparent 78px)' }}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: 6 }}
+            animate={{ opacity: 1, scale: [0.85, 1.05, 0.92], y: [6, -2, 2] }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="absolute left-6 top-4 text-red-300"
+          >
+            <AlertTriangle size={22} />
+          </motion.div>
+          {[...Array(10)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.6, x: 0, y: 0 }}
+              animate={{ opacity: [0, 1, 0], scale: [0.7, 1, 0.8], x: [-6 + (i % 5) * 4, -14 + (i % 5) * 7], y: [0, -12 - (i % 4) * 7] }}
+              transition={{ duration: 0.5 + (i % 4) * 0.05, delay: 0.02 * i }}
+              className="absolute left-6 top-10 rounded-full"
+              style={{ width: 4 + (i % 3), height: 4 + (i % 3), backgroundColor: i % 2 ? '#ef4444' : '#f97316', filter: 'blur(0.2px)' }}
+            />
+          ))}
+        </div>
       )}
     </div>
   );
@@ -1890,6 +2369,44 @@ const HeldTool = ({ actionId, accent, icon: Icon, actionProgress }: { actionId: 
         className="relative w-8 h-8 text-yellow-300"
       >
         <Sun size={22} />
+      </motion.div>
+    );
+  }
+
+  if (actionId === 'clean') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: [0.95, 1.08, 0.98], rotate: [-6, 10, -4] }}
+        transition={{ repeat: Infinity, duration: 0.6, ease: 'easeInOut' }}
+        className="relative w-8 h-8 text-emerald-300"
+      >
+        <ShieldCheck size={22} />
+        <motion.div
+          className="absolute inset-[-10px] rounded-full"
+          animate={{ opacity: [0.12, 0.28, 0.12], scale: [0.9, 1.12, 0.9] }}
+          transition={{ repeat: Infinity, duration: 0.65, ease: 'easeInOut' }}
+          style={{ background: 'radial-gradient(circle, rgba(34,197,94,0.22) 0 18px, transparent 52px)' }}
+        />
+      </motion.div>
+    );
+  }
+
+  if (actionId === 'pest') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: [0.95, 1.08, 0.98], rotate: [-10, 12, -8] }}
+        transition={{ repeat: Infinity, duration: 0.5, ease: 'easeInOut' }}
+        className="relative w-8 h-8 text-red-300"
+      >
+        <AlertTriangle size={22} />
+        <motion.div
+          className="absolute inset-[-12px] rounded-full"
+          animate={{ opacity: [0.10, 0.26, 0.10], scale: [0.92, 1.16, 0.92] }}
+          transition={{ repeat: Infinity, duration: 0.55, ease: 'easeInOut' }}
+          style={{ background: 'radial-gradient(circle, rgba(239,68,68,0.20) 0 18px, transparent 52px)' }}
+        />
       </motion.div>
     );
   }
@@ -3306,6 +3823,16 @@ const TreeGame: React.FC = () => {
   
   // Free Coordinate Trees
   const [activeTrees, setActiveTrees] = useState<ActiveTree[]>([]);
+
+  const [activeEvent, setActiveEvent] = useState<ActiveAdrenalineEvent | null>(null);
+  const [pestTreeId, setPestTreeId] = useState<number | null>(null);
+  const [pollutionSources, setPollutionSources] = useState<PollutionSource[]>([]);
+  const [restorationPatches, setRestorationPatches] = useState<RestorationPatch[]>([]);
+  const [restoreWaves, setRestoreWaves] = useState<RestoreWave[]>([]);
+  const restoredTreeIdsRef = useRef<Set<number>>(new Set());
+  const nextEventAtRef = useRef<number>(Date.now() + 18000);
+  const pestPulseAtRef = useRef<number>(0);
+  const pollutionPulseAtRef = useRef<number>(0);
   
   // ... rest of existing state ...
   const [level, setLevel] = useState(1);
@@ -3315,6 +3842,7 @@ const TreeGame: React.FC = () => {
   const [mapFocusRegionId, setMapFocusRegionId] = useState<string | null>(null);
   const [mapFocusLock, setMapFocusLock] = useState(false);
   const [showAnalysisMascot, setShowAnalysisMascot] = useState(true);
+  const [guideOpen, setGuideOpen] = useState(false);
   const regionSelectTimerRef = useRef<number | null>(null);
   const [plantingStep, setPlantingStep] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -3361,6 +3889,93 @@ const TreeGame: React.FC = () => {
     "Pohon butuh air! Dekati pohon dan tekan [E] untuk menyiramnya.",
     "Selamat! Kamu telah menyelesaikan tutorial. Sekarang pulihkan seluruh wilayah!"
   ];
+
+  const effectiveWeather = useMemo<WorldWeather>(() => {
+    if (!activeEvent) return weather;
+    if (activeEvent.type === 'HEATWAVE') return 'drought';
+    if (activeEvent.type === 'RAINSTORM') return 'rainy';
+    if (activeEvent.type === 'POLLUTION_SPIKE') return 'polluted';
+    return weather;
+  }, [activeEvent, weather]);
+
+  const clampWorld = useCallback((n: number) => Math.max(50, Math.min(2950, n)), []);
+
+  const eventHint = useMemo(() => {
+    if (!activeEvent) return null;
+    if (activeEvent.type === 'HEATWAVE') return { title: 'HEATWAVE', subtitle: 'Panas ekstrem. Air cepat habis — siram pohon yang kering (E).', tone: 'warn' as const, icon: Wind };
+    if (activeEvent.type === 'RAINSTORM') return { title: 'HUJAN DERAS', subtitle: 'Air naik, tapi banjir bisa merusak akar. Hindari over-water.', tone: 'info' as const, icon: CloudRain };
+    if (activeEvent.type === 'PESTS') return { title: 'HAMA', subtitle: 'Cari pohon bertanda Hama lalu tekan E untuk membersihkan.', tone: 'warn' as const, icon: AlertTriangle };
+    return { title: 'POLUSI', subtitle: 'Kejar ikon peringatan lalu tekan E untuk segel sumber polusi.', tone: 'warn' as const, icon: Activity };
+  }, [activeEvent]);
+
+  // #region debug-point A:init
+  const dbgRunIdRef = useRef<'pre' | 'post'>('pre');
+  const dbgLastSigRef = useRef<string>('');
+  const dbg = useCallback((hypothesisId: string, location: string, msg: string, data?: Record<string, unknown>) => {
+    try {
+      fetch('http://127.0.0.1:7778/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: 'game-blank-screen',
+          runId: dbgRunIdRef.current,
+          hypothesisId,
+          location,
+          msg: `[DEBUG] ${msg}`,
+          data: data ?? {},
+          ts: Date.now(),
+        }),
+      }).catch(() => {});
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    dbg('A', 'TreeGame.tsx:dbg-init', 'mounted', { ua: navigator.userAgent });
+
+    const onErr = (ev: ErrorEvent) => {
+      dbg('A', 'window.onerror', 'runtime-error', {
+        message: ev.message,
+        filename: ev.filename,
+        lineno: ev.lineno,
+        colno: ev.colno,
+        error: (ev.error && typeof ev.error === 'object' && 'stack' in ev.error) ? (ev.error as any).stack : String(ev.error ?? ''),
+      });
+    };
+
+    const onRej = (ev: PromiseRejectionEvent) => {
+      dbg('A', 'window.onunhandledrejection', 'unhandled-rejection', {
+        reason: (ev.reason && typeof ev.reason === 'object' && 'stack' in ev.reason) ? (ev.reason as any).stack : String(ev.reason ?? ''),
+      });
+    };
+
+    window.addEventListener('error', onErr);
+    window.addEventListener('unhandledrejection', onRej);
+    return () => {
+      window.removeEventListener('error', onErr);
+      window.removeEventListener('unhandledrejection', onRej);
+    };
+  }, [dbg]);
+
+  useEffect(() => {
+    const sig = JSON.stringify({
+      phase,
+      level,
+      tutorialActive,
+      tutorialStep,
+      activeEvent: activeEvent?.type ?? null,
+      pestTreeId,
+      pollutionSources: pollutionSources.length,
+      co2Level: Math.round(co2Level * 10) / 10,
+      water: Math.round(water * 10) / 10,
+      energy: Math.round(energy * 10) / 10,
+      timer,
+      trees: activeTrees.length,
+    });
+    if (sig === dbgLastSigRef.current) return;
+    dbgLastSigRef.current = sig;
+    dbg('B', 'TreeGame.tsx:state-sig', 'state-change', JSON.parse(sig));
+  }, [activeEvent?.type, activeTrees.length, co2Level, dbg, energy, level, pestTreeId, phase, pollutionSources.length, timer, tutorialActive, tutorialStep, water]);
+  // #endregion
 
   // --- 1. CORE PHYSICS & STATE ---
   const [charPos, setCharPos] = useState({ x: 500, y: 500 });
@@ -3451,7 +4066,7 @@ const TreeGame: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [phase, tutorialActive, tutorialStep, activeTrees, energy, water, selectedSeedling]);
+  }, [phase, tutorialActive, tutorialStep, activeTrees, energy, water, selectedSeedling, activeEvent, pollutionSources, pestTreeId]);
 
   useEffect(() => {
     if (phase !== 'planting') return;
@@ -3561,11 +4176,40 @@ const TreeGame: React.FC = () => {
     };
   }, [phase, tutorialActive, tutorialStep]);
 
+  const spawnRestoration = useCallback((x: number, y: number, intensity: number = 1) => {
+    const id = Date.now() + Math.floor(Math.random() * 100000);
+    setRestorationPatches(prev => [...prev, { id, x, y, bornAt: Date.now(), intensity }].slice(-18));
+    const wid = Date.now() + Math.floor(Math.random() * 100000);
+    setRestoreWaves(prev => [...prev, { id: wid, x, y }]);
+    window.setTimeout(() => {
+      setRestoreWaves(prev => prev.filter(w => w.id !== wid));
+    }, 900);
+    const rid = Date.now() + Math.floor(Math.random() * 100000);
+    setRipples(prev => [...prev, { id: rid, x, y, tone: 'good' }]);
+    window.setTimeout(() => {
+      setRipples(prev => prev.filter(r => r.id !== rid));
+    }, 650);
+  }, []);
+
   // --- 4. ENHANCED INTERACTION ---
   const handleInteraction = () => {
     if (phase !== 'planting') return;
     if (levelIntroOpen) return;
     const currentPos = charPosRef.current;
+    // #region debug-point D:interaction
+    dbg('D', 'TreeGame.tsx:handleInteraction', 'press-e', {
+      phase,
+      level,
+      actionId,
+      tutorialActive,
+      tutorialStep,
+      activeEvent: activeEvent?.type ?? null,
+      pestTreeId,
+      pollutionSources: pollutionSources.length,
+      x: Math.round(currentPos.x),
+      y: Math.round(currentPos.y),
+    });
+    // #endregion
 
     if (tutorialActive) {
       if (tutorialStep === 2) {
@@ -3647,6 +4291,67 @@ const TreeGame: React.FC = () => {
       return;
     }
 
+    if (activeEvent?.type === 'POLLUTION_SPIKE' && pollutionSources.length > 0) {
+      const src = pollutionSources.find(s => {
+        const dx = currentPos.x - s.x;
+        const dy = currentPos.y - s.y;
+        return Math.sqrt(dx * dx + dy * dy) < 140;
+      });
+      if (src) {
+        setActionId('clean');
+        setActionProgress(0);
+        const interval = window.setInterval(() => {
+          setActionProgress(prev => {
+            if (prev >= 100) {
+              window.clearInterval(interval);
+              setActionId(null);
+              setPollutionSources(prevS => prevS.filter(p => p.id !== src.id));
+              setCo2Level(prev => Math.max(0, prev - (12 + src.strength * 2)));
+              spawnActionParticles(src.x, src.y, '#34d399', 18);
+              spawnRipple(src.x, src.y, 'good');
+              spawnFloatText(src.x, src.y - 46, 'Sumber polusi disegel', 'good');
+              playReward();
+              return 0;
+            }
+            if (prev % 20 === 0) spawnActionParticles(src.x, src.y, '#10b981', 6);
+            return prev + 8;
+          });
+        }, 40);
+        return;
+      }
+    }
+
+    if (activeEvent?.type === 'PESTS' && pestTreeId) {
+      const t = activeTrees.find(tt => tt.id === pestTreeId) ?? null;
+      if (t) {
+        const dx = currentPos.x - t.x;
+        const dy = currentPos.y - t.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 140) {
+          setActionId('pest');
+          setActionProgress(0);
+          const interval = window.setInterval(() => {
+            setActionProgress(prev => {
+              if (prev >= 100) {
+                window.clearInterval(interval);
+                setActionId(null);
+                setPestTreeId(null);
+                setActiveTrees(prevTrees => prevTrees.map(tree => (tree.id === t.id ? { ...tree, health: Math.min(100, tree.health + 22) } : tree)));
+                spawnActionParticles(t.x, t.y, '#f97316', 18);
+                spawnRipple(t.x, t.y, 'good');
+                spawnFloatText(t.x, t.y - 46, 'Hama dibersihkan', 'good');
+                playReward();
+                return 0;
+              }
+              if (prev % 16 === 0) spawnActionParticles(t.x, t.y - 18, '#ef4444', 5);
+              return prev + 10;
+            });
+          }, 40);
+          return;
+        }
+      }
+    }
+
     const nearestPlot = plots.find(p => {
       const dist = Math.sqrt(Math.pow(currentPos.x - p.cx, 2) + Math.pow(currentPos.y - p.cy, 2));
       return dist < 120;
@@ -3715,6 +4420,8 @@ const TreeGame: React.FC = () => {
       setToast({ id: Date.now(), title: 'Air Habis!', tone: 'warn' });
       return;
     }
+    const before = activeTrees.find(t => t.id === id) ?? null;
+    const shouldRestore = Boolean(before && before.stage < 3);
     setActionId('water');
     window.setTimeout(() => setActionId(null), 260);
     setWater(prev => Math.max(0, prev - 10));
@@ -3744,6 +4451,7 @@ const TreeGame: React.FC = () => {
 
       return next;
     });
+    if (shouldRestore && before) spawnRestoration(before.x, before.y, 1.1);
     spawnFloatText(charPosRef.current.x, charPosRef.current.y - 40, '-10 Air', 'warn');
     playReward();
   };
@@ -3804,63 +4512,159 @@ const TreeGame: React.FC = () => {
         return prev - 1;
       });
 
-      // Random Dynamic Events (Hama, Polusi Mendadak)
-      if (Math.random() < 0.02) {
-        setToast({ 
-          id: Date.now(), 
-          title: 'SERANGAN HAMA!', 
-          subtitle: 'Kesehatan pohon menurun drastis!', 
-          tone: 'warn' 
-        });
-        setActiveTrees(prev => prev.map(t => ({ ...t, health: Math.max(0, t.health - 20) })));
+      if (!tutorialActive && !levelIntroOpen) {
+        if (activeEvent && now >= activeEvent.endsAt) {
+          setActiveEvent(null);
+          setPestTreeId(null);
+          setPollutionSources([]);
+          nextEventAtRef.current = now + 24000 + Math.random() * 22000;
+        }
+
+        if (activeEvent?.type === 'POLLUTION_SPIKE' && pollutionSources.length === 0) {
+          setActiveEvent(null);
+          nextEventAtRef.current = now + 24000 + Math.random() * 22000;
+        }
+
+        if (!activeEvent && now >= nextEventAtRef.current) {
+          const base: AdrenalineEventType[] = ['HEATWAVE', 'RAINSTORM', 'PESTS', 'POLLUTION_SPIKE'];
+          const choices = base.filter(t => (t === 'PESTS' ? activeTrees.length > 0 : true));
+          const picked = choices[Math.floor(Math.random() * Math.max(1, choices.length))] ?? 'HEATWAVE';
+          const duration = 12000 + Math.random() * 9000;
+          const event: ActiveAdrenalineEvent = { id: now, type: picked, startedAt: now, endsAt: now + duration };
+          setActiveEvent(event);
+          nextEventAtRef.current = now + 26000 + Math.random() * 26000;
+
+          if (picked === 'HEATWAVE') {
+            setToast({ id: now, title: 'HEATWAVE', subtitle: 'Panas ekstrem! Tanah cepat kering — bergerak cepat!', tone: 'warn' });
+            setWater(prev => Math.max(0, prev - 8));
+          }
+          if (picked === 'RAINSTORM') {
+            setToast({ id: now, title: 'HUJAN DERAS', subtitle: 'Air bonus, tapi banjir bisa merusak akar!', tone: 'info' });
+            setWater(prev => Math.min(100, prev + 18));
+          }
+          if (picked === 'PESTS') {
+            const candidates = activeTrees.filter(t => t.health > 0);
+            const target = candidates[Math.floor(Math.random() * Math.max(1, candidates.length))] ?? null;
+            if (target) {
+              setPestTreeId(target.id);
+              setToast({ id: now, title: 'HAMA MENYERANG', subtitle: 'Cari pohon yang diserang dan tekan [E] untuk bersihkan!', tone: 'warn' });
+              spawnActionParticles(target.x, target.y - 20, '#ef4444', 10);
+              // #region debug-point C:event-start
+              dbg('C', 'TreeGame.tsx:event', 'event-start', { type: picked, targetTreeId: target.id, endsInMs: duration });
+              // #endregion
+            }
+          }
+          if (picked === 'POLLUTION_SPIKE') {
+            setToast({ id: now, title: 'POLUSI MELEDAK', subtitle: 'Segel sumber polusi! Kejar ikon peringatan lalu tekan [E]', tone: 'warn' });
+            setCo2Level(prev => Math.min(180, prev + 12));
+            const c = charPosRef.current;
+            const sources: PollutionSource[] = Array.from({ length: 3 }, (_, i) => {
+              const a = (i / 3) * Math.PI * 2 + Math.random() * 0.8;
+              const d = 320 + Math.random() * 520;
+              return {
+                id: `${now}-${i}`,
+                x: clampWorld(c.x + Math.cos(a) * d),
+                y: clampWorld(c.y + Math.sin(a) * d),
+                strength: 6 + Math.floor(Math.random() * 6),
+              };
+            });
+            setPollutionSources(sources);
+            // #region debug-point C:event-start
+            dbg('C', 'TreeGame.tsx:event', 'event-start', { type: picked, sources: sources.map(s => ({ id: s.id, x: Math.round(s.x), y: Math.round(s.y), strength: s.strength })), endsInMs: duration });
+            // #endregion
+          }
+          if (picked === 'HEATWAVE' || picked === 'RAINSTORM') {
+            // #region debug-point C:event-start
+            dbg('C', 'TreeGame.tsx:event', 'event-start', { type: picked, endsInMs: duration });
+            // #endregion
+          }
+        }
       }
 
       // Update trees and CO2
+      let newlyRestored: Array<{ x: number; y: number }> = [];
+      const isHeatwave = activeEvent?.type === 'HEATWAVE';
+      const isRainstorm = activeEvent?.type === 'RAINSTORM';
+      const isPests = activeEvent?.type === 'PESTS';
+      const isPollutionSpike = activeEvent?.type === 'POLLUTION_SPIKE';
+
+      if (isHeatwave) setWater(prev => Math.max(0, prev - 0.9));
+      if (isRainstorm) setWater(prev => Math.min(100, prev + 2.2));
+
+      if (isPests && pestTreeId && now - pestPulseAtRef.current > 650) {
+        pestPulseAtRef.current = now;
+        const t = activeTrees.find(tt => tt.id === pestTreeId) ?? null;
+        if (t) spawnActionParticles(t.x, t.y - 18, '#ef4444', 8);
+      }
+
+      if (isPollutionSpike && pollutionSources.length > 0 && now - pollutionPulseAtRef.current > 700) {
+        pollutionPulseAtRef.current = now;
+        for (const s of pollutionSources) spawnActionParticles(s.x, s.y - 20, '#94a3b8', 6);
+      }
+
       setActiveTrees(prevTrees => {
         let co2Reduction = 0;
+        const pollutionAdd =
+          isPollutionSpike
+            ? 2.6 + pollutionSources.reduce((acc, s) => acc + s.strength * 0.22, 0) + (effectiveWeather === 'polluted' ? 0.6 : 0)
+            : 0;
+
         const nextTrees = prevTrees.map(tree => {
-          // Environmental Impact on Tree
           let healthLoss = 0;
-          if (weather === 'polluted') healthLoss = 1;
-          if (tree.moisture < 10) healthLoss = 2;
-          
+          if (effectiveWeather === 'polluted') healthLoss += 1.1;
+          if (tree.moisture < 10) healthLoss += 2.4;
+          if (isHeatwave) healthLoss += 2.1;
+          if (isRainstorm && tree.moisture > 95) healthLoss += 2.0;
+          if (isPests && pestTreeId && tree.id === pestTreeId) healthLoss += 6.0;
+
           const nextHealth = Math.max(0, tree.health - healthLoss);
 
-          // Water consumption
           let waterLoss = 0.5;
-          if (weather === 'drought') waterLoss = 2.5;
-          if (weather === 'sunny') waterLoss = 1.2;
-          if (weather === 'rainy') waterLoss = -3.0; // Rain replenishes moisture
-          
+          if (effectiveWeather === 'drought') waterLoss = 2.5;
+          if (effectiveWeather === 'sunny') waterLoss = 1.2;
+          if (effectiveWeather === 'rainy') waterLoss = -3.0;
+          if (isHeatwave) waterLoss += 1.8;
+          if (isRainstorm) waterLoss -= 2.0;
+
           const nextMoisture = Math.max(0, Math.min(100, tree.moisture - waterLoss));
-          
-          // Growth based on health and moisture
+
           let growthAdd = 0;
           if (nextMoisture > 20 && nextHealth > 30) {
-            growthAdd = 0.8;
-            if (weather === 'rainy') growthAdd *= 1.8;
-            if (weather === 'polluted') growthAdd *= 0.4;
+            growthAdd = 0.85;
+            if (effectiveWeather === 'rainy') growthAdd *= 1.8;
+            if (effectiveWeather === 'drought') growthAdd *= 0.62;
+            if (effectiveWeather === 'polluted') growthAdd *= 0.36;
+            if (isHeatwave) growthAdd *= 0.55;
+            if (isPests && pestTreeId && tree.id === pestTreeId) growthAdd *= 0.35;
           }
-          
+
           const nextGrowth = Math.min(100, tree.growth + growthAdd);
           const nextStage = Math.floor(nextGrowth / 16);
-          
-          // Impact on CO2 (Only healthy trees reduce CO2)
-          if (nextHealth > 20) {
-            co2Reduction += (nextStage * 0.15);
+
+          if (tree.stage < 3 && nextStage >= 3 && !restoredTreeIdsRef.current.has(tree.id)) {
+            restoredTreeIdsRef.current.add(tree.id);
+            newlyRestored.push({ x: tree.x, y: tree.y });
           }
-          
+
+          if (nextHealth > 20) co2Reduction += (nextStage * 0.18);
+
           return { ...tree, health: nextHealth, moisture: nextMoisture, growth: nextGrowth, stage: nextStage };
         });
 
-        // Check if all trees died
-        if (nextTrees.length > 0 && nextTrees.every(t => t.health <= 0)) {
-          setPhase('gameover');
-        }
+        if (nextTrees.length > 0 && nextTrees.every(t => t.health <= 0)) setPhase('gameover');
 
-        setCo2Level(prevCO2 => Math.max(0, prevCO2 - co2Reduction));
+        setCo2Level(prevCO2 => {
+          const next = Math.max(0, Math.min(180, prevCO2 - co2Reduction + pollutionAdd));
+          if (next >= 170) setPhase('gameover');
+          return next;
+        });
+
         return nextTrees;
       });
+
+      if (newlyRestored.length > 0) {
+        for (const p of newlyRestored) spawnRestoration(p.x, p.y, 1.18);
+      }
 
       // Check win condition
       if (co2Level <= (currentMission?.targetCO2 ?? 40)) {
@@ -3869,7 +4673,7 @@ const TreeGame: React.FC = () => {
       }
 
       // Dynamic Weather Engine
-      if (Math.random() < 0.08) {
+      if (!activeEvent && Math.random() < 0.08) {
         const roll = Math.random();
         let nextWeather: typeof weather = 'sunny';
         if (roll < 0.2) nextWeather = 'rainy';
@@ -3889,11 +4693,11 @@ const TreeGame: React.FC = () => {
       }
 
       // Replenish Energy (Resting)
-      setEnergy(prev => Math.min(100, prev + 1.5));
+      setEnergy(prev => Math.min(100, prev + (activeEvent ? 0.7 : 1.5)));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [phase, weather, co2Level, currentMission, activeTrees.length, level, level2Stages, levelIntroOpen, tutorialActive]);
+  }, [phase, weather, effectiveWeather, co2Level, currentMission, activeTrees, level, level2Stages, levelIntroOpen, tutorialActive, activeEvent, pestTreeId, pollutionSources, spawnRestoration, clampWorld]);
 
 
   const level1Steps = [
@@ -4802,14 +5606,7 @@ const TreeGame: React.FC = () => {
                             regionName={(hoveredRegion || selectedRegion)?.name}
                             regionStatus={(hoveredRegion || selectedRegion)?.status ?? null}
                             attention={mascotAttention}
-                            onGuide={() =>
-                              setToast({
-                                id: Date.now(),
-                                title: 'Ayo mulai dari peta',
-                                subtitle: 'Klik wilayah Oranye/Merah untuk mulai restorasi.',
-                                tone: 'info',
-                              })
-                            }
+                            onGuide={() => setGuideOpen(true)}
                           />
                         )}
                       </div>
@@ -4940,16 +5737,32 @@ const TreeGame: React.FC = () => {
                   {/* Weather Widget */}
                   <div className="bg-white/5 p-3 rounded-2xl border border-white/10 flex items-center gap-3 min-w-[120px]">
                     <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                      {weather === 'sunny' && <Sun size={24} className="text-yellow-400" />}
-                      {weather === 'rainy' && <CloudRain size={24} className="text-blue-400" />}
-                      {weather === 'drought' && <Wind size={24} className="text-orange-400" />}
-                      {weather === 'polluted' && <AlertTriangle size={24} className="text-red-400" />}
+                      {effectiveWeather === 'sunny' && <Sun size={24} className="text-yellow-400" />}
+                      {effectiveWeather === 'rainy' && <CloudRain size={24} className="text-blue-400" />}
+                      {effectiveWeather === 'drought' && <Wind size={24} className="text-orange-400" />}
+                      {effectiveWeather === 'polluted' && <AlertTriangle size={24} className="text-red-400" />}
                     </div>
                     <div>
                       <div className="text-[8px] font-black text-white/40 uppercase">Cuaca</div>
-                      <div className="text-[10px] font-black text-white uppercase tracking-wider">{weather}</div>
+                      <div className="text-[10px] font-black text-white uppercase tracking-wider">{effectiveWeather}</div>
                     </div>
                   </div>
+                  {activeEvent && (
+                    <div className="bg-red-500/10 p-3 rounded-2xl border border-red-400/20 flex items-center gap-3 min-w-[170px] shadow-[0_0_40px_rgba(239,68,68,0.10)]">
+                      <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/20 flex items-center justify-center text-red-300">
+                        <Activity size={22} />
+                      </div>
+                      <div>
+                        <div className="text-[8px] font-black text-white/40 uppercase">Event</div>
+                        <div className="text-[10px] font-black text-white uppercase tracking-wider">
+                          {activeEvent.type === 'HEATWAVE' ? 'Heatwave' : activeEvent.type === 'RAINSTORM' ? 'Hujan Deras' : activeEvent.type === 'PESTS' ? 'Hama' : 'Polusi'}
+                        </div>
+                        <div className="text-[10px] font-black text-red-300">
+                          {Math.max(0, Math.ceil((activeEvent.endsAt - Date.now()) / 1000))}s
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -4988,9 +5801,9 @@ const TreeGame: React.FC = () => {
                     y: camY,
                     width: 3000,
                     height: 3000,
-                    background: weather === 'rainy' ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' : 
-                                weather === 'drought' ? 'linear-gradient(180deg, #451a03 0%, #78350f 100%)' : 
-                                weather === 'polluted' ? 'linear-gradient(180deg, #1e293b 0%, #334155 100%)' :
+                    background: effectiveWeather === 'rainy' ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' : 
+                                effectiveWeather === 'drought' ? 'linear-gradient(180deg, #451a03 0%, #78350f 100%)' : 
+                                effectiveWeather === 'polluted' ? 'linear-gradient(180deg, #1e293b 0%, #334155 100%)' :
                                 'linear-gradient(180deg, #064e3b 0%, #065f46 100%)',
                   }}
                 >
@@ -5010,7 +5823,25 @@ const TreeGame: React.FC = () => {
                   {/* Grid Lines (Blueprint feel) */}
                   <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '100px 100px' }} />
 
-                  <EnvironmentFX weather={weather} />
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: 'radial-gradient(circle at 45% 42%, rgba(120,53,15,0.22) 0 520px, transparent 980px), radial-gradient(circle at 70% 62%, rgba(120,53,15,0.18) 0 520px, transparent 980px)',
+                      opacity: 0.55 * (1 - Math.min(1, restorationPatches.length / 10)),
+                      mixBlendMode: 'multiply',
+                    }}
+                  />
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: 'radial-gradient(circle at 40% 60%, rgba(34,197,94,0.24) 0 720px, transparent 1100px), radial-gradient(circle at 78% 38%, rgba(16,185,129,0.20) 0 720px, transparent 1100px)',
+                      opacity: 0.22 + 0.38 * Math.min(1, restorationPatches.length / 10),
+                      mixBlendMode: 'screen',
+                    }}
+                  />
+
+                  <EnvironmentFX weather={effectiveWeather} />
+                  <AdrenalineEventFX event={activeEvent} />
 
                   {/* Ambient Life & Dust */}
                   <AmbientDust />
@@ -5019,9 +5850,36 @@ const TreeGame: React.FC = () => {
                   ))}
 
                   {/* Decorative Elements for World */}
-                  <DecorativePlot x={tutorialSpot.x} y={tutorialSpot.y} />
+                  <DecorativePlot x={tutorialSpot.x} y={tutorialSpot.y} highlight={tutorialActive && tutorialStep >= 2 && tutorialStep <= 4} />
                   {plots.map(p => (
-                    <DecorativePlot key={`decor-${p.id}`} x={p.cx} y={p.cy} />
+                    <DecorativePlot
+                      key={`decor-${p.id}`}
+                      x={p.cx}
+                      y={p.cy}
+                      highlight={!tutorialActive && level === 2 && p.id === activePlotId}
+                    />
+                  ))}
+
+                  {FALLEN_TREE_SPOTS.map((s) => (
+                    <FallenTree key={s.id} x={s.x} y={s.y} rot={s.rot} scale={s.scale} weather={effectiveWeather} />
+                  ))}
+                  {LEAF_LITTER_SPOTS.map((s) => (
+                    <LeafLitter
+                      key={s.id}
+                      x={s.x}
+                      y={s.y}
+                      rot={s.rot}
+                      scale={s.scale}
+                      density={s.density}
+                      weather={effectiveWeather}
+                    />
+                  ))}
+                  {restorationPatches.map(p => (
+                    <RestorationPatchSprite key={p.id} x={p.x} y={p.y} intensity={p.intensity} />
+                  ))}
+
+                  {pollutionSources.map(s => (
+                    <PollutionSourceSprite key={s.id} x={s.x} y={s.y} strength={s.strength} />
                   ))}
 
                   {/* Random Decorative Elements */}
@@ -5088,6 +5946,20 @@ const TreeGame: React.FC = () => {
                             className="absolute inset-0 blur-xl opacity-0 group-hover:opacity-40 transition-opacity"
                             style={{ background: tree.moisture < 30 ? '#ef4444' : '#10b981', borderRadius: '50%' }}
                           />
+
+                          {activeEvent?.type === 'PESTS' && pestTreeId === tree.id && (
+                            <motion.div
+                              className="absolute -top-16 left-1/2 -translate-x-1/2 z-[80] pointer-events-none"
+                              initial={{ opacity: 0, y: 8, scale: 0.9 }}
+                              animate={{ opacity: 1, y: [8, 0, 8], scale: [0.95, 1.05, 0.95] }}
+                              transition={{ repeat: Infinity, duration: 0.8, ease: 'easeInOut' }}
+                            >
+                              <div className="flex items-center gap-2 bg-red-500/15 border border-red-400/20 px-3 py-1.5 rounded-full shadow-[0_0_30px_rgba(239,68,68,0.18)] backdrop-blur-md">
+                                <div className="text-red-300"><AlertTriangle size={16} /></div>
+                                <div className="text-[10px] font-black text-red-200 uppercase tracking-wider">Hama • Tekan E</div>
+                              </div>
+                            </motion.div>
+                          )}
                           
                           {(() => {
                             const s = seedlings.find(sd => sd.name === tree.type) || seedlings[0];
@@ -5141,7 +6013,7 @@ const TreeGame: React.FC = () => {
                       <CharacterSprite 
                         isWalking={isWalking} 
                         actionId={actionId} 
-                        toolIcon={actionId === 'hole' ? Shovel : actionId === 'plant' ? Trees : undefined}
+                        toolIcon={actionId === 'hole' ? Shovel : actionId === 'plant' ? Trees : actionId === 'clean' ? ShieldCheck : actionId === 'pest' ? AlertTriangle : undefined}
                         accent="#7d4a27"
                         actionProgress={actionProgress}
                         direction={charDirection}
@@ -5177,6 +6049,24 @@ const TreeGame: React.FC = () => {
                           scale: 0 
                         }}
                         transition={{ duration: 0.8, ease: "easeOut" }}
+                      />
+                    ))}
+                    {restoreWaves.map(w => (
+                      <motion.div
+                        key={w.id}
+                        className="absolute rounded-full pointer-events-none z-[18]"
+                        style={{
+                          left: w.x,
+                          top: w.y,
+                          transform: 'translate(-50%, -50%)',
+                          border: '2px solid rgba(52,211,153,0.35)',
+                          boxShadow: '0 0 80px rgba(16,185,129,0.18)',
+                          background: 'radial-gradient(circle, rgba(34,197,94,0.18) 0 120px, rgba(16,185,129,0.08) 240px, rgba(34,197,94,0.02) 420px, transparent 560px)',
+                          mixBlendMode: 'screen',
+                        }}
+                        initial={{ width: 40, height: 40, opacity: 0.85 }}
+                        animate={{ width: 920, height: 920, opacity: 0 }}
+                        transition={{ duration: 0.9, ease: 'easeOut' }}
                       />
                     ))}
                     {ripples.map(r => (
@@ -5323,6 +6213,38 @@ const TreeGame: React.FC = () => {
                   )}
                 </AnimatePresence>
 
+                <AnimatePresence>
+                  {!tutorialActive && !levelIntroOpen && activeEvent && eventHint && (
+                    <motion.div
+                      initial={{ y: -18, opacity: 0, scale: 0.98 }}
+                      animate={{ y: 0, opacity: 1, scale: 1 }}
+                      exit={{ y: -18, opacity: 0, scale: 0.98 }}
+                      className="absolute top-28 left-1/2 -translate-x-1/2 z-[120] w-full max-w-xl"
+                    >
+                      <div className={`mx-4 rounded-[2rem] border p-5 shadow-2xl backdrop-blur-2xl flex items-center gap-4 ${
+                        eventHint.tone === 'warn' ? 'bg-red-500/10 border-red-400/25' : 'bg-blue-500/10 border-blue-400/25'
+                      }`}>
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
+                          eventHint.tone === 'warn' ? 'bg-red-500/20 text-red-200' : 'bg-blue-500/20 text-blue-200'
+                        }`}>
+                          <eventHint.icon size={28} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-[10px] font-black text-white/50 uppercase tracking-[0.25em]">Event Aktif</div>
+                          <div className="text-white font-black tracking-tight">{eventHint.title}</div>
+                          <div className="text-[12px] text-white/80 font-bold leading-relaxed">{eventHint.subtitle}</div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <div className="text-[10px] font-black text-white/40 uppercase">Sisa</div>
+                          <div className={`text-xl font-black ${eventHint.tone === 'warn' ? 'text-red-200' : 'text-blue-200'}`}>
+                            {Math.max(0, Math.ceil((activeEvent.endsAt - Date.now()) / 1000))}s
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {/* --- 2.2 MISSION TRACKER --- */}
                 {!tutorialActive && (
                   <motion.div 
@@ -5430,6 +6352,12 @@ const TreeGame: React.FC = () => {
                     Aksi: <span className="text-emerald-400">Tanam / Siram</span>
                   </span>
                 </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-white/80">
+                    <MousePointer2 size={16} />
+                  </div>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Klik untuk dorong lari</span>
+                </div>
                 <div className="h-6 w-px bg-white/10" />
                 <div className="flex items-center gap-3 px-6 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                   <Trophy size={16} className="text-emerald-400" />
@@ -5437,6 +6365,14 @@ const TreeGame: React.FC = () => {
                     Target: Turunkan CO2 ke {currentMission?.targetCO2}%
                   </span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setGuideOpen(true)}
+                  className="px-4 py-2 rounded-full bg-white/10 border border-white/15 text-white/80 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 active:scale-95 transition-transform"
+                >
+                  <Info size={14} />
+                  Panduan
+                </button>
               </div>
 
               {/* --- 4. GAME OVER / WIN OVERLAYS --- */}
@@ -5505,6 +6441,102 @@ const TreeGame: React.FC = () => {
                 <button onClick={() => { setPhase('selection'); setPlantingStep(0); setSelectedRegion(null); setSelectedSeedling(null); setLevel(1); setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 }); setActivePlotId('p1'); setLevelIntroOpen(false); setActionPlotId(null); setActionProgress(0); }} className="bg-slate-100 px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-slate-200 transition-all shadow-md active:scale-95">Mulai Baru</button>
                 <button onClick={() => navigate('/')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-emerald-700 shadow-lg transition-all active:scale-95">Selesai</button>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {guideOpen && (
+            <motion.div
+              className="fixed inset-0 z-[260] bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="w-full max-w-3xl bg-slate-900/95 border border-white/10 rounded-[3rem] shadow-2xl overflow-hidden"
+                initial={{ scale: 0.96, y: 10 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.98, y: 10 }}
+              >
+                <div className="p-8 border-b border-white/10 flex items-start justify-between gap-6">
+                  <div>
+                    <div className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.25em]">Panduan Game</div>
+                    <div className="text-3xl font-black text-white tracking-tighter mt-1">Selamatkan Lingkungan</div>
+                    <div className="text-white/70 font-bold mt-2 leading-relaxed">
+                      Loop: eksplorasi → tanam → rawat → event muncul → selesaikan cepat → tanah berubah → ulang.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setGuideOpen(false)}
+                    className="px-4 py-2 rounded-full bg-white/10 border border-white/15 text-white/80 text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform"
+                  >
+                    Tutup
+                  </button>
+                </div>
+
+                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-5 rounded-[2rem] bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-white/80">
+                        <Move size={18} />
+                      </div>
+                      <div className="text-white font-black tracking-tight">Kontrol</div>
+                    </div>
+                    <div className="text-white/70 font-bold text-sm leading-relaxed">
+                      WASD untuk bergerak. Klik di map untuk dorong lari ke arah klik. Tekan E saat dekat lahan/pohon untuk aksi.
+                    </div>
+                  </div>
+
+                  <div className="p-5 rounded-[2rem] bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-emerald-300">
+                        <Trophy size={18} />
+                      </div>
+                      <div className="text-white font-black tracking-tight">Tujuan</div>
+                    </div>
+                    <div className="text-white/70 font-bold text-sm leading-relaxed">
+                      Turunkan CO2 sampai target, jaga pohon tetap hidup, dan kejar waktu. Kalau CO2 terlalu tinggi atau semua pohon mati: misi gagal.
+                    </div>
+                  </div>
+
+                  <div className="p-5 rounded-[2rem] bg-white/5 border border-white/10 md:col-span-2">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-2xl bg-red-500/15 border border-red-500/20 flex items-center justify-center text-red-200">
+                        <Activity size={18} />
+                      </div>
+                      <div className="text-white font-black tracking-tight">Event Dinamis</div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                        <div className="flex items-center gap-2 text-orange-200 font-black uppercase text-[11px]">
+                          <Wind size={16} /> Heatwave
+                        </div>
+                        <div className="text-white/70 font-bold text-sm mt-1">Air cepat habis, pohon cepat stres. Prioritaskan siram.</div>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                        <div className="flex items-center gap-2 text-blue-200 font-black uppercase text-[11px]">
+                          <CloudRain size={16} /> Hujan Deras
+                        </div>
+                        <div className="text-white/70 font-bold text-sm mt-1">Air naik, tapi banjir bisa merusak akar kalau terlalu basah.</div>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                        <div className="flex items-center gap-2 text-red-200 font-black uppercase text-[11px]">
+                          <AlertTriangle size={16} /> Hama
+                        </div>
+                        <div className="text-white/70 font-bold text-sm mt-1">Cari pohon bertanda Hama, dekati lalu tekan E.</div>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                        <div className="flex items-center gap-2 text-slate-200 font-black uppercase text-[11px]">
+                          <AlertTriangle size={16} /> Polusi
+                        </div>
+                        <div className="text-white/70 font-bold text-sm mt-1">Kejar sumber polusi (ikon peringatan), tekan E untuk segel.</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
