@@ -2743,6 +2743,758 @@ type Region = {
   y: number;
 };
 
+type MapWeather = 'sun' | 'rain' | 'fog' | 'heat' | 'storm';
+
+type RegionVitals = {
+  tempC: number;
+  co2Index: number;
+  humidity: number;
+  waterIndex: number;
+  trees: number;
+};
+
+const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+
+const stableHash = (s: string) => {
+  let acc = 2166136261;
+  for (let i = 0; i < s.length; i += 1) {
+    acc ^= s.charCodeAt(i);
+    acc = Math.imul(acc, 16777619);
+  }
+  return (acc >>> 0) / 4294967295;
+};
+
+const deriveRegionVitals = (region: Region, weather: MapWeather, t01: number): RegionVitals => {
+  const base = stableHash(region.id);
+  const wobbleA = Math.sin((t01 * 6.283) + base * 9.2);
+  const wobbleB = Math.cos((t01 * 6.283) + base * 5.7);
+
+  const statusTempBase = region.status === 'hijau' ? 26 : region.status === 'kritis' ? 31 : 35;
+  const statusHumBase = region.status === 'hijau' ? 74 : region.status === 'kritis' ? 52 : 34;
+  const statusCo2Base = region.status === 'hijau' ? 42 : region.status === 'kritis' ? 66 : 82;
+  const statusTreesBase = region.status === 'hijau' ? 5200 : region.status === 'kritis' ? 2100 : 650;
+
+  const weatherTemp =
+    weather === 'heat' ? 3.2 : weather === 'rain' ? -1.6 : weather === 'fog' ? -0.8 : weather === 'storm' ? -0.2 : 0;
+  const weatherHum =
+    weather === 'rain' ? 18 : weather === 'fog' ? 14 : weather === 'heat' ? -14 : weather === 'storm' ? 8 : 0;
+  const weatherCo2 =
+    weather === 'storm' ? 6 : weather === 'fog' ? 3 : weather === 'heat' ? 4 : weather === 'rain' ? -2 : 0;
+  const weatherWater =
+    weather === 'rain' ? 22 : weather === 'fog' ? 10 : weather === 'heat' ? -18 : weather === 'storm' ? 6 : 0;
+
+  const tempC = Math.round((statusTempBase + weatherTemp + wobbleA * 1.1 + wobbleB * 0.5) * 10) / 10;
+  const humidity = Math.round(Math.max(18, Math.min(92, statusHumBase + weatherHum + wobbleB * 6 + wobbleA * 4)));
+  const co2Index = Math.round(Math.max(22, Math.min(96, statusCo2Base + weatherCo2 + wobbleA * 4 + wobbleB * 3)));
+  const waterIndex = Math.round(Math.max(10, Math.min(95, (humidity * 0.72) + (region.status === 'hijau' ? 18 : region.status === 'kritis' ? 8 : -6) + weatherWater + wobbleA * 4)));
+  const trees = Math.round(Math.max(80, statusTreesBase + wobbleA * 180 + wobbleB * 140));
+
+  return { tempC, humidity, co2Index, waterIndex, trees };
+};
+
+const MapAmbientCanvas = memo(({ intensity01, seed, tint }: { intensity01: number; seed: number; tint: 'eco' | 'heat' | 'smog' }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const particlesRef = useRef<Array<{
+    id: number;
+    kind: 'dust' | 'leaf';
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    size: number;
+    rot: number;
+    vr: number;
+    alpha: number;
+  }>>([]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const rand = (n: number) => {
+      const v = Math.sin((seed + n) * 999.123) * 10000;
+      return v - Math.floor(v);
+    };
+
+    const ensureParticles = (w: number, h: number) => {
+      const target = Math.round(110 + 160 * clamp01(intensity01));
+      const p = particlesRef.current;
+      if (p.length >= target) return;
+      const start = p.length;
+      for (let i = start; i < target; i += 1) {
+        const r = rand(i + 1);
+        const kind: 'dust' | 'leaf' = r < 0.72 ? 'dust' : 'leaf';
+        const speed = kind === 'dust' ? 12 + rand(i + 21) * 18 : 20 + rand(i + 31) * 34;
+        const angle = (rand(i + 41) * 0.9 - 0.45) * Math.PI;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed * 0.35;
+        p.push({
+          id: i,
+          kind,
+          x: rand(i + 51) * w,
+          y: rand(i + 61) * h,
+          vx,
+          vy,
+          size: kind === 'dust' ? 0.9 + rand(i + 71) * 2.2 : 2.4 + rand(i + 81) * 4.2,
+          rot: rand(i + 91) * Math.PI * 2,
+          vr: (rand(i + 101) * 2 - 1) * 0.8,
+          alpha: kind === 'dust' ? 0.10 + rand(i + 111) * 0.18 : 0.10 + rand(i + 121) * 0.22,
+        });
+      }
+    };
+
+    const resize = () => {
+      const dpr = Math.max(1, Math.min(2.25, window.devicePixelRatio || 1));
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const w = Math.max(1, Math.floor(parent.clientWidth));
+      const h = Math.max(1, Math.floor(parent.clientHeight));
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ensureParticles(w, h);
+    };
+
+    resize();
+    const ro = new ResizeObserver(resize);
+    if (canvas.parentElement) ro.observe(canvas.parentElement);
+    window.addEventListener('resize', resize);
+
+    let last = performance.now();
+    const loop = (now: number) => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const w = Math.max(1, parent.clientWidth);
+      const h = Math.max(1, parent.clientHeight);
+      const dt = Math.max(0.001, Math.min(0.033, (now - last) / 1000));
+      last = now;
+      ensureParticles(w, h);
+
+      ctx.clearRect(0, 0, w, h);
+
+      const dustColor =
+        tint === 'heat' ? 'rgba(251,191,36,' : tint === 'smog' ? 'rgba(148,163,184,' : 'rgba(56,189,248,';
+      const leafColor =
+        tint === 'heat' ? 'rgba(34,197,94,' : tint === 'smog' ? 'rgba(100,116,139,' : 'rgba(16,185,129,';
+
+      const p = particlesRef.current;
+      for (let i = 0; i < p.length; i += 1) {
+        const it = p[i];
+        it.x += it.vx * dt;
+        it.y += it.vy * dt;
+        it.rot += it.vr * dt;
+        const drift = Math.sin((now / 1000) + it.id * 0.7) * 10;
+        it.y += drift * dt * (it.kind === 'leaf' ? 0.55 : 0.25);
+        if (it.x < -30) it.x = w + 30;
+        if (it.x > w + 30) it.x = -30;
+        if (it.y < -30) it.y = h + 30;
+        if (it.y > h + 30) it.y = -30;
+
+        if (it.kind === 'dust') {
+          ctx.beginPath();
+          ctx.fillStyle = `${dustColor}${it.alpha * (0.75 + 0.25 * Math.sin((now / 1000) + it.id))})`;
+          ctx.arc(it.x, it.y, it.size, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.save();
+          ctx.translate(it.x, it.y);
+          ctx.rotate(it.rot);
+          ctx.fillStyle = `${leafColor}${it.alpha * (0.75 + 0.25 * Math.cos((now / 1000) + it.id))})`;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, it.size * 1.15, it.size * 0.65, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = `rgba(255,255,255,${0.05 * clamp01(intensity01)})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(-it.size * 0.8, 0);
+          ctx.lineTo(it.size * 0.8, 0);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      rafRef.current = window.requestAnimationFrame(loop);
+    };
+
+    rafRef.current = window.requestAnimationFrame(loop);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', resize);
+      if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [intensity01, seed, tint]);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" style={{ opacity: 0.9, mixBlendMode: 'screen' }} />;
+});
+
+const GameLoadingOverlay = memo(({
+  title,
+  subtitle,
+  accent,
+  tip,
+  durationMs,
+}: {
+  title: string;
+  subtitle: string;
+  accent: 'eco' | 'warn' | 'danger';
+  tip: string;
+  durationMs: number;
+}) => {
+  const accentRgb =
+    accent === 'eco' ? '16,185,129' : accent === 'warn' ? '245,158,11' : '239,68,68';
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[220] flex items-center justify-center px-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        background:
+          'radial-gradient(circle at 50% 40%, rgba(2,6,23,0.25) 0 520px, rgba(2,6,23,0.78) 920px), rgba(2,6,23,0.70)',
+        backdropFilter: 'blur(14px)',
+      }}
+    >
+      <motion.div
+        initial={{ y: 14, scale: 0.98, opacity: 0 }}
+        animate={{ y: 0, scale: 1, opacity: 1 }}
+        exit={{ y: -10, scale: 0.98, opacity: 0 }}
+        transition={{ duration: 0.28, ease: 'easeOut' }}
+        className="w-full max-w-[560px] rounded-[2.25rem] border border-white/10 overflow-hidden shadow-[0_60px_160px_rgba(0,0,0,0.65)] bg-slate-950/55"
+      >
+        <div
+          className="relative p-6 sm:p-8"
+          style={{
+            backgroundImage: [
+              `radial-gradient(circle at 18% 18%, rgba(${accentRgb},0.20) 0 180px, transparent 520px)`,
+              'radial-gradient(circle at 78% 26%, rgba(56,189,248,0.16) 0 180px, transparent 520px)',
+              'linear-gradient(180deg, rgba(2,6,23,0.35) 0%, rgba(2,6,23,0.70) 100%)',
+            ].join(','),
+          }}
+        >
+          <motion.div
+            className="absolute inset-0 opacity-35 pointer-events-none"
+            animate={{ backgroundPosition: ['0% 0%', '0% 120%'] }}
+            transition={{ repeat: Infinity, duration: 0.55, ease: 'linear' }}
+            style={{
+              backgroundImage:
+                'repeating-linear-gradient(180deg, rgba(255,255,255,0.0) 0 10px, rgba(255,255,255,0.06) 10px 11px, rgba(255,255,255,0.0) 11px 22px)',
+              mixBlendMode: 'overlay',
+            }}
+          />
+
+          <div className="flex items-start gap-4">
+            <div className="relative">
+              <motion.div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center border border-white/10"
+                animate={{ y: [0, -4, 0], rotate: [0, -2, 0] }}
+                transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
+                style={{
+                  background: `radial-gradient(circle at 30% 20%, rgba(${accentRgb},0.22) 0 28px, rgba(255,255,255,0.02) 62px)`,
+                  boxShadow: `0 0 0 1px rgba(${accentRgb},0.10), 0 22px 60px rgba(0,0,0,0.45)`,
+                }}
+              >
+                <Leaf className="text-emerald-200" />
+              </motion.div>
+              <motion.div
+                className="absolute -inset-4 rounded-[1.75rem] pointer-events-none"
+                animate={{ opacity: [0.10, 0.26, 0.10], scale: [0.98, 1.06, 0.98] }}
+                transition={{ repeat: Infinity, duration: 1.65, ease: 'easeInOut' }}
+                style={{ background: `radial-gradient(circle, rgba(${accentRgb},0.22) 0 26px, rgba(${accentRgb},0.0) 78px)` }}
+              />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] font-black uppercase tracking-[0.26em] text-white/50">Loading</div>
+              <div className="text-white font-black tracking-tight text-xl">{title}</div>
+              <div className="text-white/70 font-bold text-sm mt-1 leading-snug">{subtitle}</div>
+              <div className="mt-4 text-[11px] font-black text-white/55 uppercase tracking-[0.22em]">Tip</div>
+              <div className="text-white/80 text-sm font-bold">{tip}</div>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <div className="h-2.5 rounded-full bg-black/35 border border-white/10 overflow-hidden">
+              <motion.div
+                className="h-full"
+                initial={{ width: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{ duration: Math.max(0.35, durationMs / 1000), ease: 'easeInOut' }}
+                style={{
+                  background: `linear-gradient(90deg, rgba(${accentRgb},0.95) 0%, rgba(56,189,248,0.75) 55%, rgba(255,255,255,0.32) 100%)`,
+                }}
+              />
+            </div>
+            <motion.div
+              className="mt-3 flex items-center justify-between text-xs font-black text-white/55"
+              animate={{ opacity: [0.55, 1, 0.55] }}
+              transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+            >
+              <span className="flex items-center gap-2">
+                <Activity size={14} className="text-white/55" /> Sinkronisasi lingkungan
+              </span>
+              <span className="flex items-center gap-2">
+                <Sparkles size={14} className="text-white/55" /> Memuat efek visual
+              </span>
+            </motion.div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+});
+
+type Biome =
+  | 'mountain_forest'
+  | 'forest'
+  | 'floodplain'
+  | 'industry_dry'
+  | 'urban'
+  | 'farmland';
+
+const TerrainMapCanvas = memo(({
+  regions,
+  weatherByRegionId,
+  regionFxAt,
+  view,
+  focusParams,
+  seed,
+}: {
+  regions: Region[];
+  weatherByRegionId: Record<string, MapWeather>;
+  regionFxAt: Record<string, number>;
+  view: { s: number; tx: number; ty: number };
+  focusParams: { s: number; tx: number; ty: number };
+  seed: number;
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const baseRef = useRef<HTMLCanvasElement | null>(null);
+  const heightRef = useRef<{ w: number; h: number; data: Float32Array } | null>(null);
+  const regionPathsRef = useRef<Record<string, Path2D>>({});
+
+  const biomeById = useMemo<Record<string, Biome>>(() => {
+    const m: Record<string, Biome> = {};
+    for (const r of regions) m[r.id] = 'forest';
+    m['kbb-lembang'] = 'mountain_forest';
+    m['kab-ciwidey'] = 'mountain_forest';
+    m['kab-pangalengan'] = 'mountain_forest';
+    m['bdg-bojonagara'] = 'urban';
+    m['bdg-cibeunying'] = 'urban';
+    m['bdg-karees'] = 'urban';
+    m['bdg-tegalega'] = 'urban';
+    m['cimahi'] = 'urban';
+    m['kab-soreang'] = 'farmland';
+    m['kab-majalaya'] = 'industry_dry';
+    m['kab-margahayu'] = 'industry_dry';
+    m['bdg-gedebage'] = 'industry_dry';
+    m['kbb-padalarang'] = 'industry_dry';
+    m['kab-baleendah'] = 'floodplain';
+    m['kbb-cipatat'] = 'farmland';
+    m['kbb-cililin'] = 'forest';
+    m['bdg-ujungberung'] = 'forest';
+    return m;
+  }, [regions]);
+
+  useEffect(() => {
+    const next: Record<string, Path2D> = {};
+    for (const r of regions) {
+      try {
+        next[r.id] = new Path2D(r.path);
+      } catch {}
+    }
+    regionPathsRef.current = next;
+  }, [regions]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const rand = (n: number) => {
+      const v = Math.sin((seed + n) * 999.123) * 10000;
+      return v - Math.floor(v);
+    };
+
+    const hash2 = (x: number, y: number) => {
+      const a = Math.sin((x * 127.1 + y * 311.7 + seed * 0.17) * 43758.5453);
+      return a - Math.floor(a);
+    };
+
+    const smooth = (t: number) => t * t * (3 - 2 * t);
+
+    const noise2 = (x: number, y: number) => {
+      const xi = Math.floor(x);
+      const yi = Math.floor(y);
+      const xf = x - xi;
+      const yf = y - yi;
+      const u = smooth(xf);
+      const v = smooth(yf);
+      const n00 = hash2(xi, yi);
+      const n10 = hash2(xi + 1, yi);
+      const n01 = hash2(xi, yi + 1);
+      const n11 = hash2(xi + 1, yi + 1);
+      const nx0 = n00 * (1 - u) + n10 * u;
+      const nx1 = n01 * (1 - u) + n11 * u;
+      return nx0 * (1 - v) + nx1 * v;
+    };
+
+    const fbm = (x: number, y: number) => {
+      let v = 0;
+      let amp = 0.52;
+      let f = 0.08;
+      for (let i = 0; i < 5; i += 1) {
+        v += noise2(x * f, y * f) * amp;
+        f *= 2.1;
+        amp *= 0.52;
+      }
+      return v;
+    };
+
+    const riverDist = (vx: number, vy: number) => {
+      const p0 = { x: 18, y: 18 };
+      const p1 = { x: 40, y: 28 };
+      const p2 = { x: 62, y: 58 };
+      const p3 = { x: 104, y: 82 };
+      const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+      const bez = (t: number) => {
+        const a = { x: lerp(p0.x, p1.x, t), y: lerp(p0.y, p1.y, t) };
+        const b = { x: lerp(p1.x, p2.x, t), y: lerp(p1.y, p2.y, t) };
+        const c = { x: lerp(p2.x, p3.x, t), y: lerp(p2.y, p3.y, t) };
+        const d = { x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t) };
+        const e = { x: lerp(b.x, c.x, t), y: lerp(b.y, c.y, t) };
+        return { x: lerp(d.x, e.x, t), y: lerp(d.y, e.y, t) };
+      };
+      let best = 1e9;
+      for (let i = 0; i <= 28; i += 1) {
+        const t = i / 28;
+        const q = bez(t);
+        const d = Math.hypot(vx - q.x, vy - q.y);
+        if (d < best) best = d;
+      }
+      return best;
+    };
+
+    const buildBase = (wPx: number, hPx: number) => {
+      const base = document.createElement('canvas');
+      base.width = wPx;
+      base.height = hPx;
+      const bctx = base.getContext('2d');
+      if (!bctx) return null;
+
+      const hw = 420;
+      const hh = 350;
+      const hdata = new Float32Array(hw * hh);
+      for (let y = 0; y < hh; y += 1) {
+        for (let x = 0; x < hw; x += 1) {
+          const vx = (x / (hw - 1)) * 120;
+          const vy = (y / (hh - 1)) * 100;
+          const north = 1 - clamp01((vy - 6) / 44);
+          const mtn = Math.pow(north, 1.8);
+          let h = fbm(vx, vy) * 0.9 + mtn * 0.55;
+          const rd = riverDist(vx, vy);
+          const valley = Math.exp(-(rd * rd) / (2 * 3.2 * 3.2));
+          h -= valley * 0.28;
+          h = clamp01(h);
+          hdata[y * hw + x] = h;
+        }
+      }
+      heightRef.current = { w: hw, h: hh, data: hdata };
+
+      const sampleH = (vx: number, vy: number) => {
+        const xx = clamp01(vx / 120) * (hw - 1);
+        const yy = clamp01(vy / 100) * (hh - 1);
+        const x0 = Math.floor(xx);
+        const y0 = Math.floor(yy);
+        const x1 = Math.min(hw - 1, x0 + 1);
+        const y1 = Math.min(hh - 1, y0 + 1);
+        const fx = xx - x0;
+        const fy = yy - y0;
+        const i00 = hdata[y0 * hw + x0];
+        const i10 = hdata[y0 * hw + x1];
+        const i01 = hdata[y1 * hw + x0];
+        const i11 = hdata[y1 * hw + x1];
+        const a = i00 * (1 - fx) + i10 * fx;
+        const b = i01 * (1 - fx) + i11 * fx;
+        return a * (1 - fy) + b * fy;
+      };
+
+      const toRgb = (r: number, g: number, b: number) => `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+      const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+      bctx.clearRect(0, 0, wPx, hPx);
+      const img = bctx.createImageData(wPx, hPx);
+      const data = img.data;
+      const contourStep = 0.085;
+      for (let y = 0; y < hPx; y += 1) {
+        const vy = (y / (hPx - 1)) * 100;
+        for (let x = 0; x < wPx; x += 1) {
+          const vx = (x / (wPx - 1)) * 120;
+          const h = sampleH(vx, vy);
+          const water = clamp01((0.26 - h) * 6.8);
+          const land = 1 - water;
+          const rock = clamp01((h - 0.74) * 4.2);
+          const soil = land * (1 - rock);
+
+          const baseR = lerp(12, 36, soil) + rock * 40;
+          const baseG = lerp(18, 62, soil) + rock * 36;
+          const baseB = lerp(22, 54, soil) + rock * 28;
+
+          const wR = lerp(10, 40, 1 - water);
+          const wG = lerp(40, 140, 1 - water);
+          const wB = lerp(80, 220, 1 - water);
+
+          let cr = baseR * land + wR * water;
+          let cg = baseG * land + wG * water;
+          let cb = baseB * land + wB * water;
+
+          const t = (h / contourStep) % 1;
+          const band = 1 - Math.min(1, Math.abs(t - 0.5) * 4);
+          const contour = (water < 0.35 ? band : band * 0.25);
+          cr = cr * (1 - contour * 0.10);
+          cg = cg * (1 - contour * 0.12);
+          cb = cb * (1 - contour * 0.14);
+
+          const idx = (y * wPx + x) * 4;
+          data[idx] = Math.max(0, Math.min(255, Math.round(cr)));
+          data[idx + 1] = Math.max(0, Math.min(255, Math.round(cg)));
+          data[idx + 2] = Math.max(0, Math.min(255, Math.round(cb)));
+          data[idx + 3] = 255;
+        }
+      }
+      bctx.putImageData(img, 0, 0);
+
+      bctx.save();
+      bctx.globalCompositeOperation = 'overlay';
+      bctx.globalAlpha = 0.28;
+      for (let i = 0; i < 14; i += 1) {
+        const gx = rand(i + 41) * wPx;
+        const gy = rand(i + 51) * hPx;
+        const gr = (0.18 + rand(i + 61) * 0.32) * Math.min(wPx, hPx);
+        const g = bctx.createRadialGradient(gx, gy, 0, gx, gy, gr);
+        g.addColorStop(0, 'rgba(255,255,255,0.12)');
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        bctx.fillStyle = g;
+        bctx.beginPath();
+        bctx.arc(gx, gy, gr, 0, Math.PI * 2);
+        bctx.fill();
+      }
+      bctx.restore();
+
+      for (const r of regions) {
+        const p = regionPathsRef.current[r.id];
+        if (!p) continue;
+        const biome = biomeById[r.id] ?? 'forest';
+        const weather = weatherByRegionId[r.id] ?? 'sun';
+        const isDry = biome === 'industry_dry' || r.status === 'gersang' || weather === 'heat';
+
+        bctx.save();
+        bctx.scale(wPx / 120, hPx / 100);
+        bctx.clip(p);
+
+        const t = r.status === 'hijau' ? 0.0 : r.status === 'kritis' ? 0.45 : 0.85;
+        const baseSoil = isDry ? `rgba(239,68,68,${0.08 + t * 0.12})` : `rgba(16,185,129,${0.08 + (1 - t) * 0.12})`;
+        bctx.fillStyle = baseSoil;
+        bctx.fillRect(0, 0, 120, 100);
+
+        const vcount = biome === 'mountain_forest' ? 520 : biome === 'forest' ? 420 : biome === 'farmland' ? 320 : biome === 'floodplain' ? 260 : biome === 'urban' ? 160 : 180;
+        for (let i = 0; i < vcount; i += 1) {
+          const px = r.x + (rand(i + r.x * 7) * 22 - 11);
+          const py = r.y + (rand(i + r.y * 11) * 18 - 9);
+          const ok = (px >= 0 && px <= 120 && py >= 0 && py <= 100);
+          if (!ok) continue;
+          const size = biome === 'mountain_forest' ? 0.40 : biome === 'forest' ? 0.38 : biome === 'farmland' ? 0.32 : biome === 'floodplain' ? 0.30 : 0.28;
+          bctx.fillStyle =
+            biome === 'industry_dry' || biome === 'urban'
+              ? `rgba(148,163,184,${0.06 + t * 0.10})`
+              : `rgba(34,197,94,${0.07 + (1 - t) * 0.14})`;
+          bctx.beginPath();
+          bctx.arc(px, py, size + rand(i + 91) * 0.35, 0, Math.PI * 2);
+          bctx.fill();
+        }
+
+        if (biome === 'industry_dry' || biome === 'urban') {
+          const n = biome === 'urban' ? 18 : 12;
+          for (let i = 0; i < n; i += 1) {
+            const bx = r.x + (rand(i + 301) * 18 - 9);
+            const by = r.y + (rand(i + 311) * 14 - 7);
+            const bw = 0.8 + rand(i + 321) * 1.8;
+            const bh = 0.8 + rand(i + 331) * 2.2;
+            bctx.fillStyle = `rgba(15,23,42,${0.22 + t * 0.20})`;
+            bctx.fillRect(bx - bw / 2, by - bh / 2, bw, bh);
+            bctx.fillStyle = `rgba(56,189,248,${0.10 + (1 - t) * 0.10})`;
+            bctx.fillRect(bx - bw / 2 + 0.1, by - bh / 2 + 0.1, Math.max(0.2, bw - 0.2), 0.25);
+          }
+        }
+
+        if (biome === 'floodplain') {
+          bctx.globalAlpha = 0.55;
+          for (let i = 0; i < 12; i += 1) {
+            const wx = r.x + (rand(i + 501) * 20 - 10);
+            const wy = r.y + (rand(i + 511) * 18 - 9);
+            const wr = 2.2 + rand(i + 521) * 4.2;
+            const g = bctx.createRadialGradient(wx, wy, 0, wx, wy, wr);
+            g.addColorStop(0, 'rgba(59,130,246,0.25)');
+            g.addColorStop(1, 'rgba(59,130,246,0)');
+            bctx.fillStyle = g;
+            bctx.beginPath();
+            bctx.arc(wx, wy, wr, 0, Math.PI * 2);
+            bctx.fill();
+          }
+          bctx.globalAlpha = 1;
+        }
+
+        bctx.restore();
+      }
+
+      return base;
+    };
+
+    const resize = () => {
+      const dpr = Math.max(1, Math.min(2.0, window.devicePixelRatio || 1));
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const w = Math.max(1, Math.floor(parent.clientWidth));
+      const h = Math.max(1, Math.floor(parent.clientHeight));
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      baseRef.current = buildBase(960, 800);
+    };
+
+    resize();
+    const ro = new ResizeObserver(resize);
+    if (canvas.parentElement) ro.observe(canvas.parentElement);
+    window.addEventListener('resize', resize);
+
+    const loop = (now: number) => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const w = Math.max(1, parent.clientWidth);
+      const h = Math.max(1, parent.clientHeight);
+
+      ctx.clearRect(0, 0, w, h);
+
+      const base = baseRef.current;
+      if (base) {
+        ctx.save();
+        const sx = w / 120;
+        const sy = h / 100;
+        ctx.scale(sx, sy);
+
+        const combinedS = view.s * focusParams.s;
+        const combinedTx = view.s * focusParams.tx + view.tx;
+        const combinedTy = view.s * focusParams.ty + view.ty;
+
+        ctx.translate(combinedTx, combinedTy);
+        ctx.scale(combinedS, combinedS);
+        ctx.imageSmoothingEnabled = true;
+        ctx.globalAlpha = 1;
+        ctx.drawImage(base, 0, 0, 120, 100);
+
+        const t = now / 1000;
+        const river = new Path2D();
+        river.moveTo(18, 18);
+        river.bezierCurveTo(40, 28, 62, 58, 104, 82);
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = 'rgba(59,130,246,0.30)';
+        ctx.lineWidth = 3.6;
+        ctx.setLineDash([10, 18]);
+        ctx.lineDashOffset = -t * 26;
+        ctx.stroke(river);
+        ctx.strokeStyle = 'rgba(147,197,253,0.16)';
+        ctx.lineWidth = 6.2;
+        ctx.setLineDash([18, 26]);
+        ctx.lineDashOffset = -t * 18;
+        ctx.stroke(river);
+        ctx.restore();
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.globalAlpha = 0.46;
+        const sunA = t * 0.12;
+        const lx = Math.cos(sunA);
+        const ly = Math.sin(sunA) * 0.55 - 0.25;
+        const g = ctx.createLinearGradient(0, 0, 120 * lx + 60, 100 * ly + 50);
+        g.addColorStop(0, 'rgba(255,255,255,0.65)');
+        g.addColorStop(1, 'rgba(2,6,23,0.95)');
+        ctx.fillStyle = g;
+        ctx.fillRect(-20, -20, 160, 140);
+        ctx.restore();
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        ctx.globalAlpha = 0.22;
+        const sun = ctx.createRadialGradient(60, 24, 0, 60, 24, 70);
+        sun.addColorStop(0, 'rgba(255,255,255,0.25)');
+        sun.addColorStop(0.35, 'rgba(56,189,248,0.08)');
+        sun.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = sun;
+        ctx.beginPath();
+        ctx.arc(60, 24, 70, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        for (const r of regions) {
+          const at = regionFxAt[r.id] ?? 0;
+          if (!at) continue;
+          const k = clamp01((now - at) / 3200);
+          if (k <= 0) continue;
+          const p = regionPathsRef.current[r.id];
+          if (!p) continue;
+          ctx.save();
+          ctx.clip(p);
+          ctx.globalCompositeOperation = 'screen';
+          ctx.globalAlpha = 0.35 * (1 - Math.pow(1 - k, 2));
+          const gg = ctx.createRadialGradient(r.x, r.y, 0, r.x, r.y, 22 + k * 28);
+          gg.addColorStop(0, 'rgba(16,185,129,0.40)');
+          gg.addColorStop(1, 'rgba(16,185,129,0)');
+          ctx.fillStyle = gg;
+          ctx.beginPath();
+          ctx.arc(r.x, r.y, 22 + k * 28, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        ctx.restore();
+      }
+
+      rafRef.current = window.requestAnimationFrame(loop);
+    };
+
+    rafRef.current = window.requestAnimationFrame(loop);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', resize);
+      if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [biomeById, focusParams.s, focusParams.tx, focusParams.ty, regionFxAt, regions, seed, view.s, view.tx, view.ty, weatherByRegionId]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 pointer-events-none"
+      style={{ opacity: 0.98, mixBlendMode: 'normal', filter: 'saturate(1.08) contrast(1.06)' }}
+    />
+  );
+});
+
 type Seedling = {
   id: string;
   name: string;
@@ -2789,8 +3541,10 @@ const allRegions: Region[] = [
   { id: 'kbb-cililin', name: 'Cililin & Sindangkerta', status: 'hijau', description: 'Kawasan barat daya dengan waduk dan perbukitan.', path: "M 5,45 L 15,40 L 30,45 L 35,55 L 30,65 L 15,70 L 5,60 Z", x: 18, y: 55 },
 ];
 
-const RegionItem = memo(({ region, isHovered, isFocused, focusActive, hoverActive, onHover, onClick }: {
+const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focusActive, hoverActive, onHover, onClick }: {
   region: Region;
+  statusAnim?: { from: Region['status']; to: Region['status']; at: number } | null;
+  fxAt?: number;
   isHovered: boolean;
   isFocused: boolean;
   focusActive: boolean;
@@ -2800,6 +3554,7 @@ const RegionItem = memo(({ region, isHovered, isFocused, focusActive, hoverActiv
 }) => {
   const isHijau = region.status === 'hijau';
   const fillUrl = `url(#grad-${region.status})`;
+  const fromFillUrl = statusAnim ? `url(#grad-${statusAnim.from})` : fillUrl;
   const glowColor =
     region.status === 'hijau'
       ? 'rgba(16,185,129,0.55)'
@@ -2873,9 +3628,35 @@ const RegionItem = memo(({ region, isHovered, isFocused, focusActive, hoverActiv
           : (showFullLabel ? 6.5 : 5.2);
     return { x, y, w, h, fontSize };
   }, [labelLines.length, labelOffset.dx, labelOffset.dy, region.id, region.x, region.y, showFullLabel]);
+
+  const [animNow, setAnimNow] = useState(0);
+  useEffect(() => {
+    if (!statusAnim) return;
+    const dur = 1200;
+    const tick = () => {
+      const now = Date.now();
+      setAnimNow(now);
+      if (now - statusAnim.at > dur + 120) window.clearInterval(t);
+    };
+    tick();
+    const t = window.setInterval(tick, 50);
+    return () => window.clearInterval(t);
+  }, [statusAnim?.at, statusAnim?.from, statusAnim?.to]);
+  const statusP = statusAnim ? clamp01((Math.max(statusAnim.at, animNow || Date.now()) - statusAnim.at) / 1200) : 1;
+  const isRestoring = Boolean(statusAnim && statusAnim.to === 'hijau' && statusP < 1);
+  const restoreGlow = fxAt ? clamp01((Date.now() - fxAt) / 1800) : 1;
+  const identity =
+    region.id === 'kbb-lembang' || region.id === 'kab-ciwidey' || region.id === 'kab-pangalengan'
+      ? 'cold'
+      : region.id === 'bdg-gedebage' || region.id === 'kab-majalaya' || region.id === 'kab-margahayu'
+        ? 'industry'
+        : region.id === 'kab-baleendah'
+          ? 'flood'
+          : 'neutral';
   
   return (
     <motion.g
+      data-region-id={region.id}
       onMouseEnter={() => onHover(region)}
       onMouseLeave={() => onHover(null)}
       onClick={() => onClick(region)}
@@ -2902,8 +3683,8 @@ const RegionItem = memo(({ region, isHovered, isFocused, focusActive, hoverActiv
     >
       <path
         d={region.path}
-        fill="rgba(0,0,0,0.40)"
-        opacity={isDimmed ? 0.08 : 0.26}
+        fill="rgba(0,0,0,0.65)"
+        opacity={isDimmed ? 0.06 : 0.18}
         transform={`translate(0 ${depth})`}
         className="pointer-events-none"
       />
@@ -2919,8 +3700,30 @@ const RegionItem = memo(({ region, isHovered, isFocused, focusActive, hoverActiv
       />
       <path
         d={region.path}
+        fill={fromFillUrl}
+        fillOpacity={
+          isDimmed
+            ? 0.15
+            : statusAnim && statusAnim.from !== region.status
+              ? (1 - statusP) * (isHovered || isFocused ? 1 : 0.92)
+              : 0
+        }
+        stroke={strokeColor}
+        strokeWidth={isHovered || isFocused ? 0.7 : 0.25}
+        strokeLinejoin="round"
+        filter={isDimmed ? undefined : innerGlowFilter}
+        className="pointer-events-none"
+      />
+      <path
+        d={region.path}
         fill={fillUrl}
-        fillOpacity={isDimmed ? 0.35 : (isHovered || isFocused ? 1 : 0.86)}
+        fillOpacity={
+          isDimmed
+            ? 0.35
+            : statusAnim && statusAnim.from !== region.status
+              ? statusP * (isHovered || isFocused ? 1 : 0.90)
+              : (isHovered || isFocused ? 1 : 0.86)
+        }
         stroke={strokeColor}
         strokeWidth={isHovered || isFocused ? 0.7 : 0.25}
         strokeLinejoin="round"
@@ -2952,6 +3755,37 @@ const RegionItem = memo(({ region, isHovered, isFocused, focusActive, hoverActiv
           className="pointer-events-none"
         />
       )}
+      {identity === 'cold' && !isDimmed && (
+        <motion.path
+          d={region.path}
+          fill="rgba(248,250,252,0.10)"
+          filter="url(#softFog)"
+          initial={false}
+          animate={{ opacity: isHovered || isFocused ? [0.10, 0.22, 0.10] : [0.06, 0.12, 0.06] }}
+          transition={{ repeat: Infinity, duration: 4.6, ease: 'easeInOut' }}
+          className="pointer-events-none"
+        />
+      )}
+      {identity === 'industry' && !isDimmed && (
+        <motion.path
+          d={region.path}
+          fill="rgba(148,163,184,0.10)"
+          initial={false}
+          animate={{ opacity: isHovered || isFocused ? [0.06, 0.16, 0.06] : [0.04, 0.10, 0.04] }}
+          transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}
+          className="pointer-events-none"
+        />
+      )}
+      {identity === 'flood' && !isDimmed && (
+        <motion.path
+          d={region.path}
+          fill="rgba(59,130,246,0.10)"
+          initial={false}
+          animate={{ opacity: isHovered || isFocused ? [0.08, 0.18, 0.08] : [0.05, 0.10, 0.05] }}
+          transition={{ repeat: Infinity, duration: 3.2, ease: 'easeInOut' }}
+          className="pointer-events-none"
+        />
+      )}
       <path
         d={region.path}
         fill="transparent"
@@ -2966,11 +3800,21 @@ const RegionItem = memo(({ region, isHovered, isFocused, focusActive, hoverActiv
         fill={texFill}
         initial={false}
         animate={{
-          opacity: (isHovered || isFocused) && !isDimmed ? [texOpacity * 0.92, texOpacity * 1.08, texOpacity * 0.92] : texOpacity,
+          opacity: (isHovered || isFocused) && !isDimmed ? [texOpacity * 0.92, texOpacity * 1.10, texOpacity * 0.92] : texOpacity,
         }}
         transition={{ repeat: (isHovered || isFocused) && !isDimmed ? Infinity : 0, duration: region.status === 'hijau' ? 3.6 : region.status === 'kritis' ? 2.4 : 2.1, ease: 'easeInOut' }}
         className="pointer-events-none"
       />
+      {isRestoring && !isDimmed && (
+        <motion.path
+          d={region.path}
+          fill="rgba(16,185,129,0.10)"
+          initial={false}
+          animate={{ opacity: [0.05, 0.22, 0.05] }}
+          transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+          className="pointer-events-none"
+        />
+      )}
       <motion.path
         d={region.path}
         fill="transparent"
@@ -3060,15 +3904,25 @@ const RegionItem = memo(({ region, isHovered, isFocused, focusActive, hoverActiv
 });
 
 const InteractiveMap = memo(({
+  regions,
   onHover,
   hoveredRegion,
   onSelect,
+  weatherByRegionId,
+  regionFxAt,
+  restorationWave,
+  statusAnimByRegionId,
   focusedRegionId,
   onResetFocus,
 }: {
+  regions: Region[];
   onHover: (r: Region | null) => void;
   hoveredRegion: Region | null;
   onSelect: (r: Region) => void;
+  weatherByRegionId: Record<string, MapWeather>;
+  regionFxAt: Record<string, number>;
+  restorationWave?: { id: number; regionId: string } | null;
+  statusAnimByRegionId: Record<string, { from: Region['status']; to: Region['status']; at: number }>;
   focusedRegionId?: string | null;
   onResetFocus?: () => void;
 }) => {
@@ -3088,6 +3942,22 @@ const InteractiveMap = memo(({
   const [ripple, setRipple] = useState<{ id: string; key: number } | null>(null);
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
   const [tooltipSize, setTooltipSize] = useState({ w: 220, h: 120 });
+  const [liveTick, setLiveTick] = useState(0);
+  const lastHoverSoundAtRef = useRef(0);
+  const lastHoverIdRef = useRef<string | null>(null);
+  const [view, setView] = useState<{ s: number; tx: number; ty: number }>({ s: 1, tx: 0, ty: 0 });
+  const viewRef = useRef<{ s: number; tx: number; ty: number }>({ s: 1, tx: 0, ty: 0 });
+  const dragRef = useRef<{
+    active: boolean;
+    pointerId: number | null;
+    sx: number;
+    sy: number;
+    stx: number;
+    sty: number;
+  }>({ active: false, pointerId: null, sx: 0, sy: 0, stx: 0, sty: 0 });
+  const inertiaRafRef = useRef<number | null>(null);
+  const inertiaVelRef = useRef<{ vx: number; vy: number }>({ vx: 0, vy: 0 });
+  const lastDragSampleRef = useRef<{ tx: number; ty: number; t: number } | null>(null);
 
   useEffect(() => {
     const el = mapRef.current;
@@ -3141,20 +4011,23 @@ const InteractiveMap = memo(({
   }, [focusedRegionId]);
 
   const visibleRegions = useMemo(() => {
-    return allRegions.filter(r => filters[r.status]);
-  }, [filters]);
+    return regions.filter(r => filters[r.status]);
+  }, [filters, regions]);
 
   const rippleTarget = useMemo(() => {
     if (!ripple) return null;
-    return allRegions.find(r => r.id === ripple.id) ?? null;
-  }, [ripple]);
+    return regions.find(r => r.id === ripple.id) ?? null;
+  }, [regions, ripple]);
 
-  const focusTransform = useMemo(() => {
-    const s = focusActive ? 1.35 : 1;
+  const focusParams = useMemo(() => {
+    const hoverCam = !focusActive && Boolean(hoveredRegion);
+    const s = focusActive ? 1.35 : hoverCam ? 1.12 : 1;
     const centerX = 60;
     const centerY = 50;
-    const target = focusedRegionId ? allRegions.find(r => r.id === focusedRegionId) : null;
-    if (!target) return 'translate(0px, 0px) scale(1)';
+    const target = focusActive
+      ? (focusedRegionId ? regions.find(r => r.id === focusedRegionId) : null)
+      : (hoveredRegion ?? null);
+    if (!target) return { s: 1, tx: 0, ty: 0 };
     const rawTx = centerX - target.x * s;
     const rawTy = centerY - target.y * s;
     const minTx = 120 * (1 - s);
@@ -3163,8 +4036,79 @@ const InteractiveMap = memo(({
     const maxTy = 0;
     const tx = Math.max(minTx, Math.min(maxTx, rawTx));
     const ty = Math.max(minTy, Math.min(maxTy, rawTy));
-    return `translate(${tx}px, ${ty}px) scale(${s})`;
-  }, [focusActive, focusedRegionId]);
+    return { s, tx, ty };
+  }, [focusActive, focusedRegionId, hoveredRegion, regions]);
+
+  const focusTransform = useMemo(() => {
+    return `translate(${focusParams.tx}px, ${focusParams.ty}px) scale(${focusParams.s})`;
+  }, [focusParams.s, focusParams.tx, focusParams.ty]);
+
+  const viewTransform = useMemo(() => {
+    return `translate(${view.tx}px, ${view.ty}px) scale(${view.s})`;
+  }, [view.s, view.tx, view.ty]);
+
+  useEffect(() => {
+    const t = window.setInterval(() => setLiveTick(v => (v + 1) % 1000000), 850);
+    return () => window.clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    if (!hoveredRegion) return;
+    const now = Date.now();
+    if (lastHoverIdRef.current === hoveredRegion.id) return;
+    if (now - lastHoverSoundAtRef.current < 90) return;
+    lastHoverSoundAtRef.current = now;
+    lastHoverIdRef.current = hoveredRegion.id;
+  }, [hoveredRegion]);
+
+  const bgShiftX = useTransform(smoothX, (x) => {
+    const w = Math.max(1, containerSize.w);
+    return ((x / w) - 0.5) * 16;
+  });
+  const bgShiftY = useTransform(smoothY, (y) => {
+    const h = Math.max(1, containerSize.h);
+    return ((y / h) - 0.5) * 14;
+  });
+
+  const tint: 'eco' | 'heat' | 'smog' = useMemo(() => {
+    const h = hoveredRegion?.status ?? null;
+    if (h === 'gersang') return 'heat';
+    if (h === 'kritis') return 'smog';
+    return 'eco';
+  }, [hoveredRegion?.status]);
+
+  const hoveredVitals = useMemo(() => {
+    if (!hoveredRegion) return null;
+    const w = weatherByRegionId[hoveredRegion.id] ?? 'sun';
+    const t01 = ((liveTick % 1200) / 1200);
+    return deriveRegionVitals(hoveredRegion, w, t01);
+  }, [hoveredRegion, liveTick, weatherByRegionId]);
+
+  const hoveredWeather = useMemo(() => {
+    if (!hoveredRegion) return null;
+    return weatherByRegionId[hoveredRegion.id] ?? 'sun';
+  }, [hoveredRegion, weatherByRegionId]);
+
+  const applyViewClamp = useCallback((s: number, tx: number, ty: number) => {
+    const cs = Math.max(1, Math.min(2.25, s));
+    const minTx = 120 * (1 - cs);
+    const minTy = 100 * (1 - cs);
+    const ctx = Math.max(minTx, Math.min(0, tx));
+    const cty = Math.max(minTy, Math.min(0, ty));
+    const next = { s: cs, tx: ctx, ty: cty };
+    viewRef.current = next;
+    setView(next);
+  }, []);
+
+  const clientToViewBox = useCallback((clientX: number, clientY: number) => {
+    const rect = rectRef.current ?? mapRef.current?.getBoundingClientRect() ?? null;
+    if (!rect) return null;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const vx = (x / Math.max(1, rect.width)) * 120;
+    const vy = (y / Math.max(1, rect.height)) * 100;
+    return { vx, vy, x, y, rect };
+  }, []);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const rect = rectRef.current ?? mapRef.current?.getBoundingClientRect() ?? null;
@@ -3179,6 +4123,122 @@ const InteractiveMap = memo(({
       mouseX.set(p.x);
       mouseY.set(p.y);
     });
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    const p = clientToViewBox(e.clientX, e.clientY);
+    if (!p) return;
+    e.preventDefault();
+    if (inertiaRafRef.current) window.cancelAnimationFrame(inertiaRafRef.current);
+    inertiaRafRef.current = null;
+    const cur = viewRef.current;
+    const speed = e.deltaMode === 1 ? 0.14 : 0.09;
+    const dir = e.deltaY > 0 ? -1 : 1;
+    const ns = Math.max(1, Math.min(2.25, cur.s * (1 + dir * speed)));
+    const ntx = cur.tx + (cur.s - ns) * p.vx;
+    const nty = cur.ty + (cur.s - ns) * p.vy;
+    applyViewClamp(ns, ntx, nty);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    const root = mapRef.current;
+    if (!root) return;
+    if (inertiaRafRef.current) window.cancelAnimationFrame(inertiaRafRef.current);
+    inertiaRafRef.current = null;
+    inertiaVelRef.current = { vx: 0, vy: 0 };
+    const target = e.target as HTMLElement | null;
+    if (target && target.closest && target.closest('[data-region-id]')) return;
+    const p = clientToViewBox(e.clientX, e.clientY);
+    if (!p) return;
+    dragRef.current = { active: true, pointerId: e.pointerId, sx: p.x, sy: p.y, stx: viewRef.current.tx, sty: viewRef.current.ty };
+    lastDragSampleRef.current = { tx: viewRef.current.tx, ty: viewRef.current.ty, t: performance.now() };
+    try { root.setPointerCapture(e.pointerId); } catch {}
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragRef.current.active) return;
+    if (dragRef.current.pointerId !== e.pointerId) return;
+    const rect = rectRef.current ?? mapRef.current?.getBoundingClientRect() ?? null;
+    if (!rect) return;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const dxPx = x - dragRef.current.sx;
+    const dyPx = y - dragRef.current.sy;
+    const dxV = (dxPx / Math.max(1, rect.width)) * 120;
+    const dyV = (dyPx / Math.max(1, rect.height)) * 100;
+    const ntx = dragRef.current.stx + dxV;
+    const nty = dragRef.current.sty + dyV;
+    const now = performance.now();
+    const prev = lastDragSampleRef.current;
+    if (prev) {
+      const dt = Math.max(0.001, Math.min(0.05, (now - prev.t) / 1000));
+      inertiaVelRef.current = { vx: (ntx - prev.tx) / dt, vy: (nty - prev.ty) / dt };
+    }
+    lastDragSampleRef.current = { tx: ntx, ty: nty, t: now };
+    applyViewClamp(viewRef.current.s, ntx, nty);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    const root = mapRef.current;
+    if (dragRef.current.pointerId === e.pointerId) {
+      dragRef.current.active = false;
+      dragRef.current.pointerId = null;
+      try { if (root) root.releasePointerCapture(e.pointerId); } catch {}
+    }
+    lastDragSampleRef.current = null;
+    const start = performance.now();
+    const startVel = inertiaVelRef.current;
+    const maxV = 180;
+    const v0 = {
+      vx: Math.max(-maxV, Math.min(maxV, startVel.vx)),
+      vy: Math.max(-maxV, Math.min(maxV, startVel.vy)),
+    };
+    if (Math.hypot(v0.vx, v0.vy) < 18) return;
+    let last = start;
+    const loop = (now: number) => {
+      const dt = Math.max(0.001, Math.min(0.05, (now - last) / 1000));
+      last = now;
+      const cur = viewRef.current;
+      const damp = Math.pow(0.0015, dt);
+      v0.vx *= damp;
+      v0.vy *= damp;
+      if (Math.hypot(v0.vx, v0.vy) < 8) {
+        inertiaRafRef.current = null;
+        return;
+      }
+      const ntx = cur.tx + v0.vx * dt;
+      const nty = cur.ty + v0.vy * dt;
+      const cs = cur.s;
+      const minTx = 120 * (1 - cs);
+      const minTy = 100 * (1 - cs);
+      const clampedTx = Math.max(minTx, Math.min(0, ntx));
+      const clampedTy = Math.max(minTy, Math.min(0, nty));
+      if (clampedTx !== ntx) v0.vx *= 0.15;
+      if (clampedTy !== nty) v0.vy *= 0.15;
+      applyViewClamp(cs, clampedTx, clampedTy);
+      inertiaRafRef.current = window.requestAnimationFrame(loop);
+    };
+    inertiaRafRef.current = window.requestAnimationFrame(loop);
+  };
+
+  const zoomBy = (k: number) => {
+    const rect = rectRef.current ?? mapRef.current?.getBoundingClientRect() ?? null;
+    const cur = viewRef.current;
+    if (!rect) return;
+    if (inertiaRafRef.current) window.cancelAnimationFrame(inertiaRafRef.current);
+    inertiaRafRef.current = null;
+    const cx = 60;
+    const cy = 50;
+    const ns = Math.max(1, Math.min(2.25, cur.s * k));
+    const ntx = cur.tx + (cur.s - ns) * cx;
+    const nty = cur.ty + (cur.s - ns) * cy;
+    applyViewClamp(ns, ntx, nty);
+  };
+
+  const resetView = () => {
+    if (inertiaRafRef.current) window.cancelAnimationFrame(inertiaRafRef.current);
+    inertiaRafRef.current = null;
+    applyViewClamp(1, 0, 0);
   };
 
   const tooltipX = useTransform(smoothX, (x) => {
@@ -3225,16 +4285,157 @@ const InteractiveMap = memo(({
     <div 
       ref={mapRef}
       onMouseMove={handleMouseMove}
+      onWheel={handleWheel}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       onMouseEnter={() => {
         if (mapRef.current) rectRef.current = mapRef.current.getBoundingClientRect();
       }}
       className="relative bg-[#0b1220] rounded-[2rem] border border-white/10 aspect-[4/3] overflow-hidden shadow-2xl"
+      style={{ touchAction: 'none' }}
     >
-      {/* High-tech / Blueprint Background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%)' }} />
-        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(#334155 2px, transparent 2px), linear-gradient(90deg, #334155 2px, transparent 2px)', backgroundSize: '100px 100px' }} />
+        <motion.div className="absolute inset-0 opacity-45" style={{ x: bgShiftX, y: bgShiftY, backgroundImage: 'radial-gradient(circle at 50% 50%, #1e293b 0%, #0b1220 70%, #020617 100%)' }} />
+        <motion.div className="absolute inset-0 opacity-18" style={{ x: useTransform(bgShiftX, v => -v * 0.8), y: useTransform(bgShiftY, v => -v * 0.8), backgroundImage: 'linear-gradient(rgba(56,189,248,0.26) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.18) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+        <motion.div className="absolute inset-0 opacity-10" style={{ x: useTransform(bgShiftX, v => v * 0.55), y: useTransform(bgShiftY, v => v * 0.55), backgroundImage: 'linear-gradient(rgba(148,163,184,0.26) 2px, transparent 2px), linear-gradient(90deg, rgba(148,163,184,0.18) 2px, transparent 2px)', backgroundSize: '110px 110px' }} />
+        <motion.div
+          className="absolute -inset-10 opacity-30 blur-2xl"
+          animate={{ backgroundPosition: ['0% 0%', '100% 70%', '0% 0%'] }}
+          transition={{ repeat: Infinity, duration: 14, ease: 'easeInOut' }}
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 18% 22%, rgba(16,185,129,0.18) 0 240px, transparent 620px), radial-gradient(circle at 82% 24%, rgba(56,189,248,0.14) 0 220px, transparent 600px), radial-gradient(circle at 52% 84%, rgba(245,158,11,0.10) 0 260px, transparent 640px)',
+            backgroundSize: '180% 180%',
+          }}
+        />
+        <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 140px rgba(0,0,0,0.85), inset 0 0 220px rgba(2,6,23,0.85)' }} />
+      </div>
+
+      <motion.div
+        className="absolute left-1/2 bottom-4 w-[78%] h-20 -translate-x-1/2 pointer-events-none blur-2xl opacity-70"
+        animate={{ opacity: [0.35, 0.62, 0.35], scale: [0.98, 1.03, 0.98] }}
+        transition={{ repeat: Infinity, duration: 4.8, ease: 'easeInOut' }}
+        style={{
+          backgroundImage:
+            'radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.22) 42%, rgba(0,0,0,0) 70%)',
+          mixBlendMode: 'multiply',
+        }}
+      />
+
+      <MapAmbientCanvas intensity01={0.9} seed={1337} tint={tint} />
+      <motion.div
+        className="absolute -inset-10 pointer-events-none opacity-35 blur-xl"
+        animate={{ x: ['-12%', '12%', '-12%'] }}
+        transition={{ repeat: Infinity, duration: 22, ease: 'easeInOut' }}
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 20% 30%, rgba(248,250,252,0.10) 0 140px, transparent 360px), radial-gradient(circle at 60% 40%, rgba(248,250,252,0.08) 0 160px, transparent 420px), radial-gradient(circle at 80% 25%, rgba(248,250,252,0.06) 0 120px, transparent 360px)',
+          mixBlendMode: 'screen',
+        }}
+      />
+      <motion.div
+        className="absolute -inset-12 pointer-events-none blur-3xl opacity-55"
+        animate={{ x: [-22, 18, -22], y: [10, -8, 10] }}
+        transition={{ repeat: Infinity, duration: 16, ease: 'easeInOut' }}
+        style={{
+          mixBlendMode: 'screen',
+          backgroundImage:
+            'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08) 0 220px, transparent 560px), radial-gradient(circle at 70% 60%, rgba(255,255,255,0.06) 0 240px, transparent 600px), radial-gradient(circle at 40% 80%, rgba(56,189,248,0.06) 0 260px, transparent 640px)',
+        }}
+      />
+      <motion.div
+        className="absolute -inset-12 pointer-events-none blur-3xl opacity-45"
+        animate={{ x: [16, -18, 16], y: [-12, 10, -12] }}
+        transition={{ repeat: Infinity, duration: 19, ease: 'easeInOut' }}
+        style={{
+          mixBlendMode: 'screen',
+          backgroundImage:
+            'radial-gradient(circle at 60% 20%, rgba(148,163,184,0.06) 0 260px, transparent 640px), radial-gradient(circle at 20% 70%, rgba(16,185,129,0.05) 0 240px, transparent 620px)',
+        }}
+      />
+
+      <AnimatePresence>
+        {hoveredRegion && containerSize.w > 0 && containerSize.h > 0 && (
+          <motion.svg
+            key={`energy-${hoveredRegion.id}`}
+            className="absolute inset-0 pointer-events-none z-[18]"
+            viewBox={`0 0 ${containerSize.w} ${containerSize.h}`}
+            preserveAspectRatio="none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {(() => {
+              const combinedS = view.s * focusParams.s;
+              const combinedTx = view.s * focusParams.tx + view.tx;
+              const combinedTy = view.s * focusParams.ty + view.ty;
+              const rx = combinedS * hoveredRegion.x + combinedTx;
+              const ry = combinedS * hoveredRegion.y + combinedTy;
+              const x2 = (rx / 120) * containerSize.w;
+              const y2 = (ry / 100) * containerSize.h;
+              return (
+                <>
+                  <motion.line
+                    x1={smoothX}
+                    y1={smoothY}
+                    x2={x2}
+                    y2={y2}
+                    initial={false}
+                    animate={{
+                      opacity: [0.15, 0.45, 0.15],
+                      strokeDashoffset: [0, -48],
+                    }}
+                    transition={{ repeat: Infinity, duration: 1.25, ease: 'linear' }}
+                    stroke="rgba(56,189,248,0.32)"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeDasharray="10 14"
+                  />
+                  <motion.circle
+                    cx={x2}
+                    cy={y2}
+                    r={0}
+                    initial={false}
+                    animate={{ r: [6, 16, 6], opacity: [0.10, 0.22, 0.10] }}
+                    transition={{ repeat: Infinity, duration: 1.35, ease: 'easeInOut' }}
+                    fill="rgba(16,185,129,0.10)"
+                    stroke="rgba(255,255,255,0.14)"
+                    strokeWidth={1}
+                  />
+                </>
+              );
+            })()}
+          </motion.svg>
+        )}
+      </AnimatePresence>
+
+      <div className="absolute top-4 right-4 z-20 pointer-events-auto flex items-center gap-2">
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.96 }}
+          onClick={() => zoomBy(1.14)}
+          className="w-10 h-10 rounded-2xl bg-white/8 border border-white/14 backdrop-blur-xl shadow-[0_20px_46px_rgba(0,0,0,0.55)] hover:bg-white/10 transition-all text-white font-black"
+        >
+          +
+        </motion.button>
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.96 }}
+          onClick={() => zoomBy(0.88)}
+          className="w-10 h-10 rounded-2xl bg-white/8 border border-white/14 backdrop-blur-xl shadow-[0_20px_46px_rgba(0,0,0,0.55)] hover:bg-white/10 transition-all text-white font-black"
+        >
+          −
+        </motion.button>
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.96 }}
+          onClick={resetView}
+          className="px-3 h-10 rounded-2xl bg-white/8 border border-white/14 backdrop-blur-xl shadow-[0_20px_46px_rgba(0,0,0,0.55)] hover:bg-white/10 transition-all text-[10px] text-white/80 font-black uppercase tracking-widest"
+        >
+          Reset
+        </motion.button>
       </div>
 
       <div className="absolute top-4 left-4 z-20 pointer-events-auto">
@@ -3665,9 +4866,19 @@ const InteractiveMap = memo(({
 
         <motion.g
           initial={false}
-          animate={{ transform: focusTransform }}
-          transition={{ duration: 0.42, ease: 'easeInOut' }}
+          animate={{ transform: viewTransform }}
+          transition={{ duration: 0.36, ease: 'easeOut' }}
         >
+          <motion.g
+            initial={false}
+            animate={{ transform: focusTransform }}
+            transition={{ duration: 0.42, ease: 'easeInOut' }}
+          >
+          <g opacity="0.85">
+            <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="rgba(2,6,23,0.55)" transform="translate(0 4.2)" />
+            <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="rgba(2,6,23,0.35)" transform="translate(0 3.2)" />
+            <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="rgba(2,6,23,0.22)" transform="translate(0 2.2)" />
+          </g>
           <g filter="url(#softShadow)">
             <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="url(#tex-outside)" opacity="0.95" />
           </g>
@@ -3675,6 +4886,8 @@ const InteractiveMap = memo(({
             <RegionItem
               key={r.id}
               region={r}
+              statusAnim={statusAnimByRegionId[r.id] ?? null}
+              fxAt={regionFxAt[r.id]}
               isHovered={hoveredRegion?.id === r.id}
               isFocused={focusedRegionId === r.id}
               focusActive={focusActive}
@@ -3683,6 +4896,112 @@ const InteractiveMap = memo(({
               onClick={onSelect}
             />
           ))}
+          {visibleRegions.map(r => {
+            const w = weatherByRegionId[r.id] ?? 'sun';
+            const isHover = hoveredRegion?.id === r.id;
+            const isFocus = focusedRegionId === r.id;
+            const show = isHover || isFocus || (r.status !== 'hijau' && (liveTick % 6 === 0));
+            if (!show) return null;
+            const baseOpacity = isHover || isFocus ? 0.9 : 0.55;
+            const scale = isHover || isFocus ? 1 : 0.9;
+            if (w === 'rain') {
+              return (
+                <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} style={{ transformOrigin: `${r.x}px ${r.y}px` }} initial={false} animate={{ opacity: baseOpacity, scale }}>
+                  <motion.g animate={{ y: [0, 1.6, 0] }} transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}>
+                    {[...Array(8)].map((_, i) => (
+                      <motion.line
+                        key={i}
+                        x1={-6 + i * 1.6}
+                        y1={-10}
+                        x2={-4 + i * 1.6}
+                        y2={-4}
+                        stroke="rgba(147,197,253,0.55)"
+                        strokeWidth={0.65}
+                        strokeLinecap="round"
+                        initial={false}
+                        animate={{ y1: [-12, 6], y2: [-6, 12], opacity: [0.0, 0.55, 0.0] }}
+                        transition={{ repeat: Infinity, duration: 0.95 + i * 0.03, ease: 'linear', delay: i * 0.08 }}
+                      />
+                    ))}
+                  </motion.g>
+                </motion.g>
+              );
+            }
+            if (w === 'fog') {
+              return (
+                <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: baseOpacity, scale }}>
+                  <motion.circle
+                    r={10}
+                    fill="rgba(255,255,255,0.06)"
+                    filter="url(#softFog)"
+                    animate={{ r: [9.5, 12.5, 9.5], opacity: [0.10, 0.22, 0.10] }}
+                    transition={{ repeat: Infinity, duration: 3.6, ease: 'easeInOut' }}
+                  />
+                  <motion.circle
+                    r={6}
+                    fill="rgba(56,189,248,0.06)"
+                    animate={{ r: [6, 8.5, 6], opacity: [0.06, 0.14, 0.06] }}
+                    transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut', delay: 0.15 }}
+                  />
+                </motion.g>
+              );
+            }
+            if (w === 'heat') {
+              return (
+                <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: baseOpacity, scale }}>
+                  <motion.path
+                    d="M -10 -4 C -6 -10, -2 -2, 2 -8 C 6 -14, 10 -6, 12 -12"
+                    fill="none"
+                    stroke="rgba(251,191,36,0.30)"
+                    strokeWidth={1.0}
+                    strokeLinecap="round"
+                    animate={{ opacity: [0.12, 0.34, 0.12], y: [0, -1.2, 0] }}
+                    transition={{ repeat: Infinity, duration: 1.9, ease: 'easeInOut' }}
+                  />
+                  <motion.path
+                    d="M -12 3 C -7 -3, -3 5, 1 -1 C 5 -7, 9 1, 12 -4"
+                    fill="none"
+                    stroke="rgba(239,68,68,0.22)"
+                    strokeWidth={0.9}
+                    strokeLinecap="round"
+                    animate={{ opacity: [0.10, 0.28, 0.10], y: [0, 1.1, 0] }}
+                    transition={{ repeat: Infinity, duration: 1.7, ease: 'easeInOut', delay: 0.12 }}
+                  />
+                </motion.g>
+              );
+            }
+            if (w === 'storm') {
+              return (
+                <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: baseOpacity, scale }}>
+                  <motion.path
+                    d="M -2 -12 L 6 -12 L 1 -2 L 8 -2 L -4 12 L 0 2 L -7 2 Z"
+                    fill="rgba(248,250,252,0.12)"
+                    stroke="rgba(56,189,248,0.30)"
+                    strokeWidth={0.7}
+                    strokeLinejoin="round"
+                    animate={{ opacity: [0.05, 0.65, 0.08, 0.55, 0.05] }}
+                    transition={{ repeat: Infinity, duration: 2.6, ease: 'easeInOut' }}
+                  />
+                </motion.g>
+              );
+            }
+            return (
+              <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: baseOpacity, scale }}>
+                <motion.circle
+                  r={7.5}
+                  fill="rgba(16,185,129,0.06)"
+                  animate={{ opacity: [0.06, 0.18, 0.06], r: [7, 9.2, 7] }}
+                  transition={{ repeat: Infinity, duration: 3.2, ease: 'easeInOut' }}
+                />
+                <motion.circle
+                  r={4.5}
+                  fill="rgba(255,255,255,0.05)"
+                  animate={{ opacity: [0.05, 0.14, 0.05], r: [4.2, 5.3, 4.2] }}
+                  transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut', delay: 0.1 }}
+                />
+              </motion.g>
+            );
+          })}
           <AnimatePresence>
             {rippleTarget && (
               <motion.g
@@ -3722,6 +5041,131 @@ const InteractiveMap = memo(({
               </motion.g>
             )}
           </AnimatePresence>
+          <AnimatePresence>
+            {restorationWave && restorationWave.regionId && (
+              <motion.g
+                key={`restore-${restorationWave.id}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                {(() => {
+                  const target = regions.find(r => r.id === restorationWave.regionId);
+                  if (!target) return null;
+                  return (
+                    <motion.g>
+                      <motion.circle
+                        cx={target.x}
+                        cy={target.y}
+                        r={4}
+                        fill="rgba(16,185,129,0.12)"
+                        initial={{ r: 2, opacity: 0.0 }}
+                        animate={{ r: [2, 18, 36], opacity: [0.0, 0.28, 0.0] }}
+                        transition={{ duration: 0.9, ease: 'easeOut' }}
+                      />
+                      <motion.circle
+                        cx={target.x}
+                        cy={target.y}
+                        r={6}
+                        fill="transparent"
+                        stroke="rgba(16,185,129,0.75)"
+                        strokeWidth={1.4}
+                        initial={{ r: 6, opacity: 0.0 }}
+                        animate={{ r: [6, 22, 44], opacity: [0.0, 0.65, 0.0] }}
+                        transition={{ duration: 0.95, ease: 'easeOut' }}
+                      />
+                    </motion.g>
+                  );
+                })()}
+              </motion.g>
+            )}
+          </AnimatePresence>
+          {visibleRegions.map((r) => {
+            const base = stableHash(r.id);
+            const w = weatherByRegionId[r.id] ?? 'sun';
+            const isOn = (hoveredRegion?.id === r.id) || (focusedRegionId === r.id) || (r.status !== 'hijau' && (liveTick % 5 === 0));
+            if (!isOn) return null;
+
+            if (r.status === 'hijau') {
+              const speed = 3.8 + base * 1.8;
+              const y0 = -6 - (base * 6);
+              return (
+                <motion.g key={`bird-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: 0.55 }}>
+                  {[...Array(3)].map((_, i) => (
+                    <motion.path
+                      key={i}
+                      d="M -2 0 Q 0 -2 2 0 Q 0 -1 -2 0 Z"
+                      fill="rgba(255,255,255,0.18)"
+                      stroke="rgba(16,185,129,0.35)"
+                      strokeWidth={0.35}
+                      initial={false}
+                      animate={{
+                        x: [-10 - i * 4, 12 + i * 5],
+                        y: [y0 - i * 3, y0 - 2 - i * 2],
+                        opacity: [0.0, 0.55, 0.0],
+                      }}
+                      transition={{ repeat: Infinity, duration: speed + i * 0.6, ease: 'linear', delay: i * 0.7 + base * 0.6 }}
+                    />
+                  ))}
+                </motion.g>
+              );
+            }
+
+            if (r.status === 'kritis') {
+              return (
+                <motion.g key={`smoke-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: 0.65 }}>
+                  <motion.g animate={{ y: [0, -1.8, 0] }} transition={{ repeat: Infinity, duration: 2.6 + base, ease: 'easeInOut' }}>
+                    {[...Array(4)].map((_, i) => (
+                      <motion.circle
+                        key={i}
+                        cx={-3 + i * 3}
+                        cy={-4 - i * 2}
+                        r={2.2 + i * 0.5}
+                        fill="rgba(148,163,184,0.14)"
+                        stroke="rgba(255,255,255,0.06)"
+                        strokeWidth={0.35}
+                        initial={false}
+                        animate={{ cy: [-2, -12], opacity: [0.0, 0.22, 0.0], r: [2.0 + i * 0.4, 3.8 + i * 0.55] }}
+                        transition={{ repeat: Infinity, duration: 2.2 + i * 0.35 + base, ease: 'easeOut', delay: i * 0.18 }}
+                      />
+                    ))}
+                  </motion.g>
+                  <motion.path
+                    d="M -10 4 L 10 4"
+                    stroke="rgba(245,158,11,0.22)"
+                    strokeWidth={0.9}
+                    strokeLinecap="round"
+                    strokeDasharray="3 6"
+                    animate={{ strokeDashoffset: [0, -18], opacity: [0.10, 0.26, 0.10] }}
+                    transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
+                  />
+                </motion.g>
+              );
+            }
+
+            if (r.status === 'gersang') {
+              const dust = w === 'heat' ? 0.22 : 0.16;
+              return (
+                <motion.g key={`dust-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: 0.75 }}>
+                  {[...Array(6)].map((_, i) => (
+                    <motion.circle
+                      key={i}
+                      cx={-12 + i * 4}
+                      cy={6 - (i % 2) * 2}
+                      r={1.2 + (i % 3) * 0.6}
+                      fill={`rgba(251,191,36,${dust})`}
+                      initial={false}
+                      animate={{ cx: [-14 + i * 2, 14 - i * 2], opacity: [0.0, dust, 0.0] }}
+                      transition={{ repeat: Infinity, duration: 1.8 + i * 0.12 + base, ease: 'linear', delay: i * 0.1 }}
+                    />
+                  ))}
+                </motion.g>
+              );
+            }
+
+            return null;
+          })}
+          </motion.g>
         </motion.g>
       </svg>
 
@@ -3765,6 +5209,43 @@ const InteractiveMap = memo(({
               }`}>{hoveredRegion.status}</span>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed font-medium">{hoveredRegion.description}</p>
+            {hoveredVitals && (
+              <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-black text-white/80">
+                <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-2 py-1.5">
+                  <Thermometer size={14} className="text-orange-200" />
+                  <span className="text-white/70">Suhu</span>
+                  <span className="ml-auto text-white">{hoveredVitals.tempC}°C</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-2 py-1.5">
+                  <Droplets size={14} className="text-blue-200" />
+                  <span className="text-white/70">Lembab</span>
+                  <span className="ml-auto text-white">{hoveredVitals.humidity}%</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-2 py-1.5">
+                  <Droplets size={14} className="text-sky-200" />
+                  <span className="text-white/70">Air</span>
+                  <span className="ml-auto text-white">{hoveredVitals.waterIndex}</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-2 py-1.5">
+                  <Activity size={14} className="text-red-200" />
+                  <span className="text-white/70">CO2</span>
+                  <span className="ml-auto text-white">{hoveredVitals.co2Index}</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-2 py-1.5">
+                  <Trees size={14} className="text-emerald-200" />
+                  <span className="text-white/70">Pohon</span>
+                  <span className="ml-auto text-white">{hoveredVitals.trees}</span>
+                </div>
+              </div>
+            )}
+            {hoveredWeather && (
+              <div className="mt-2 flex items-center gap-2 text-[10px] font-black text-white/70 uppercase tracking-widest">
+                {hoveredWeather === 'rain' ? <CloudRain size={14} className="text-blue-200" /> : hoveredWeather === 'fog' ? <Wind size={14} className="text-slate-200" /> : hoveredWeather === 'heat' ? <Sun size={14} className="text-orange-200" /> : hoveredWeather === 'storm' ? <AlertTriangle size={14} className="text-blue-200" /> : <Sparkles size={14} className="text-emerald-200" />}
+                <span>
+                  {hoveredWeather === 'rain' ? 'Hujan Lokal' : hoveredWeather === 'fog' ? 'Kabut' : hoveredWeather === 'heat' ? 'Panas' : hoveredWeather === 'storm' ? 'Badai Jauh' : 'Cerah'}
+                </span>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -3843,6 +5324,34 @@ const TreeGame: React.FC = () => {
   const [mapFocusLock, setMapFocusLock] = useState(false);
   const [showAnalysisMascot, setShowAnalysisMascot] = useState(true);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [restoredRegionIds, setRestoredRegionIds] = useState<string[]>(() => {
+    try {
+      const raw = window.localStorage.getItem('treegame:restored-regions');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(v => typeof v === 'string');
+    } catch {
+      return [];
+    }
+  });
+  const [improvedRegionIds, setImprovedRegionIds] = useState<string[]>(() => {
+    try {
+      const raw = window.localStorage.getItem('treegame:improved-regions');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(v => typeof v === 'string');
+    } catch {
+      return [];
+    }
+  });
+  const [mapRegionFxAt, setMapRegionFxAt] = useState<Record<string, number>>({});
+  const [mapStatusAnimByRegionId, setMapStatusAnimByRegionId] = useState<Record<string, { from: Region['status']; to: Region['status']; at: number }>>({});
+  const [mapRestorationWave, setMapRestorationWave] = useState<{ id: number; regionId: string } | null>(null);
+  const [mapTransition, setMapTransition] = useState<{ id: number; region: Region } | null>(null);
+  const [gameLoading, setGameLoading] = useState<{ id: number; title: string; subtitle: string; accent: 'eco' | 'warn' | 'danger'; tip: string; durationMs: number } | null>(null);
+  const [mapAlert, setMapAlert] = useState<{ id: number; title: string; subtitle: string; tone: 'warn' | 'info' | 'good' } | null>(null);
   const regionSelectTimerRef = useRef<number | null>(null);
   const [plantingStep, setPlantingStep] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -3879,6 +5388,7 @@ const TreeGame: React.FC = () => {
   // Tutorial & Flow State
   const [tutorialActive, setTutorialActive] = useState(true);
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [tutorialDockCollapsed, setTutorialDockCollapsed] = useState(false);
   const [unlockedRadius, setUnlockedRadius] = useState(450); // Initial area radius (larger for better visibility)
   const tutorialSpot = { x: 400, y: 400 }; // The only spot allowed initially
 
@@ -3907,6 +5417,118 @@ const TreeGame: React.FC = () => {
     if (activeEvent.type === 'PESTS') return { title: 'HAMA', subtitle: 'Cari pohon bertanda Hama lalu tekan E untuk membersihkan.', tone: 'warn' as const, icon: AlertTriangle };
     return { title: 'POLUSI', subtitle: 'Kejar ikon peringatan lalu tekan E untuk segel sumber polusi.', tone: 'warn' as const, icon: Activity };
   }, [activeEvent]);
+
+  const regions = useMemo<Region[]>(() => {
+    const restored = new Set(restoredRegionIds);
+    const improved = new Set(improvedRegionIds);
+    const bump = (s: Region['status']): Region['status'] => (s === 'gersang' ? 'kritis' : 'hijau');
+    return allRegions.map((r) => {
+      if (restored.has(r.id)) return { ...r, status: 'hijau' as const };
+      if (improved.has(r.id) && r.status !== 'hijau') return { ...r, status: bump(r.status) };
+      return r;
+    });
+  }, [improvedRegionIds, restoredRegionIds]);
+
+  const weatherByRegionId = useMemo<Record<string, MapWeather>>(() => {
+    const m: Record<string, MapWeather> = {};
+    for (const r of allRegions) m[r.id] = 'sun';
+    m['bdg-gedebage'] = 'rain';
+    m['kab-baleendah'] = 'fog';
+    m['kab-majalaya'] = 'heat';
+    m['kab-margahayu'] = 'storm';
+    m['kbb-padalarang'] = 'heat';
+    m['cimahi'] = 'storm';
+    return m;
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('treegame:restored-regions', JSON.stringify(restoredRegionIds));
+    } catch {}
+  }, [restoredRegionIds]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('treegame:improved-regions', JSON.stringify(improvedRegionIds));
+    } catch {}
+  }, [improvedRegionIds]);
+
+  useEffect(() => {
+    if (phase !== 'finished') return;
+    if (!selectedRegion) return;
+    const mainId = selectedRegion.id;
+    const main = allRegions.find(r => r.id === mainId) ?? null;
+    if (!main) return;
+
+    const neighborIds = allRegions
+      .filter(r => r.id !== mainId)
+      .map(r => ({ id: r.id, d: Math.hypot(r.x - main.x, r.y - main.y) }))
+      .filter(x => x.d <= 26)
+      .sort((a, b) => a.d - b.d)
+      .slice(0, 3)
+      .map(x => x.id);
+
+    setRestoredRegionIds(prev => (prev.includes(mainId) ? prev : [...prev, mainId]));
+    setImprovedRegionIds(prev => {
+      const set = new Set(prev);
+      for (const id of neighborIds) {
+        set.add(id);
+      }
+      return Array.from(set);
+    });
+
+    const waveIds = [mainId, ...neighborIds];
+    waveIds.forEach((rid, idx) => {
+      window.setTimeout(() => setMapRestorationWave({ id: Date.now() + idx, regionId: rid }), 120 + idx * 160);
+    });
+    setMapStatusAnimByRegionId(prev => {
+      const now = Date.now();
+      const statusNow: Record<string, Region['status']> = {};
+      for (const r of regions) statusNow[r.id] = r.status;
+      const bump = (s: Region['status']): Region['status'] => (s === 'gersang' ? 'kritis' : 'hijau');
+      const next = { ...prev };
+      for (const rid of waveIds) {
+        const from = statusNow[rid] ?? (allRegions.find(r => r.id === rid)?.status ?? 'kritis');
+        const to = rid === mainId ? 'hijau' : bump(from);
+        if (from === to) continue;
+        next[rid] = { from, to, at: now };
+      }
+      return next;
+    });
+    setMapRegionFxAt(prev => {
+      const next = { ...prev };
+      const now = Date.now();
+      for (const rid of waveIds) next[rid] = now;
+      return next;
+    });
+  }, [phase, regions, selectedRegion]);
+
+  useEffect(() => {
+    if (phase !== 'selection') return;
+    const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * Math.max(1, arr.length))];
+    const mk = () => {
+      const targets = regions.filter(r => r.status !== 'hijau');
+      const t = pick(targets.length ? targets : regions);
+      const kind = Math.random();
+      const title =
+        kind < 0.34 ? `${t.name} mengalami kekeringan` : kind < 0.68 ? `${t.name} membutuhkan restorasi` : 'CO2 meningkat drastis';
+      const subtitle =
+        kind < 0.34 ? 'Prioritaskan wilayah gersang, tanam pohon penahan panas.' : kind < 0.68 ? 'Buka misi dan pulihkan lahan sekarang.' : 'Cari wilayah kritis dan turunkan polusi.';
+      setMapAlert({ id: Date.now(), title, subtitle, tone: kind < 0.34 ? 'warn' : kind < 0.68 ? 'info' : 'warn' });
+    };
+    const first = window.setTimeout(mk, 2800);
+    const interval = window.setInterval(mk, 13000 + Math.random() * 9000);
+    return () => {
+      window.clearTimeout(first);
+      window.clearInterval(interval);
+    };
+  }, [phase, regions]);
+
+  useEffect(() => {
+    if (!mapAlert) return;
+    const t = window.setTimeout(() => setMapAlert(null), 3600);
+    return () => window.clearTimeout(t);
+  }, [mapAlert]);
 
   // #region debug-point A:init
   const dbgRunIdRef = useRef<'pre' | 'post'>('pre');
@@ -4921,6 +6543,19 @@ const TreeGame: React.FC = () => {
     window.setTimeout(() => playTone(990, 120, 'sine', 0.08), 70);
   };
 
+  const lastMapHoverIdRef = useRef<string | null>(null);
+  const lastMapHoverAtRef = useRef<number>(0);
+  useEffect(() => {
+    if (phase !== 'selection') return;
+    if (!hoveredRegion) return;
+    if (hoveredRegion.id === lastMapHoverIdRef.current) return;
+    const now = Date.now();
+    if (now - lastMapHoverAtRef.current < 110) return;
+    lastMapHoverAtRef.current = now;
+    lastMapHoverIdRef.current = hoveredRegion.id;
+    playUiHover();
+  }, [hoveredRegion, phase]);
+
   const startAmbience = () => {
     const ctx = ensureAudioContext();
     if (!ctx) return;
@@ -5056,6 +6691,7 @@ const TreeGame: React.FC = () => {
       setMapFocusLock(true);
       setMapFocusRegionId(region.id);
       setHoveredRegion(region);
+      playUiClick();
       if (regionSelectTimerRef.current) window.clearTimeout(regionSelectTimerRef.current);
       regionSelectTimerRef.current = window.setTimeout(() => {
         setMapFocusLock(false);
@@ -5067,13 +6703,25 @@ const TreeGame: React.FC = () => {
     setMapFocusLock(true);
     setMapFocusRegionId(region.id);
     setHoveredRegion(region);
+    setMapTransition({ id: Date.now(), region });
+    setGameLoading({
+      id: Date.now() + 1,
+      title: `Mengunci ${region.name}`,
+      subtitle: 'Menyiapkan data wilayah & briefing misi…',
+      accent: region.status === 'kritis' ? 'warn' : 'danger',
+      tip: 'Hover wilayah untuk cek data. Setelah masuk, tekan E untuk interaksi di dalam area.',
+      durationMs: 760,
+    });
+    playUiClick();
+    playNoise(140, 0.20, 1800, 720);
     if (regionSelectTimerRef.current) window.clearTimeout(regionSelectTimerRef.current);
     regionSelectTimerRef.current = window.setTimeout(() => {
       setMapFocusLock(false);
       setMapFocusRegionId(null);
       regionSelectTimerRef.current = null;
+      setMapTransition(null);
       commitRegionSelect(region);
-    }, 420);
+    }, 760);
   };
 
   const commitRegionSelect = (region: Region) => {
@@ -5104,6 +6752,14 @@ const TreeGame: React.FC = () => {
   const handleSeedlingSelect = (seedling: Seedling) => {
     setSelectedSeedling(seedling);
     setPhase('planting');
+    setGameLoading({
+      id: Date.now(),
+      title: 'Memuat Dunia Restorasi',
+      subtitle: 'Membangun lahan, cuaca, partikel, dan sistem event…',
+      accent: 'eco',
+      tip: 'WASD/Arrow untuk bergerak, E untuk aksi. Fokus ke titik menyala saat Level 2.',
+      durationMs: 1150,
+    });
     setLevel(1);
     setPlantingStep(0);
     setActionProgress(0);
@@ -5482,6 +7138,12 @@ const TreeGame: React.FC = () => {
     return () => window.clearTimeout(t);
   }, [levelUpFxId]);
 
+  useEffect(() => {
+    if (!gameLoading) return;
+    const t = window.setTimeout(() => setGameLoading(null), Math.max(260, gameLoading.durationMs));
+    return () => window.clearTimeout(t);
+  }, [gameLoading]);
+
   return (
     <div className="min-h-screen py-3 sm:py-4 px-4 font-sans select-none overflow-hidden relative">
       <div
@@ -5496,6 +7158,18 @@ const TreeGame: React.FC = () => {
           ].join(','),
         }}
       />
+      <AnimatePresence>
+        {gameLoading && (
+          <GameLoadingOverlay
+            key={`game-loading-${gameLoading.id}`}
+            title={gameLoading.title}
+            subtitle={gameLoading.subtitle}
+            accent={gameLoading.accent}
+            tip={gameLoading.tip}
+            durationMs={gameLoading.durationMs}
+          />
+        )}
+      </AnimatePresence>
       <div className="max-w-7xl mx-auto h-full flex flex-col relative">
         <button 
           onClick={() => navigate('/')}
@@ -5511,38 +7185,90 @@ const TreeGame: React.FC = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="bg-white/85 backdrop-blur-md p-6 sm:p-8 rounded-[2.5rem] shadow-2xl border border-emerald-100/80 flex-1 flex flex-col overflow-hidden relative"
+              className="bg-slate-950/70 backdrop-blur-2xl p-6 sm:p-8 rounded-[2.5rem] shadow-[0_40px_120px_rgba(0,0,0,0.55)] border border-white/10 flex-1 flex flex-col overflow-hidden relative"
             >
-              <div className="absolute inset-0 pointer-events-none opacity-70" style={{ backgroundImage: 'radial-gradient(circle at 12% 10%, rgba(16,185,129,0.18) 0 220px, transparent 360px), radial-gradient(circle at 88% 24%, rgba(59,130,246,0.12) 0 220px, transparent 360px)' }} />
+              <div className="absolute inset-0 pointer-events-none opacity-80" style={{ backgroundImage: 'radial-gradient(circle at 12% 10%, rgba(16,185,129,0.18) 0 260px, transparent 520px), radial-gradient(circle at 88% 24%, rgba(56,189,248,0.14) 0 260px, transparent 560px), radial-gradient(circle at 60% 90%, rgba(245,158,11,0.10) 0 320px, transparent 620px), linear-gradient(180deg, rgba(2,6,23,0.35) 0%, rgba(2,6,23,0.55) 100%)' }} />
               <div className="mb-6 text-center">
-                <h1 className="text-2xl sm:text-3xl font-black text-gray-900 mb-1 flex items-center justify-center gap-3">
-                  <MapPin className="text-primary" /> Eksplorasi Bandung Raya
+                <h1 className="text-2xl sm:text-3xl font-black text-white mb-1 flex items-center justify-center gap-3">
+                  <MapPin className="text-emerald-400" /> Eksplorasi Bandung Raya
                 </h1>
-                <p className="text-gray-500 text-sm">Pilih wilayah berwarna Merah atau Oranye untuk mulai restorasi.</p>
+                <p className="text-white/70 text-sm font-bold">Pilih wilayah Merah/Oranye untuk mulai restorasi. Hover untuk lihat data live.</p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-stretch">
                 <div className="lg:col-span-7 flex flex-col items-center justify-center">
-                  <div className="w-full max-w-[680px]">
+                  <div className="w-full max-w-[680px] relative">
                     <InteractiveMap
+                      regions={regions}
                       onHover={setHoveredRegion}
                       hoveredRegion={hoveredRegion}
                       focusedRegionId={mapFocusRegionId}
+                      weatherByRegionId={weatherByRegionId}
+                      regionFxAt={mapRegionFxAt}
+                      restorationWave={mapRestorationWave}
+                      statusAnimByRegionId={mapStatusAnimByRegionId}
                       onResetFocus={() => {
                         setMapFocusRegionId(null);
                         setMapFocusLock(false);
+                        setMapTransition(null);
                         if (regionSelectTimerRef.current) window.clearTimeout(regionSelectTimerRef.current);
                         regionSelectTimerRef.current = null;
                       }}
                       onSelect={beginRegionSelect}
                     />
+                    <AnimatePresence>
+                      {mapTransition && (
+                        <motion.div
+                          key={`map-cine-${mapTransition.id}`}
+                          className="absolute inset-0 z-[70] pointer-events-none rounded-[2rem] overflow-hidden"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          <motion.div
+                            className="absolute inset-0"
+                            animate={{ opacity: [0.05, 0.26, 0.08], filter: ['blur(0px)', 'blur(4px)', 'blur(0px)'] }}
+                            transition={{ duration: 0.76, ease: 'easeInOut' }}
+                            style={{
+                              backgroundImage:
+                                'radial-gradient(circle at 50% 45%, rgba(56,189,248,0.20) 0 240px, rgba(2,6,23,0.0) 560px), radial-gradient(circle at 50% 55%, rgba(16,185,129,0.14) 0 220px, rgba(2,6,23,0.0) 520px)',
+                            }}
+                          />
+                          <motion.div
+                            className="absolute inset-0 opacity-30"
+                            animate={{ backgroundPosition: ['0% 0%', '0% 120%'] }}
+                            transition={{ repeat: Infinity, duration: 0.55, ease: 'linear' }}
+                            style={{
+                              backgroundImage:
+                                'repeating-linear-gradient(180deg, rgba(255,255,255,0.0) 0 10px, rgba(255,255,255,0.06) 10px 11px, rgba(255,255,255,0.0) 11px 22px)',
+                              mixBlendMode: 'overlay',
+                            }}
+                          />
+                          <motion.div
+                            className="absolute left-0 top-0 h-full w-[28%] opacity-40"
+                            animate={{ x: ['-35%', '120%'] }}
+                            transition={{ duration: 0.72, ease: 'easeInOut' }}
+                            style={{
+                              backgroundImage:
+                                'linear-gradient(90deg, rgba(255,255,255,0.0) 0%, rgba(56,189,248,0.12) 25%, rgba(255,255,255,0.0) 55%, rgba(16,185,129,0.10) 75%, rgba(255,255,255,0.0) 100%)',
+                              filter: 'blur(0.5px)',
+                            }}
+                          />
+                          <div className="absolute left-4 bottom-4 px-4 py-3 rounded-2xl bg-slate-950/70 border border-white/10 backdrop-blur-xl">
+                            <div className="text-[10px] font-black text-white/50 uppercase tracking-[0.25em]">Scan</div>
+                            <div className="text-white font-black tracking-tight">{mapTransition.region.name}</div>
+                            <div className="text-[11px] font-bold text-white/70">Mengunci wilayah & memuat misi…</div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 
                 <div className="lg:col-span-5 flex flex-col">
-                  <div className="bg-emerald-50/80 p-6 rounded-[2rem] border border-emerald-100 h-full flex flex-col shadow-[inset_0_0_90px_rgba(16,185,129,0.10)]">
-                    <h3 className="text-lg font-black text-gray-900 mb-4 uppercase flex items-center gap-2 border-b border-emerald-200 pb-3">
-                      <Info size={20} className="text-primary" /> Analisis Lahan
+                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 h-full flex flex-col shadow-[inset_0_0_90px_rgba(16,185,129,0.10)]">
+                    <h3 className="text-lg font-black text-white mb-4 uppercase flex items-center gap-2 border-b border-white/10 pb-3">
+                      <Info size={20} className="text-emerald-300" /> Analisis Lahan
                     </h3>
                     <div className="flex-1 min-h-0 flex flex-col">
                       <AnimatePresence mode="wait">
@@ -5562,12 +7288,12 @@ const TreeGame: React.FC = () => {
                               <h4 className="text-xl font-black">{(hoveredRegion || selectedRegion)?.name}</h4>
                               <p className="text-[10px] font-black uppercase opacity-50">Status: {(hoveredRegion || selectedRegion)?.status}</p>
                             </div>
-                            <p className="text-sm text-gray-600 italic mb-4 leading-relaxed">"{(hoveredRegion || selectedRegion)?.description}"</p>
+                            <p className="text-sm text-white/75 font-bold italic mb-4 leading-relaxed">"{(hoveredRegion || selectedRegion)?.description}"</p>
                             
                             {(hoveredRegion || selectedRegion)?.status !== 'hijau' ? (
                               <button
                                 onClick={() => beginRegionSelect((hoveredRegion || selectedRegion)!)}
-                                className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95 relative overflow-hidden"
+                                className="w-full bg-emerald-500 text-slate-950 py-4 rounded-2xl font-black shadow-[0_20px_50px_rgba(16,185,129,0.25)] hover:shadow-[0_24px_70px_rgba(16,185,129,0.30)] transition-all flex items-center justify-center gap-2 active:scale-95 relative overflow-hidden"
                               >
                                 <motion.div
                                   aria-hidden
@@ -5579,7 +7305,7 @@ const TreeGame: React.FC = () => {
                                 MULAI RESTORASI <Zap size={18} />
                               </button>
                             ) : (
-                              <div className="flex flex-col items-center gap-2 text-emerald-700 font-black p-4 bg-white rounded-2xl border border-emerald-200">
+                              <div className="flex flex-col items-center gap-2 text-emerald-200 font-black p-4 bg-white/5 rounded-2xl border border-emerald-500/25">
                                 <ShieldCheck size={32} />
                                 <span className="text-[10px] uppercase">Wilayah Terproteksi</span>
                               </div>
@@ -5588,12 +7314,12 @@ const TreeGame: React.FC = () => {
                         ) : null}
                       </AnimatePresence>
 
-                      <div className="mt-auto sticky bottom-0 pt-3 -mx-6 px-6 pb-3 bg-gradient-to-t from-white/95 via-white/80 to-transparent">
+                      <div className="mt-auto sticky bottom-0 pt-3 -mx-6 px-6 pb-3 bg-gradient-to-t from-slate-950/85 via-slate-950/65 to-transparent">
                         <div className="flex items-center justify-end mb-2">
                           <button
                             type="button"
                             onClick={() => setShowAnalysisMascot(v => !v)}
-                            className="px-3 py-1.5 rounded-full bg-white/80 border border-slate-200/70 shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-700 inline-flex items-center gap-2 active:scale-95 transition-transform"
+                            className="px-3 py-1.5 rounded-full bg-white/8 border border-white/12 shadow-sm text-[10px] font-black uppercase tracking-widest text-white/80 inline-flex items-center gap-2 active:scale-95 transition-transform"
                           >
                             {showAnalysisMascot ? <EyeOff size={14} /> : <Eye size={14} />}
                             {showAnalysisMascot ? 'Sembunyikan' : 'Tampilkan'}
@@ -5614,6 +7340,40 @@ const TreeGame: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              <AnimatePresence>
+                {mapAlert && (
+                  <motion.div
+                    key={`map-alert-${mapAlert.id}`}
+                    className="absolute top-6 right-6 z-[120] w-[340px] max-w-[calc(100%-48px)]"
+                    initial={{ opacity: 0, y: -14, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                  >
+                    <div
+                      className={`rounded-[2rem] border backdrop-blur-2xl p-5 shadow-[0_30px_90px_rgba(0,0,0,0.55)] ${
+                        mapAlert.tone === 'warn' ? 'bg-red-500/10 border-red-400/20' : mapAlert.tone === 'good' ? 'bg-emerald-500/10 border-emerald-400/20' : 'bg-blue-500/10 border-blue-400/20'
+                      }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div
+                          className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                            mapAlert.tone === 'warn' ? 'bg-red-500/20 text-red-200' : mapAlert.tone === 'good' ? 'bg-emerald-500/20 text-emerald-200' : 'bg-blue-500/20 text-blue-200'
+                          }`}
+                        >
+                          <AlertTriangle size={22} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-black text-white/50 uppercase tracking-[0.25em]">Alert</div>
+                          <div className="text-white font-black tracking-tight leading-tight">{mapAlert.title}</div>
+                          <div className="mt-1 text-[12px] text-white/75 font-bold leading-relaxed">{mapAlert.subtitle}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
 
@@ -6184,30 +7944,47 @@ const TreeGame: React.FC = () => {
                 <AnimatePresence>
                   {tutorialActive && (
                     <motion.div 
-                      initial={{ y: -50, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: -50, opacity: 0 }}
-                      className="absolute top-28 left-1/2 -translate-x-1/2 z-[100] w-full max-w-xl"
+                      initial={{ y: 24, opacity: 0, scale: 0.98 }}
+                      animate={{ y: 0, opacity: 1, scale: 1 }}
+                      exit={{ y: 24, opacity: 0, scale: 0.98 }}
+                      className="absolute bottom-24 left-6 z-[120] w-[min(92vw,420px)]"
                     >
-                      <div className="bg-slate-900/90 backdrop-blur-2xl border-2 border-emerald-500/50 p-5 rounded-[2rem] shadow-2xl flex items-center gap-5">
-                        <div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-emerald-900/40">
-                          <Info size={28} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Panduan Pemula</div>
-                          <div className="text-sm font-bold text-white leading-relaxed">
-                            {tutorialMessages[tutorialStep]}
+                      <div className="bg-slate-900/90 backdrop-blur-2xl border-2 border-emerald-500/50 p-4 rounded-[1.75rem] shadow-2xl">
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-emerald-900/40">
+                            <Info size={24} />
                           </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Panduan Pemula</div>
+                              <button
+                                type="button"
+                                onClick={() => setTutorialDockCollapsed(v => !v)}
+                                className="shrink-0 w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/80 active:scale-95 transition-transform"
+                                aria-label={tutorialDockCollapsed ? 'Tampilkan panduan' : 'Sembunyikan panduan'}
+                              >
+                                {tutorialDockCollapsed ? <Eye size={18} /> : <EyeOff size={18} />}
+                              </button>
+                            </div>
+
+                            {!tutorialDockCollapsed && (
+                              <div className="mt-1 text-[13px] font-bold text-white leading-relaxed">
+                                {tutorialMessages[tutorialStep]}
+                              </div>
+                            )}
+                          </div>
+
+                          {!tutorialDockCollapsed && tutorialStep === 1 && (
+                            <motion.div 
+                              className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center text-white shrink-0"
+                              animate={{ x: [0, 10, 0] }}
+                              transition={{ repeat: Infinity, duration: 1 }}
+                            >
+                              <Move size={20} />
+                            </motion.div>
+                          )}
                         </div>
-                        {tutorialStep === 1 && (
-                          <motion.div 
-                            className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white"
-                            animate={{ x: [0, 10, 0] }}
-                            transition={{ repeat: Infinity, duration: 1 }}
-                          >
-                            <Move size={20} />
-                          </motion.div>
-                        )}
                       </div>
                     </motion.div>
                   )}
@@ -6438,7 +8215,7 @@ const TreeGame: React.FC = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button onClick={() => { setPhase('selection'); setPlantingStep(0); setSelectedRegion(null); setSelectedSeedling(null); setLevel(1); setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 }); setActivePlotId('p1'); setLevelIntroOpen(false); setActionPlotId(null); setActionProgress(0); }} className="bg-slate-100 px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-slate-200 transition-all shadow-md active:scale-95">Mulai Baru</button>
+                <button onClick={() => { setMapRestorationWave({ id: Date.now(), regionId: selectedRegion.id }); setPhase('selection'); setPlantingStep(0); setSelectedRegion(null); setSelectedSeedling(null); setLevel(1); setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 }); setActivePlotId('p1'); setLevelIntroOpen(false); setActionPlotId(null); setActionProgress(0); }} className="bg-slate-100 px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-slate-200 transition-all shadow-md active:scale-95">Mulai Baru</button>
                 <button onClick={() => navigate('/')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-emerald-700 shadow-lg transition-all active:scale-95">Selesai</button>
               </div>
             </motion.div>
