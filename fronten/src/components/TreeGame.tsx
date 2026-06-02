@@ -1,6 +1,6 @@
-import React, { useState, useRef, memo, useEffect, useMemo, useReducer, useCallback } from 'react';
+import React, { useState, useRef, memo, useEffect, useMemo, useReducer, useCallback, startTransition } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { MapPin, Trees, ArrowLeft, Thermometer, Droplets, Sun, Info, ShieldCheck, Zap, Move, Sparkles, Sprout, Trophy, Shovel, Volume2, VolumeX, Eye, EyeOff, ThumbsUp, MousePointer2, CloudRain, Wind, AlertTriangle, Activity, Leaf, Heart } from 'lucide-react';
+import { MapPin, Trees, ArrowLeft, Thermometer, Droplets, Sun, Info, ShieldCheck, Zap, Move, Sparkles, Sprout, Trophy, Shovel, Volume2, VolumeX, Eye, EyeOff, ThumbsUp, MousePointer2, CloudRain, Wind, AlertTriangle, Activity, Leaf, Heart, Pause, Play, RotateCcw, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // --- Realistic Visual Components ---
@@ -232,9 +232,41 @@ const FallenTree = memo(
             style={{ background: `linear-gradient(90deg, ${tone.trunkA}, ${tone.trunkB})` }}
           />
           <div
+            className="absolute left-6 top-9 h-6 w-56 rounded-full opacity-60"
+            style={{
+              background:
+                weather === 'polluted'
+                  ? 'repeating-linear-gradient(90deg, rgba(15,23,42,0.20) 0 6px, rgba(148,163,184,0.08) 6px 14px)'
+                  : 'repeating-linear-gradient(90deg, rgba(2,6,23,0.18) 0 8px, rgba(255,255,255,0.06) 8px 18px)',
+              maskImage: 'linear-gradient(90deg, transparent, black 12%, black 88%, transparent)',
+            }}
+          />
+          <div
             className="absolute left-2 top-7 w-14 h-14 rounded-full border border-black/15 shadow-[0_18px_38px_rgba(0,0,0,0.22)]"
             style={{ background: `radial-gradient(circle at 35% 35%, rgba(255,255,255,0.22), transparent 60%), linear-gradient(135deg, ${tone.trunkA}, ${tone.trunkB})` }}
           />
+          {weather === 'rainy' && (
+            <div
+              className="absolute left-20 top-6 w-16 h-10 rounded-[999px] blur-[0.6px] opacity-70"
+              style={{
+                background:
+                  'radial-gradient(circle at 30% 40%, rgba(16,185,129,0.28) 0 18px, rgba(34,197,94,0.14) 36px, transparent 60px)',
+                mixBlendMode: 'screen',
+              }}
+            />
+          )}
+          <div
+            className="absolute left-56 top-10 w-8 h-5"
+            style={{
+              rotate: '-18deg',
+              filter: 'drop-shadow(0 10px 14px rgba(0,0,0,0.18))',
+              opacity: weather === 'drought' ? 0.85 : 0.55,
+            }}
+          >
+            <div className="absolute left-0 top-1 w-6 h-1 rounded-full bg-white/15" />
+            <div className="absolute left-1 top-2 w-5 h-1 rounded-full bg-white/10" />
+            <div className="absolute left-2 top-3 w-4 h-1 rounded-full bg-white/8" />
+          </div>
           <div className="absolute left-14 top-4 w-20 h-4 rounded-full bg-black/15 blur-md" />
           <div
             className="absolute left-44 top-2 h-4 w-16 rounded-full border border-black/10"
@@ -298,12 +330,25 @@ const LeafLitter = memo(
       <motion.div
         className="absolute pointer-events-none z-[11]"
         style={{ left: x, top: y, transform: `translate(-50%, -50%) rotate(${rot}deg) scale(${scale})` }}
-        animate={{ y: [0, -1.5, 0] }}
-        transition={{ repeat: Infinity, duration: 3.6 + rand(9) * 2.4, ease: 'easeInOut' }}
+        animate={{
+          y: [0, weather === 'drought' ? -2.2 : -1.5, 0],
+          rotate: weather === 'rainy' ? [`${rot}deg`, `${rot + 2}deg`, `${rot}deg`] : weather === 'drought' ? [`${rot}deg`, `${rot - 3}deg`, `${rot}deg`] : `${rot}deg`,
+        }}
+        transition={{ repeat: Infinity, duration: 3.2 + rand(9) * 2.8, ease: 'easeInOut' }}
       >
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-10 rounded-full bg-black/18 blur-xl" />
         <div className="relative w-24 h-16">
           <div className="absolute inset-0 rounded-[40px] blur-[10px]" style={{ background: base }} />
+          {weather === 'rainy' && (
+            <div
+              className="absolute inset-0 rounded-[40px] opacity-60"
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 55%), radial-gradient(circle at 55% 55%, rgba(59,130,246,0.10) 0 26px, transparent 52px)',
+                mixBlendMode: 'screen',
+              }}
+            />
+          )}
           {Array.from({ length: density }, (_, i) => {
             const lx = 6 + rand(i + 1) * 76;
             const ly = 8 + rand(i + 11) * 42;
@@ -322,8 +367,11 @@ const LeafLitter = memo(
                 key={i}
                 className="absolute"
                 style={{ left: lx, top: ly, rotate: `${r}deg`, scale: s, color: tint, filter: 'drop-shadow(0 10px 14px rgba(0,0,0,0.16))' }}
-                animate={{ rotate: [`${r}deg`, `${r + 6}deg`, `${r}deg`] }}
-                transition={{ repeat: Infinity, duration: 2.6 + rand(i + 61) * 2.2, ease: 'easeInOut', delay: i * 0.05 }}
+                animate={{
+                  rotate: [`${r}deg`, `${r + (weather === 'drought' ? 10 : 6)}deg`, `${r}deg`],
+                  x: weather === 'drought' ? [0, -2, 0] : 0,
+                }}
+                transition={{ repeat: Infinity, duration: 2.4 + rand(i + 61) * 2.5, ease: 'easeInOut', delay: i * 0.05 }}
               >
                 <Leaf size={size} />
               </motion.div>
@@ -509,31 +557,40 @@ const AdrenalineEventFX = memo(
   }
 );
 
-const Bird = () => (
-  <motion.div
-    initial={{ x: -100, y: Math.random() * 500 }}
-    animate={{ 
-      x: 3100,
-      y: [null, Math.random() * 500, Math.random() * 500],
-    }}
-    transition={{ duration: 15 + Math.random() * 10, ease: "linear", repeat: Infinity }}
-    className="absolute pointer-events-none z-[70]"
-  >
-    <div className="relative flex gap-1">
-      <motion.div 
-        animate={{ rotateZ: [-30, 30, -30] }}
-        transition={{ repeat: Infinity, duration: 0.2 }}
-        className="w-4 h-1 bg-slate-800 rounded-full origin-right"
-      />
-      <div className="w-2 h-2 bg-slate-900 rounded-full" />
-      <motion.div 
-        animate={{ rotateZ: [30, -30, 30] }}
-        transition={{ repeat: Infinity, duration: 0.2 }}
-        className="w-4 h-1 bg-slate-800 rounded-full origin-left"
-      />
-    </div>
-  </motion.div>
-);
+const Bird = memo(({ seed }: { seed: number }) => {
+  const rand = useCallback((n: number) => prand(seed * 91.7 + n * 13.1), [seed]);
+  const y0 = useMemo(() => 40 + rand(1) * 460, [rand]);
+  const y1 = useMemo(() => 40 + rand(2) * 460, [rand]);
+  const y2 = useMemo(() => 40 + rand(3) * 460, [rand]);
+  const duration = useMemo(() => 14 + rand(4) * 12, [rand]);
+  const delay = useMemo(() => rand(5) * 5.5, [rand]);
+
+  return (
+    <motion.div
+      initial={{ x: -160, y: y0 }}
+      animate={{ x: 3160, y: [y0, y1, y2] }}
+      transition={{ duration, ease: 'linear', repeat: Infinity, delay }}
+      className="absolute pointer-events-none z-[70]"
+      style={{ filter: 'drop-shadow(0 10px 14px rgba(0,0,0,0.12))' }}
+    >
+      <div className="relative flex gap-1">
+        <motion.div
+          animate={{ rotateZ: [-30, 30, -30] }}
+          transition={{ repeat: Infinity, duration: 0.2 }}
+          className="w-4 h-1 rounded-full origin-right"
+          style={{ background: 'linear-gradient(90deg, rgba(15,23,42,0.75), rgba(30,41,59,0.9))' }}
+        />
+        <div className="w-2 h-2 rounded-full" style={{ background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,0.12), rgba(2,6,23,0.92))' }} />
+        <motion.div
+          animate={{ rotateZ: [30, -30, 30] }}
+          transition={{ repeat: Infinity, duration: 0.2 }}
+          className="w-4 h-1 rounded-full origin-left"
+          style={{ background: 'linear-gradient(90deg, rgba(30,41,59,0.9), rgba(15,23,42,0.75))' }}
+        />
+      </div>
+    </motion.div>
+  );
+});
 
 const SeedlingIcon = ({ type }: { type: string }) => {
   if (type === 'Mahoni') {
@@ -1876,33 +1933,46 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
   );
 };
 
-const AmbientDust = () => (
-  <div className="absolute inset-0 pointer-events-none z-[65] overflow-hidden">
-    {[...Array(20)].map((_, i) => (
-      <motion.div
-        key={i}
-        className="absolute w-1 h-1 bg-white/20 rounded-full blur-[1px]"
-        initial={{ 
-          x: Math.random() * 3000, 
-          y: Math.random() * 3000,
-          opacity: 0 
-        }}
-        animate={{ 
-          y: [null, Math.random() * 3000, Math.random() * 3000],
-          x: [null, Math.random() * 3000, Math.random() * 3000],
-          opacity: [0, 0.5, 0],
-          scale: [0, 1.5, 0]
-        }}
-        transition={{ 
-          duration: 10 + Math.random() * 20, 
-          repeat: Infinity, 
-          ease: "linear",
-          delay: Math.random() * 10
-        }}
-      />
-    ))}
-  </div>
-);
+const AmbientDust = memo(({ count }: { count: number }) => {
+  const specs = useMemo(() => {
+    return Array.from({ length: Math.max(0, Math.min(80, count)) }, (_, i) => {
+      const r = (n: number) => prand(i * 71.13 + n * 19.77);
+      const x0 = r(1) * 3000;
+      const y0 = r(2) * 3000;
+      const x1 = r(3) * 3000;
+      const y1 = r(4) * 3000;
+      const x2 = r(5) * 3000;
+      const y2 = r(6) * 3000;
+      const duration = 11 + r(7) * 19;
+      const delay = r(8) * 9;
+      const size = 1 + r(9) * 1.6;
+      const blur = 0.6 + r(10) * 1.2;
+      const opacity = 0.16 + r(11) * 0.22;
+      return { x0, y0, x1, y1, x2, y2, duration, delay, size, blur, opacity };
+    });
+  }, [count]);
+
+  return (
+    <div className="absolute inset-0 pointer-events-none z-[65] overflow-hidden">
+      {specs.map((s, i) => (
+        <motion.div
+          key={`dust-${i}`}
+          className="absolute rounded-full"
+          initial={{ x: s.x0, y: s.y0, opacity: 0, scale: 0 }}
+          animate={{ x: [s.x0, s.x1, s.x2], y: [s.y0, s.y1, s.y2], opacity: [0, s.opacity, 0], scale: [0, 1.35, 0] }}
+          transition={{ duration: s.duration, repeat: Infinity, ease: 'linear', delay: s.delay }}
+          style={{
+            width: s.size,
+            height: s.size,
+            background: 'rgba(255,255,255,0.65)',
+            filter: `blur(${s.blur}px)`,
+            mixBlendMode: 'overlay',
+          }}
+        />
+      ))}
+    </div>
+  );
+});
 
 const prand = (n: number) => {
   const x = Math.sin(n * 999.123) * 10000;
@@ -2569,7 +2639,8 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
       <motion.div 
         animate={{ scale: isDigging ? [1, 0.92, 1] : isPlanting ? [1, 0.94, 1] : isActing ? [1, 0.94, 1] : isWalking ? [1, 0.93, 1] : [1, 0.95, 1] }}
         transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 2.4, ease: 'easeInOut' }}
-        className="w-12 h-3 bg-black/20 rounded-full blur-sm mt-1" 
+        className="w-12 h-3 bg-black/20 rounded-full blur-sm mt-1"
+        style={{ background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.14) 58%, rgba(0,0,0,0.0) 76%)' }}
       />
 
       {!isActing && (
@@ -2590,23 +2661,39 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
   );
 };
 
-const Butterfly = () => (
-  <motion.div
-    initial={{ x: Math.random() * 500, y: Math.random() * 300 }}
-    animate={{ 
-      x: [null, Math.random() * 500, Math.random() * 500],
-      y: [null, Math.random() * 300, Math.random() * 300],
-    }}
-    transition={{ repeat: Infinity, duration: 10 + Math.random() * 10, ease: "linear" }}
-    className="absolute pointer-events-none z-40"
-  >
-    <motion.div 
-      animate={{ rotateY: [0, 80, 0] }}
-      transition={{ repeat: Infinity, duration: 0.2 }}
-      className="w-3 h-3 bg-yellow-400 rounded-full shadow-sm"
-    />
-  </motion.div>
-);
+const Butterfly = memo(({ seed }: { seed: number }) => {
+  const rand = useCallback((n: number) => prand(seed * 37.1 + n * 9.3), [seed]);
+  const x0 = useMemo(() => rand(1) * 520, [rand]);
+  const y0 = useMemo(() => rand(2) * 340, [rand]);
+  const x1 = useMemo(() => rand(3) * 520, [rand]);
+  const y1 = useMemo(() => rand(4) * 340, [rand]);
+  const x2 = useMemo(() => rand(5) * 520, [rand]);
+  const y2 = useMemo(() => rand(6) * 340, [rand]);
+  const duration = useMemo(() => 10 + rand(7) * 11, [rand]);
+  const delay = useMemo(() => rand(8) * 6, [rand]);
+  const size = useMemo(() => 2.6 + rand(9) * 2.0, [rand]);
+
+  return (
+    <motion.div
+      initial={{ x: x0, y: y0, opacity: 0 }}
+      animate={{ x: [x0, x1, x2], y: [y0, y1, y2], opacity: [0, 0.9, 0] }}
+      transition={{ repeat: Infinity, duration, ease: 'linear', delay }}
+      className="absolute pointer-events-none z-40"
+      style={{ filter: 'drop-shadow(0 10px 14px rgba(0,0,0,0.12))' }}
+    >
+      <motion.div
+        animate={{ rotateY: [0, 80, 0], scale: [0.95, 1.12, 0.95] }}
+        transition={{ repeat: Infinity, duration: 0.22, ease: 'easeInOut' }}
+        className="rounded-full"
+        style={{
+          width: size,
+          height: size,
+          background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,0.85), rgba(251,191,36,0.85) 55%, rgba(245,158,11,0.75))',
+        }}
+      />
+    </motion.div>
+  );
+});
 
 const Cloud = ({ delay, top, size, opacity }: { delay: number, top: number, size: number, opacity: number }) => (
   <motion.div
@@ -2940,15 +3027,31 @@ const GameLoadingOverlay = memo(({
   accent,
   tip,
   durationMs,
+  stages,
 }: {
   title: string;
   subtitle: string;
   accent: 'eco' | 'warn' | 'danger';
   tip: string;
   durationMs: number;
+  stages?: string[];
 }) => {
   const accentRgb =
     accent === 'eco' ? '16,185,129' : accent === 'warn' ? '245,158,11' : '239,68,68';
+
+  const [stageIdx, setStageIdx] = useState(0);
+  useEffect(() => {
+    if (!stages || stages.length === 0) return;
+    const startAt = Date.now();
+    const tick = () => {
+      const p = Math.max(0, Math.min(0.999, (Date.now() - startAt) / Math.max(1, durationMs)));
+      const idx = Math.min(stages.length - 1, Math.floor(p * stages.length));
+      setStageIdx(idx);
+    };
+    tick();
+    const t = window.setInterval(tick, 120);
+    return () => window.clearInterval(t);
+  }, [durationMs, stages]);
 
   return (
     <motion.div
@@ -3015,6 +3118,12 @@ const GameLoadingOverlay = memo(({
               <div className="text-[10px] font-black uppercase tracking-[0.26em] text-white/50">Loading</div>
               <div className="text-white font-black tracking-tight text-xl">{title}</div>
               <div className="text-white/70 font-bold text-sm mt-1 leading-snug">{subtitle}</div>
+              {stages && stages.length > 0 && (
+                <div className="mt-4">
+                  <div className="text-[11px] font-black text-white/55 uppercase tracking-[0.22em]">Proses</div>
+                  <div className="mt-1 text-white/85 text-sm font-black">{stages[Math.max(0, Math.min(stages.length - 1, stageIdx))]}</div>
+                </div>
+              )}
               <div className="mt-4 text-[11px] font-black text-white/55 uppercase tracking-[0.22em]">Tip</div>
               <div className="text-white/80 text-sm font-bold">{tip}</div>
             </div>
@@ -3541,14 +3650,13 @@ const allRegions: Region[] = [
   { id: 'kbb-cililin', name: 'Cililin & Sindangkerta', status: 'hijau', description: 'Kawasan barat daya dengan waduk dan perbukitan.', path: "M 5,45 L 15,40 L 30,45 L 35,55 L 30,65 L 15,70 L 5,60 Z", x: 18, y: 55 },
 ];
 
-const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focusActive, hoverActive, onHover, onClick }: {
+const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focusActive, onHover, onClick }: {
   region: Region;
   statusAnim?: { from: Region['status']; to: Region['status']; at: number } | null;
   fxAt?: number;
   isHovered: boolean;
   isFocused: boolean;
   focusActive: boolean;
-  hoverActive: boolean;
   onHover: (r: Region | null) => void;
   onClick: (r: Region) => void;
 }) => {
@@ -3561,7 +3669,7 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
       : region.status === 'kritis'
         ? 'rgba(245,158,11,0.60)'
         : 'rgba(239,68,68,0.62)';
-  const isDimmed = (focusActive && !isFocused) || (hoverActive && !isHovered && !isFocused);
+  const isDimmed = (focusActive && !isFocused);
   const depth = isFocused ? 2.6 : isHovered ? 2.1 : 1.2;
   const texFill = `url(#tex-${region.status})`;
   const texBaseOpacity =
@@ -3622,10 +3730,10 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
     const y = clamp(region.y - h / 2 + labelOffset.dy, 2, 98 - h);
     const fontSize =
       region.id === 'cimahi'
-        ? (showFullLabel ? 6.3 : 5.0)
+        ? (showFullLabel ? 5.4 : 4.2)
         : labelLines.length > 1
-          ? (showFullLabel ? 6.1 : 5.0)
-          : (showFullLabel ? 6.5 : 5.2);
+          ? (showFullLabel ? 5.2 : 4.2)
+          : (showFullLabel ? 5.6 : 4.4);
     return { x, y, w, h, fontSize };
   }, [labelLines.length, labelOffset.dx, labelOffset.dy, region.id, region.x, region.y, showFullLabel]);
 
@@ -3872,7 +3980,7 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
         >
           <div
             style={{
-              padding: showFullLabel ? (labelLines.length > 1 ? '1px 6px' : '1px 7px') : '0px 5px',
+              padding: showFullLabel ? (labelLines.length > 1 ? '1px 6px' : '1px 7px') : '0px 4px',
               borderRadius: 999,
               background: showFullLabel ? 'rgba(2,6,23,0.46)' : 'rgba(2,6,23,0.28)',
               border: showFullLabel ? '1px solid rgba(255,255,255,0.14)' : '1px solid rgba(255,255,255,0.08)',
@@ -3938,11 +4046,11 @@ const InteractiveMap = memo(({
   const [filters, setFilters] = useState<{ hijau: boolean; kritis: boolean; gersang: boolean }>({ hijau: true, kritis: true, gersang: true });
   const [legendOpen, setLegendOpen] = useState(false);
   const focusActive = Boolean(focusedRegionId);
-  const hoverActive = Boolean(hoveredRegion);
   const [ripple, setRipple] = useState<{ id: string; key: number } | null>(null);
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
   const [tooltipSize, setTooltipSize] = useState({ w: 220, h: 120 });
   const [liveTick, setLiveTick] = useState(0);
+  const [cursorInside, setCursorInside] = useState(false);
   const lastHoverSoundAtRef = useRef(0);
   const lastHoverIdRef = useRef<string | null>(null);
   const [view, setView] = useState<{ s: number; tx: number; ty: number }>({ s: 1, tx: 0, ty: 0 });
@@ -4020,13 +4128,12 @@ const InteractiveMap = memo(({
   }, [regions, ripple]);
 
   const focusParams = useMemo(() => {
-    const hoverCam = !focusActive && Boolean(hoveredRegion);
-    const s = focusActive ? 1.35 : hoverCam ? 1.12 : 1;
+    const s = focusActive ? 1.35 : 1;
     const centerX = 60;
     const centerY = 50;
     const target = focusActive
       ? (focusedRegionId ? regions.find(r => r.id === focusedRegionId) : null)
-      : (hoveredRegion ?? null);
+      : null;
     if (!target) return { s: 1, tx: 0, ty: 0 };
     const rawTx = centerX - target.x * s;
     const rawTy = centerY - target.y * s;
@@ -4037,11 +4144,15 @@ const InteractiveMap = memo(({
     const tx = Math.max(minTx, Math.min(maxTx, rawTx));
     const ty = Math.max(minTy, Math.min(maxTy, rawTy));
     return { s, tx, ty };
-  }, [focusActive, focusedRegionId, hoveredRegion, regions]);
+  }, [focusActive, focusedRegionId, regions]);
 
   const focusTransform = useMemo(() => {
     return `translate(${focusParams.tx}px, ${focusParams.ty}px) scale(${focusParams.s})`;
   }, [focusParams.s, focusParams.tx, focusParams.ty]);
+
+  const zoomNow = useMemo(() => {
+    return Math.max(1, Math.min(2.25, view.s * focusParams.s));
+  }, [focusParams.s, view.s]);
 
   const viewTransform = useMemo(() => {
     return `translate(${view.tx}px, ${view.ty}px) scale(${view.s})`;
@@ -4292,6 +4403,11 @@ const InteractiveMap = memo(({
       onPointerCancel={handlePointerUp}
       onMouseEnter={() => {
         if (mapRef.current) rectRef.current = mapRef.current.getBoundingClientRect();
+        setCursorInside(true);
+      }}
+      onMouseLeave={() => {
+        setCursorInside(false);
+        onHover(null);
       }}
       className="relative bg-[#0b1220] rounded-[2rem] border border-white/10 aspect-[4/3] overflow-hidden shadow-2xl"
       style={{ touchAction: 'none' }}
@@ -4325,6 +4441,36 @@ const InteractiveMap = memo(({
       />
 
       <MapAmbientCanvas intensity01={0.9} seed={1337} tint={tint} />
+      <AnimatePresence>
+        {cursorInside && (
+          <motion.div
+            className="absolute z-[19] pointer-events-none"
+            style={{
+              left: 0,
+              top: 0,
+              x: smoothX,
+              y: smoothY,
+              transform: 'translate(-50%, -50%)',
+            }}
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+          >
+            <motion.div
+              className="w-16 h-16 rounded-full"
+              animate={{ opacity: [0.35, 0.7, 0.35], scale: [0.98, 1.03, 0.98] }}
+              transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
+              style={{
+                background:
+                  'radial-gradient(circle, rgba(56,189,248,0.18) 0 10px, rgba(16,185,129,0.10) 22px, rgba(255,255,255,0.0) 34px)',
+                filter: 'blur(0.2px)',
+                mixBlendMode: 'screen',
+              }}
+            />
+            <div className="absolute left-1/2 top-1/2 w-2.5 h-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/35" />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <motion.div
         className="absolute -inset-10 pointer-events-none opacity-35 blur-xl"
         animate={{ x: ['-12%', '12%', '-12%'] }}
@@ -4355,6 +4501,25 @@ const InteractiveMap = memo(({
             'radial-gradient(circle at 60% 20%, rgba(148,163,184,0.06) 0 260px, transparent 640px), radial-gradient(circle at 20% 70%, rgba(16,185,129,0.05) 0 240px, transparent 620px)',
         }}
       />
+
+      <div className="absolute bottom-4 left-4 z-20 pointer-events-none">
+        <div className="px-4 py-3 rounded-2xl bg-white/6 border border-white/12 backdrop-blur-2xl shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
+          <div className="text-[9px] font-black text-white/55 uppercase tracking-[0.26em]">Kontrol Peta</div>
+          <div className="mt-1 flex items-center gap-3 text-[10px] font-black text-white/75 uppercase tracking-wider">
+            <span className="inline-flex items-center gap-2">
+              <Move size={14} className="text-white/55" />
+              Drag
+            </span>
+            <span className="text-white/25">•</span>
+            <span className="inline-flex items-center gap-2">
+              <MousePointer2 size={14} className="text-white/55" />
+              Klik Wilayah
+            </span>
+            <span className="text-white/25">•</span>
+            <span className="text-white/70">Zoom {Math.round(zoomNow * 100)}%</span>
+          </div>
+        </div>
+      </div>
 
       <AnimatePresence>
         {hoveredRegion && containerSize.w > 0 && containerSize.h > 0 && (
@@ -4891,7 +5056,6 @@ const InteractiveMap = memo(({
               isHovered={hoveredRegion?.id === r.id}
               isFocused={focusedRegionId === r.id}
               focusActive={focusActive}
-              hoverActive={hoverActive}
               onHover={onHover}
               onClick={onSelect}
             />
@@ -5324,6 +5488,16 @@ const TreeGame: React.FC = () => {
   const [mapFocusLock, setMapFocusLock] = useState(false);
   const [showAnalysisMascot, setShowAnalysisMascot] = useState(true);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [visualOpen, setVisualOpen] = useState(false);
+  const [gfxPreset, setGfxPreset] = useState<'clean' | 'cinematic' | 'performance'>(() => {
+    try {
+      const raw = window.localStorage.getItem('treegame:gfx-preset');
+      if (raw === 'cinematic' || raw === 'performance' || raw === 'clean') return raw;
+      return 'clean';
+    } catch {
+      return 'clean';
+    }
+  });
   const [restoredRegionIds, setRestoredRegionIds] = useState<string[]>(() => {
     try {
       const raw = window.localStorage.getItem('treegame:restored-regions');
@@ -5350,7 +5524,7 @@ const TreeGame: React.FC = () => {
   const [mapStatusAnimByRegionId, setMapStatusAnimByRegionId] = useState<Record<string, { from: Region['status']; to: Region['status']; at: number }>>({});
   const [mapRestorationWave, setMapRestorationWave] = useState<{ id: number; regionId: string } | null>(null);
   const [mapTransition, setMapTransition] = useState<{ id: number; region: Region } | null>(null);
-  const [gameLoading, setGameLoading] = useState<{ id: number; title: string; subtitle: string; accent: 'eco' | 'warn' | 'danger'; tip: string; durationMs: number } | null>(null);
+  const [gameLoading, setGameLoading] = useState<{ id: number; title: string; subtitle: string; accent: 'eco' | 'warn' | 'danger'; tip: string; durationMs: number; stages?: string[] } | null>(null);
   const [mapAlert, setMapAlert] = useState<{ id: number; title: string; subtitle: string; tone: 'warn' | 'info' | 'good' } | null>(null);
   const regionSelectTimerRef = useRef<number | null>(null);
   const [plantingStep, setPlantingStep] = useState(0);
@@ -5360,6 +5534,7 @@ const TreeGame: React.FC = () => {
   const [actionProgress, setActionProgress] = useState(0);
   const [actionPlotId, setActionPlotId] = useState<string | null>(null);
   const [levelIntroOpen, setLevelIntroOpen] = useState(false);
+  const [pauseOpen, setPauseOpen] = useState(false);
   const [level2Stages, setLevel2Stages] = useState<Record<string, number>>({ p1: 0, p2: 0, p3: 0, p4: 0 });
   const [activePlotId, setActivePlotId] = useState('p1');
   const [toast, setToast] = useState<{ id: number, title: string, subtitle?: string, tone: 'good' | 'warn' | 'info' } | null>(null);
@@ -5399,6 +5574,52 @@ const TreeGame: React.FC = () => {
     "Pohon butuh air! Dekati pohon dan tekan [E] untuk menyiramnya.",
     "Selamat! Kamu telah menyelesaikan tutorial. Sekarang pulihkan seluruh wilayah!"
   ];
+
+  const gfx = useMemo(() => {
+    if (gfxPreset === 'performance') {
+      return {
+        dustCount: 8,
+        birdCount: 2,
+        leafLitterCount: 8,
+        decorCount: 8,
+        gridOpacity: 0.01,
+        vignette: 0.26,
+        scanlines: 0.0,
+        fogAlpha: 0.58,
+        worldTexture: 0.35,
+        haze: 0.18,
+        sunBloom: 0.22,
+      };
+    }
+    if (gfxPreset === 'cinematic') {
+      return {
+        dustCount: 20,
+        birdCount: 6,
+        leafLitterCount: 22,
+        decorCount: 18,
+        gridOpacity: 0.03,
+        vignette: 0.45,
+        scanlines: 0.012,
+        fogAlpha: 0.72,
+        worldTexture: 0.85,
+        haze: 0.34,
+        sunBloom: 0.46,
+      };
+    }
+    return {
+      dustCount: 14,
+      birdCount: 4,
+      leafLitterCount: 16,
+      decorCount: 14,
+      gridOpacity: 0.02,
+      vignette: 0.34,
+      scanlines: 0.008,
+      fogAlpha: 0.66,
+      worldTexture: 0.60,
+      haze: 0.26,
+      sunBloom: 0.32,
+    };
+  }, [gfxPreset]);
 
   const effectiveWeather = useMemo<WorldWeather>(() => {
     if (!activeEvent) return weather;
@@ -5452,6 +5673,12 @@ const TreeGame: React.FC = () => {
       window.localStorage.setItem('treegame:improved-regions', JSON.stringify(improvedRegionIds));
     } catch {}
   }, [improvedRegionIds]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('treegame:gfx-preset', gfxPreset);
+    } catch {}
+  }, [gfxPreset]);
 
   useEffect(() => {
     if (phase !== 'finished') return;
@@ -5670,9 +5897,22 @@ const TreeGame: React.FC = () => {
 
   const keysPressed = useRef<Set<string>>(new Set());
 
+  useEffect(() => {
+    if (!pauseOpen) return;
+    keysPressed.current.clear();
+    velocityRef.current.x = 0;
+    velocityRef.current.y = 0;
+    setIsWalking(false);
+  }, [pauseOpen]);
+
   // --- Input Handling ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Escape') {
+        if (phase === 'planting') setPauseOpen(v => !v);
+        return;
+      }
+      if (pauseOpen) return;
       keysPressed.current.add(e.code);
       if (e.code === 'KeyE') {
         handleInteraction();
@@ -5688,7 +5928,13 @@ const TreeGame: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [phase, tutorialActive, tutorialStep, activeTrees, energy, water, selectedSeedling, activeEvent, pollutionSources, pestTreeId]);
+  }, [activeEvent, activeTrees, energy, pauseOpen, pestTreeId, phase, pollutionSources, selectedSeedling, tutorialActive, tutorialStep, water]);
+
+  useEffect(() => {
+    if (phase === 'planting') return;
+    if (!pauseOpen) return;
+    setPauseOpen(false);
+  }, [pauseOpen, phase]);
 
   useEffect(() => {
     if (phase !== 'planting') return;
@@ -5715,6 +5961,7 @@ const TreeGame: React.FC = () => {
   // --- 3. PHYSICS LOOP (LERP & VELOCITY) ---
   useEffect(() => {
     if (phase !== 'planting') return;
+    if (pauseOpen) return;
     if (tutorialActive && tutorialStep === 0) return;
 
     const worldWidth = 3000;
@@ -5796,7 +6043,7 @@ const TreeGame: React.FC = () => {
       if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
       lastFrameTsRef.current = null;
     };
-  }, [phase, tutorialActive, tutorialStep]);
+  }, [pauseOpen, phase, tutorialActive, tutorialStep]);
 
   const spawnRestoration = useCallback((x: number, y: number, intensity: number = 1) => {
     const id = Date.now() + Math.floor(Math.random() * 100000);
@@ -6081,6 +6328,7 @@ const TreeGame: React.FC = () => {
   // --- Real-time Game Loop ---
   useEffect(() => {
     if (phase !== 'planting') return;
+    if (pauseOpen) return;
 
     const interval = setInterval(() => {
       const now = Date.now();
@@ -6319,7 +6567,7 @@ const TreeGame: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [phase, weather, effectiveWeather, co2Level, currentMission, activeTrees, level, level2Stages, levelIntroOpen, tutorialActive, activeEvent, pestTreeId, pollutionSources, spawnRestoration, clampWorld]);
+  }, [activeEvent, activeTrees, clampWorld, co2Level, currentMission, effectiveWeather, level, level2Stages, levelIntroOpen, pauseOpen, pestTreeId, phase, pollutionSources, spawnRestoration, tutorialActive, weather]);
 
 
   const level1Steps = [
@@ -6360,6 +6608,35 @@ const TreeGame: React.FC = () => {
       dot: 'radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.0) 62%)',
     };
   }, [activeStepId]);
+
+  const worldBaseBg = useMemo(() => {
+    if (effectiveWeather === 'rainy') return 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)';
+    if (effectiveWeather === 'drought') return 'linear-gradient(180deg, #451a03 0%, #78350f 100%)';
+    if (effectiveWeather === 'polluted') return 'linear-gradient(180deg, #1e293b 0%, #334155 100%)';
+    return 'linear-gradient(180deg, #064e3b 0%, #065f46 100%)';
+  }, [effectiveWeather]);
+
+  const sunFx = useMemo(() => {
+    const rgb =
+      effectiveWeather === 'rainy'
+        ? '56,189,248'
+        : effectiveWeather === 'drought'
+          ? '250,204,21'
+          : effectiveWeather === 'polluted'
+            ? '148,163,184'
+            : '34,197,94';
+    const phase01 = Math.max(0, Math.min(1, dayPhase / 100));
+    const strength =
+      effectiveWeather === 'rainy'
+        ? 0.55
+        : effectiveWeather === 'drought'
+          ? 0.75
+          : effectiveWeather === 'polluted'
+            ? 0.42
+            : 0.62;
+    const opacity = (0.18 + phase01 * 0.10) * strength * gfx.sunBloom;
+    return { rgb, opacity };
+  }, [dayPhase, effectiveWeather, gfx.sunBloom]);
 
   const getActionHint = (stepId: string) => {
     if (stepId === 'hole') return 'Klik untuk menggali';
@@ -6640,6 +6917,55 @@ const TreeGame: React.FC = () => {
 
   const nearTargetNow = useMemo(() => isNearTarget(), [charPos.x, charPos.y, plots, requiredPlotId]);
 
+  const interactionHint = useMemo(() => {
+    if (phase !== 'planting') return null;
+    if (pauseOpen) return null;
+    if (levelIntroOpen) return null;
+
+    const dist = (ax: number, ay: number, bx: number, by: number) => {
+      const dx = ax - bx;
+      const dy = ay - by;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const currentX = charPos.x;
+    const currentY = charPos.y;
+
+    if (tutorialActive) {
+      const d = dist(currentX, currentY, tutorialSpot.x, tutorialSpot.y);
+      if (tutorialStep === 2 && d < 160) return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Gali lubang' };
+      if (tutorialStep === 3 && d < 160) return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Tanam bibit' };
+      if (tutorialStep === 4) {
+        const nearTree = activeTrees.some(t => dist(currentX, currentY, t.x, t.y) < 160);
+        if (nearTree) return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Siram pohon' };
+      }
+      return null;
+    }
+
+    if (activeEvent?.type === 'POLLUTION_SPIKE' && pollutionSources.length > 0) {
+      const src = pollutionSources.find(s => dist(currentX, currentY, s.x, s.y) < 160);
+      if (src) return { key: 'E', tone: 'warn' as const, title: 'Tekan E', subtitle: 'Bersihkan polusi' };
+    }
+
+    if (activeEvent?.type === 'PESTS' && pestTreeId) {
+      const t = activeTrees.find(tt => tt.id === pestTreeId) ?? null;
+      if (t && dist(currentX, currentY, t.x, t.y) < 160) return { key: 'E', tone: 'warn' as const, title: 'Tekan E', subtitle: 'Basmi hama' };
+    }
+
+    const nearestPlot = plots.find(p => dist(currentX, currentY, p.cx, p.cy) < 160) ?? null;
+    if (!nearestPlot) return null;
+
+    const existingTree = activeTrees.find(t => t.x === nearestPlot.cx && t.y === nearestPlot.cy) ?? null;
+    if (!existingTree) {
+      if (level === 2 && nearestPlot.id !== activePlotId) return { key: 'E', tone: 'warn' as const, title: 'Target Salah', subtitle: 'Ikuti titik yang menyala' };
+      if (energy < 20) return { key: 'E', tone: 'warn' as const, title: 'Energi Kurang', subtitle: 'Butuh 20 energi untuk gali' };
+      return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Gali & tanam' };
+    }
+
+    if (water < 10) return { key: 'E', tone: 'warn' as const, title: 'Air Habis', subtitle: 'Cari hujan / tunggu regen' };
+    return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Siram pohon' };
+  }, [activeEvent?.type, activePlotId, activeTrees, charPos.x, charPos.y, energy, level, levelIntroOpen, pauseOpen, pestTreeId, plots, pollutionSources, phase, tutorialActive, tutorialSpot.x, tutorialSpot.y, tutorialStep, water]);
+
   useEffect(() => {
     if (phase !== 'planting') return;
     const el = gameAreaRef.current;
@@ -6687,44 +7013,34 @@ const TreeGame: React.FC = () => {
 
   const beginRegionSelect = (region: Region) => {
     if (mapFocusLock) return;
-    if (region.status === 'hijau') {
-      setMapFocusLock(true);
-      setMapFocusRegionId(region.id);
-      setHoveredRegion(region);
-      playUiClick();
-      if (regionSelectTimerRef.current) window.clearTimeout(regionSelectTimerRef.current);
-      regionSelectTimerRef.current = window.setTimeout(() => {
-        setMapFocusLock(false);
-        setMapFocusRegionId(null);
-        regionSelectTimerRef.current = null;
-      }, 520);
-      return;
-    }
     setMapFocusLock(true);
     setMapFocusRegionId(region.id);
     setHoveredRegion(region);
-    setMapTransition({ id: Date.now(), region });
-    setGameLoading({
-      id: Date.now() + 1,
-      title: `Mengunci ${region.name}`,
-      subtitle: 'Menyiapkan data wilayah & briefing misi…',
-      accent: region.status === 'kritis' ? 'warn' : 'danger',
-      tip: 'Hover wilayah untuk cek data. Setelah masuk, tekan E untuk interaksi di dalam area.',
-      durationMs: 760,
-    });
     playUiClick();
-    playNoise(140, 0.20, 1800, 720);
+    if (region.status !== 'hijau') {
+      setMapTransition({ id: Date.now(), region });
+      playNoise(140, 0.20, 1800, 720);
+      commitRegionSelect(region);
+    }
     if (regionSelectTimerRef.current) window.clearTimeout(regionSelectTimerRef.current);
     regionSelectTimerRef.current = window.setTimeout(() => {
       setMapFocusLock(false);
       setMapFocusRegionId(null);
       regionSelectTimerRef.current = null;
       setMapTransition(null);
-      commitRegionSelect(region);
-    }, 760);
+    }, 920);
   };
 
   const commitRegionSelect = (region: Region) => {
+    setGameLoading({
+      id: Date.now(),
+      title: `Memasuki ${region.name}`,
+      subtitle: 'Mempersiapkan pemilihan bibit & briefing misi…',
+      accent: region.status === 'kritis' ? 'warn' : region.status === 'gersang' ? 'danger' : 'eco',
+      tip: 'Pilih bibit yang sesuai kondisi wilayah. Setelah itu kamu langsung masuk ke gameplay.',
+      durationMs: 820,
+      stages: ['Memindai wilayah', 'Menyiapkan briefing', 'Memuat daftar bibit', 'Menyiapkan HUD & kontrol'],
+    });
     setSelectedRegion(region);
     setPhase('seedling');
     playReward();
@@ -6758,28 +7074,33 @@ const TreeGame: React.FC = () => {
       subtitle: 'Membangun lahan, cuaca, partikel, dan sistem event…',
       accent: 'eco',
       tip: 'WASD/Arrow untuk bergerak, E untuk aksi. Fokus ke titik menyala saat Level 2.',
-      durationMs: 1150,
+      durationMs: 1350,
+      stages: ['Membangun lahan', 'Menyiapkan cuaca', 'Menyiapkan event', 'Sinkronisasi progres', 'Menyiapkan tutorial'],
     });
-    setLevel(1);
-    setPlantingStep(0);
-    setActionProgress(0);
-    setActionPlotId(null);
-    setLevelIntroOpen(true);
-    setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 });
-    setActivePlotId('p1');
-    setTutorialActive(true);
-    setTutorialStep(0);
-    setUnlockedRadius(450);
-    setActiveTrees([]);
-    lastPlantAtRef.current = Date.now();
-    idleReminderAtRef.current = 0;
-    timeWarnedRef.current = { s60: false, s30: false, s10: false };
-    lastTreesCountRef.current = 0;
-    teleportPlayer(120, 120);
-    setEnvScore({ co2: 0, water: 0, temp: 0, bio: 0 });
-    setPlotMoisture({ p1: 45, p2: 45, p3: 45, p4: 45 });
-    setPlotHealth({ p1: 75, p2: 75, p3: 75, p4: 75 });
-    setDayPhase(0);
+    window.requestAnimationFrame(() => {
+      startTransition(() => {
+        setLevel(1);
+        setPlantingStep(0);
+        setActionProgress(0);
+        setActionPlotId(null);
+        setLevelIntroOpen(true);
+        setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 });
+        setActivePlotId('p1');
+        setTutorialActive(true);
+        setTutorialStep(0);
+        setUnlockedRadius(450);
+        setActiveTrees([]);
+        lastPlantAtRef.current = Date.now();
+        idleReminderAtRef.current = 0;
+        timeWarnedRef.current = { s60: false, s30: false, s10: false };
+        lastTreesCountRef.current = 0;
+        teleportPlayer(120, 120);
+        setEnvScore({ co2: 0, water: 0, temp: 0, bio: 0 });
+        setPlotMoisture({ p1: 45, p2: 45, p3: 45, p4: 45 });
+        setPlotHealth({ p1: 75, p2: 75, p3: 75, p4: 75 });
+        setDayPhase(0);
+      });
+    });
   };
 
   const mascotAttention = useMemo<MascotAttention | null>(() => {
@@ -7167,6 +7488,7 @@ const TreeGame: React.FC = () => {
             accent={gameLoading.accent}
             tip={gameLoading.tip}
             durationMs={gameLoading.durationMs}
+            stages={gameLoading.stages}
           />
         )}
       </AnimatePresence>
@@ -7523,6 +7845,20 @@ const TreeGame: React.FC = () => {
                       </div>
                     </div>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => setPauseOpen(v => !v)}
+                    className={`px-4 py-3 rounded-2xl border text-white/85 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 active:scale-95 transition-transform ${
+                      pauseOpen ? 'bg-emerald-500/15 border-emerald-500/25' : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    }`}
+                    aria-label={pauseOpen ? 'Lanjutkan' : 'Pause'}
+                  >
+                    {pauseOpen ? <Play size={14} /> : <Pause size={14} />}
+                    {pauseOpen ? 'Lanjut' : 'Pause'}
+                    <span className="ml-1 px-2 py-1 rounded-lg bg-black/20 border border-white/10 text-white/60 text-[9px] font-black tracking-widest">
+                      ESC
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -7531,6 +7867,8 @@ const TreeGame: React.FC = () => {
                 ref={gameAreaRef} 
                 className="flex-1 relative overflow-hidden bg-slate-950 cursor-pointer"
                 onClick={(e) => {
+                  if (pauseOpen) return;
+                  if (levelIntroOpen) return;
                   const rect = e.currentTarget.getBoundingClientRect();
                   const clickX = e.clientX - rect.left;
                   const clickY = e.clientY - rect.top;
@@ -7561,10 +7899,13 @@ const TreeGame: React.FC = () => {
                     y: camY,
                     width: 3000,
                     height: 3000,
-                    background: effectiveWeather === 'rainy' ? 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)' : 
-                                effectiveWeather === 'drought' ? 'linear-gradient(180deg, #451a03 0%, #78350f 100%)' : 
-                                effectiveWeather === 'polluted' ? 'linear-gradient(180deg, #1e293b 0%, #334155 100%)' :
-                                'linear-gradient(180deg, #064e3b 0%, #065f46 100%)',
+                    backgroundImage: [
+                      `radial-gradient(circle at 18% 22%, rgba(255,255,255,${0.06 * gfx.worldTexture}) 0 160px, transparent 620px)`,
+                      `radial-gradient(circle at 78% 70%, rgba(0,0,0,${0.22 * gfx.worldTexture}) 0 520px, transparent 1200px)`,
+                      `repeating-linear-gradient(135deg, rgba(255,255,255,${0.012 * gfx.worldTexture}) 0 2px, transparent 2px 20px)`,
+                      worldBaseBg,
+                    ].join(','),
+                    backgroundBlendMode: 'screen, multiply, overlay, normal',
                   }}
                 >
                   <motion.div
@@ -7581,7 +7922,7 @@ const TreeGame: React.FC = () => {
                     transition={{ duration: 0.22, ease: 'easeOut' }}
                   >
                   {/* Grid Lines (Blueprint feel) */}
-                  <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '100px 100px' }} />
+                  <div className="absolute inset-0 pointer-events-none" style={{ opacity: gfx.gridOpacity, backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '100px 100px' }} />
 
                   <div
                     className="absolute inset-0 pointer-events-none"
@@ -7600,13 +7941,35 @@ const TreeGame: React.FC = () => {
                     }}
                   />
 
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: `linear-gradient(180deg, rgba(255,255,255,${0.10 * gfx.haze}) 0%, rgba(2,6,23,${0.55 * gfx.haze}) 100%)`,
+                      mixBlendMode: 'soft-light',
+                    }}
+                  />
+                  <motion.div
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: charPos.x,
+                      top: charPos.y - 180,
+                      width: 980,
+                      height: 980,
+                      transform: 'translate(-50%, -50%)',
+                      background: `radial-gradient(circle, rgba(${sunFx.rgb},${sunFx.opacity}) 0 0, rgba(${sunFx.rgb},${sunFx.opacity * 0.55}) 180px, rgba(${sunFx.rgb},0) 540px)`,
+                      mixBlendMode: 'screen',
+                    }}
+                    animate={{ scale: [0.98, 1.03, 0.98], opacity: [0.75, 1, 0.75] }}
+                    transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut' }}
+                  />
+
                   <EnvironmentFX weather={effectiveWeather} />
                   <AdrenalineEventFX event={activeEvent} />
 
                   {/* Ambient Life & Dust */}
-                  <AmbientDust />
-                  {[...Array(5)].map((_, i) => (
-                    <Bird key={`bird-${i}`} />
+                  <AmbientDust count={gfx.dustCount} />
+                  {Array.from({ length: gfx.birdCount }, (_, i) => (
+                    <Bird key={`bird-${i}`} seed={i + 1} />
                   ))}
 
                   {/* Decorative Elements for World */}
@@ -7623,7 +7986,7 @@ const TreeGame: React.FC = () => {
                   {FALLEN_TREE_SPOTS.map((s) => (
                     <FallenTree key={s.id} x={s.x} y={s.y} rot={s.rot} scale={s.scale} weather={effectiveWeather} />
                   ))}
-                  {LEAF_LITTER_SPOTS.map((s) => (
+                  {LEAF_LITTER_SPOTS.slice(0, gfx.leafLitterCount).map((s) => (
                     <LeafLitter
                       key={s.id}
                       x={s.x}
@@ -7643,20 +8006,64 @@ const TreeGame: React.FC = () => {
                   ))}
 
                   {/* Random Decorative Elements */}
-                  {[...Array(25)].map((_, i) => (
-                    <div 
-                      key={`random-decor-${i}`}
-                      className="absolute pointer-events-none"
-                      style={{ 
-                        left: 100 + (i * 157) % 2800, 
-                        top: 100 + (i * 213) % 2800,
-                        transform: `scale(${0.6 + Math.random() * 0.4})`
-                      }}
-                    >
-                      <div className="w-6 h-4 bg-emerald-900/10 rounded-full blur-md" />
-                      <div className="absolute top-0 left-1 w-1 h-3 bg-emerald-600/20 rounded-full rotate-[-10deg]" />
-                    </div>
-                  ))}
+                  {Array.from({ length: gfx.decorCount }, (_, i) => {
+                    const rand = (n: number) => {
+                      const v = Math.sin((i + 1) * 971.113 + n * 127.7) * 10000;
+                      return v - Math.floor(v);
+                    };
+                    const left = 100 + (i * 157) % 2800;
+                    const top = 100 + (i * 213) % 2800;
+                    const s = 0.62 + rand(1) * 0.48;
+                    const rot = -18 + rand(2) * 36;
+                    const kind = rand(3) < 0.55 ? 'grass' : 'stone';
+                    const tone = rand(4);
+                    const tintA = kind === 'grass' ? `rgba(16,185,129,${0.16 + tone * 0.12})` : `rgba(148,163,184,${0.14 + tone * 0.12})`;
+                    const tintB = kind === 'grass' ? `rgba(6,95,70,${0.12 + tone * 0.10})` : `rgba(71,85,105,${0.12 + tone * 0.10})`;
+                    return (
+                      <div
+                        key={`random-decor-${i}`}
+                        className="absolute pointer-events-none"
+                        style={{
+                          left,
+                          top,
+                          transform: `scale(${s}) rotate(${rot}deg)`,
+                          filter: 'drop-shadow(0 12px 18px rgba(0,0,0,0.14))',
+                        }}
+                      >
+                        <div className="absolute -left-6 -top-4 w-20 h-16 rounded-full blur-2xl opacity-70" style={{ background: `radial-gradient(circle, ${tintA} 0 18px, transparent 54px)` }} />
+                        {kind === 'grass' ? (
+                          <div className="relative w-10 h-10">
+                            <div className="absolute left-1/2 top-7 -translate-x-1/2 w-10 h-3 rounded-full blur-md" style={{ background: 'rgba(0,0,0,0.18)' }} />
+                            {Array.from({ length: 5 }, (_, j) => {
+                              const h = 10 + rand(10 + j) * 14;
+                              const w = 1 + rand(20 + j) * 1.2;
+                              const r = -18 + rand(30 + j) * 36;
+                              return (
+                                <motion.div
+                                  key={j}
+                                  className="absolute left-1/2 top-4 origin-bottom rounded-full"
+                                  style={{
+                                    width: w,
+                                    height: h,
+                                    background: `linear-gradient(180deg, ${tintA} 0%, ${tintB} 100%)`,
+                                    rotate: `${r}deg`,
+                                  }}
+                                  animate={{ rotate: [`${r - 10}deg`, `${r + 10}deg`, `${r - 10}deg`] }}
+                                  transition={{ repeat: Infinity, duration: 2.0 + rand(40 + j) * 2.2, ease: 'easeInOut', delay: i * 0.03 + j * 0.02 }}
+                                />
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="relative w-10 h-10">
+                            <div className="absolute left-1/2 top-7 -translate-x-1/2 w-10 h-3 rounded-full blur-md" style={{ background: 'rgba(0,0,0,0.16)' }} />
+                            <div className="absolute left-1/2 top-4 -translate-x-1/2 w-8 h-6 rounded-[18px] border border-black/10" style={{ background: `linear-gradient(135deg, ${tintA}, ${tintB})` }} />
+                            <div className="absolute left-4 top-4 w-3 h-2 rounded-full bg-white/12" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {tutorialActive && (tutorialStep === 1 || tutorialStep === 2) && (
                     <PlantSpotMarker x={tutorialSpot.x} y={tutorialSpot.y} tone="tutorial" />
@@ -7684,8 +8091,8 @@ const TreeGame: React.FC = () => {
                   <div 
                     className="absolute inset-0 z-40 pointer-events-none"
                     style={{
-                      background: `radial-gradient(circle at ${charPos.x}px ${charPos.y}px, transparent 0, rgba(0,0,0,0.85) ${unlockedRadius}px)`,
-                      transition: 'background 1s ease-in-out'
+                      background: `radial-gradient(circle at ${charPos.x}px ${charPos.y}px, transparent 0, rgba(0,0,0,${gfx.fogAlpha}) ${unlockedRadius}px)`,
+                      transition: 'background 650ms ease-out'
                     }}
                   />
 
@@ -7862,8 +8269,8 @@ const TreeGame: React.FC = () => {
                   </AnimatePresence>
 
                   {/* Vignette & Scanlines Effect for immersive feel */}
-                  <div className="absolute inset-0 z-[60] pointer-events-none shadow-[inset_0_0_150px_rgba(0,0,0,0.5)]" />
-                  <div className="absolute inset-0 z-[60] pointer-events-none opacity-[0.03] overflow-hidden" style={{ backgroundImage: 'repeating-linear-gradient(0deg, #000 0 1px, transparent 1px 2px)' }} />
+                  <div className="absolute inset-0 z-[60] pointer-events-none" style={{ boxShadow: `inset 0 0 170px rgba(0,0,0,${gfx.vignette})` }} />
+                  <div className="absolute inset-0 z-[60] pointer-events-none overflow-hidden" style={{ opacity: gfx.scanlines, backgroundImage: 'repeating-linear-gradient(0deg, #000 0 1px, transparent 1px 2px)' }} />
                   </motion.div>
                 </motion.div>
 
@@ -8113,9 +8520,102 @@ const TreeGame: React.FC = () => {
                         </div>
                       </div>
                     )}
+
+                    <div className="mt-4 p-3 rounded-2xl bg-black/25 border border-white/10">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[9px] font-black text-white/60 uppercase tracking-widest">Mini Map</div>
+                        <div className="text-[9px] font-black text-white/35 uppercase tracking-widest">
+                          {Math.round(charPos.x)},{Math.round(charPos.y)}
+                        </div>
+                      </div>
+                      <div
+                        className="mt-2 relative w-full h-24 rounded-xl overflow-hidden"
+                        style={{
+                          backgroundImage:
+                            'radial-gradient(circle at 30% 30%, rgba(16,185,129,0.14) 0 80px, transparent 160px), radial-gradient(circle at 70% 60%, rgba(56,189,248,0.10) 0 90px, transparent 180px), linear-gradient(180deg, rgba(15,23,42,0.85), rgba(2,6,23,0.92))',
+                        }}
+                      >
+                        <div
+                          className="absolute inset-0 opacity-30"
+                          style={{
+                            backgroundImage:
+                              'linear-gradient(rgba(255,255,255,0.10) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.10) 1px, transparent 1px)',
+                            backgroundSize: '18px 18px',
+                          }}
+                        />
+                        {level === 2 && (
+                          (() => {
+                            const target = plots.find(p => p.id === activePlotId) ?? null;
+                            if (!target) return null;
+                            const left = `${Math.max(0, Math.min(1, target.cx / 3000)) * 100}%`;
+                            const top = `${Math.max(0, Math.min(1, target.cy / 3000)) * 100}%`;
+                            return (
+                              <motion.div
+                                className="absolute w-3 h-3 rounded-full bg-yellow-300 shadow-[0_0_18px_rgba(250,204,21,0.55)]"
+                                style={{ left, top, transform: 'translate(-50%, -50%)' }}
+                                animate={{ scale: [1, 1.25, 1], opacity: [0.8, 1, 0.8] }}
+                                transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }}
+                              />
+                            );
+                          })()
+                        )}
+                        {activeTrees.slice(0, 24).map(t => {
+                          const left = `${Math.max(0, Math.min(1, t.x / 3000)) * 100}%`;
+                          const top = `${Math.max(0, Math.min(1, t.y / 3000)) * 100}%`;
+                          return (
+                            <div
+                              key={`mini-tree-${t.id}`}
+                              className="absolute w-1.5 h-1.5 rounded-full bg-emerald-300/80"
+                              style={{ left, top, transform: 'translate(-50%, -50%)' }}
+                            />
+                          );
+                        })}
+                        {(() => {
+                          const left = `${Math.max(0, Math.min(1, charPos.x / 3000)) * 100}%`;
+                          const top = `${Math.max(0, Math.min(1, charPos.y / 3000)) * 100}%`;
+                          return (
+                            <div
+                              className="absolute w-3 h-3 rounded-full bg-white shadow-[0_0_18px_rgba(255,255,255,0.35)] border border-white/40"
+                              style={{ left, top, transform: 'translate(-50%, -50%)' }}
+                            />
+                          );
+                        })()}
+                      </div>
+                    </div>
                   </motion.div>
                 )}
               </div>
+
+              <AnimatePresence>
+                {interactionHint && (
+                  <motion.div
+                    className="absolute bottom-24 left-1/2 -translate-x-1/2 z-[160] pointer-events-none"
+                    initial={{ y: 10, opacity: 0, scale: 0.98 }}
+                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                    exit={{ y: 10, opacity: 0, scale: 0.98 }}
+                  >
+                    <motion.div
+                      className={`flex items-center gap-3 px-4 py-3 rounded-2xl border backdrop-blur-2xl shadow-2xl ${
+                        interactionHint.tone === 'warn' ? 'bg-red-500/10 border-red-400/25' : 'bg-emerald-500/10 border-emerald-400/20'
+                      }`}
+                      animate={{ scale: [1, 1.02, 1] }}
+                      transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+                    >
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm ${
+                          interactionHint.tone === 'warn' ? 'bg-red-500/20 border border-red-400/25 text-red-100' : 'bg-emerald-500/20 border border-emerald-400/25 text-emerald-100'
+                        }`}
+                      >
+                        {interactionHint.key}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-black text-white/70 uppercase tracking-widest">{interactionHint.title}</div>
+                        <div className="text-white font-black tracking-tight leading-tight">{interactionHint.subtitle}</div>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* --- 3. CONTROLS & TIPS FOOTER --- */}
               <div className="h-16 bg-slate-900/95 border-t border-white/10 flex items-center justify-center gap-12 px-10 z-[100]">
@@ -8144,6 +8644,22 @@ const TreeGame: React.FC = () => {
                 </div>
                 <button
                   type="button"
+                  onClick={() => setPauseOpen(true)}
+                  className="px-4 py-2 rounded-full bg-white/10 border border-white/15 text-white/80 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 active:scale-95 transition-transform"
+                >
+                  <Pause size={14} />
+                  Pause
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVisualOpen(true)}
+                  className="px-4 py-2 rounded-full bg-white/10 border border-white/15 text-white/80 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 active:scale-95 transition-transform"
+                >
+                  <Sparkles size={14} />
+                  Visual
+                </button>
+                <button
+                  type="button"
                   onClick={() => setGuideOpen(true)}
                   className="px-4 py-2 rounded-full bg-white/10 border border-white/15 text-white/80 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 active:scale-95 transition-transform"
                 >
@@ -8151,6 +8667,94 @@ const TreeGame: React.FC = () => {
                   Panduan
                 </button>
               </div>
+
+              <AnimatePresence>
+                {pauseOpen && (
+                  <motion.div
+                    className="absolute inset-0 z-[220] bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <motion.div
+                      className="max-w-lg w-full bg-slate-900/95 border border-white/10 rounded-[3rem] p-10 shadow-2xl"
+                      initial={{ scale: 0.94, y: 16 }}
+                      animate={{ scale: 1, y: 0 }}
+                      exit={{ scale: 0.96, y: 10 }}
+                    >
+                      <div className="flex items-start justify-between gap-6">
+                        <div>
+                          <div className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.25em]">Menu</div>
+                          <div className="text-4xl font-black text-white tracking-tighter">PAUSE</div>
+                          <div className="mt-2 text-white/70 font-bold leading-relaxed">
+                            Tekan ESC untuk lanjut. Saat pause, karakter tidak bergerak.
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setPauseOpen(false)}
+                          className="w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/80 active:scale-95 transition-transform"
+                          aria-label="Tutup"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+
+                      <div className="mt-8 grid grid-cols-1 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setPauseOpen(false)}
+                          className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2"
+                        >
+                          <Play size={18} />
+                          Lanjutkan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPauseOpen(false);
+                            handleSeedlingSelect(selectedSeedling);
+                          }}
+                          className="w-full py-4 bg-white/10 hover:bg-white/15 text-white rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95 border border-white/10 flex items-center justify-center gap-2"
+                        >
+                          <RotateCcw size={18} />
+                          Ulang Misi
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPauseOpen(false);
+                            setPhase('selection');
+                            setPlantingStep(0);
+                            setSelectedRegion(null);
+                            setSelectedSeedling(null);
+                            setLevel(1);
+                            setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 });
+                            setActivePlotId('p1');
+                            setLevelIntroOpen(false);
+                            setActionId(null);
+                            setActionPlotId(null);
+                            setActionProgress(0);
+                            setActiveTrees([]);
+                            setEnvScore({ co2: 0, water: 0, temp: 0, bio: 0 });
+                            setPlotMoisture({ p1: 45, p2: 45, p3: 45, p4: 45 });
+                            setPlotHealth({ p1: 75, p2: 75, p3: 75, p4: 75 });
+                            setDayPhase(0);
+                            setCurrentMission(missions[0]);
+                            setWater(missions[0].initialWater);
+                            setEnergy(missions[0].initialEnergy);
+                            setTimer(missions[0].timeLimit);
+                            setCo2Level(100);
+                          }}
+                          className="w-full py-4 bg-white/5 hover:bg-white/10 text-white/90 rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95 border border-white/10"
+                        >
+                          Kembali ke Peta
+                        </button>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* --- 4. GAME OVER / WIN OVERLAYS --- */}
               <AnimatePresence>
@@ -8218,6 +8822,97 @@ const TreeGame: React.FC = () => {
                 <button onClick={() => { setMapRestorationWave({ id: Date.now(), regionId: selectedRegion.id }); setPhase('selection'); setPlantingStep(0); setSelectedRegion(null); setSelectedSeedling(null); setLevel(1); setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 }); setActivePlotId('p1'); setLevelIntroOpen(false); setActionPlotId(null); setActionProgress(0); }} className="bg-slate-100 px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-slate-200 transition-all shadow-md active:scale-95">Mulai Baru</button>
                 <button onClick={() => navigate('/')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-emerald-700 shadow-lg transition-all active:scale-95">Selesai</button>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {visualOpen && (
+            <motion.div
+              className="fixed inset-0 z-[258] bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="w-full max-w-2xl bg-slate-900/95 border border-white/10 rounded-[3rem] shadow-2xl overflow-hidden"
+                initial={{ scale: 0.96, y: 10 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.98, y: 10 }}
+              >
+                <div className="p-8 border-b border-white/10 flex items-start justify-between gap-6">
+                  <div>
+                    <div className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.25em]">Kualitas Visual</div>
+                    <div className="text-3xl font-black text-white tracking-tighter mt-1">Tampilan Game</div>
+                    <div className="text-white/70 font-bold mt-2 leading-relaxed">
+                      Pilih mode tampilan yang paling nyaman. Kalau terasa ramai/burik, pakai mode Bersih.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setVisualOpen(false)}
+                    className="px-4 py-2 rounded-full bg-white/10 border border-white/15 text-white/80 text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform"
+                  >
+                    Tutup
+                  </button>
+                </div>
+
+                <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => { setGfxPreset('clean'); setVisualOpen(false); }}
+                    className={`p-5 rounded-[2rem] border text-left transition-all active:scale-[0.99] ${
+                      gfxPreset === 'clean' ? 'bg-emerald-500/15 border-emerald-500/25' : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${gfxPreset === 'clean' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/10 text-white/80'}`}>
+                        <Eye size={18} />
+                      </div>
+                      <div className="text-white font-black tracking-tight">Bersih</div>
+                    </div>
+                    <div className="text-white/70 font-bold text-sm mt-3 leading-relaxed">
+                      Fokus gameplay, efek tidak berlebihan.
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setGfxPreset('cinematic'); setVisualOpen(false); }}
+                    className={`p-5 rounded-[2rem] border text-left transition-all active:scale-[0.99] ${
+                      gfxPreset === 'cinematic' ? 'bg-emerald-500/15 border-emerald-500/25' : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${gfxPreset === 'cinematic' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/10 text-white/80'}`}>
+                        <Sparkles size={18} />
+                      </div>
+                      <div className="text-white font-black tracking-tight">Cinematic</div>
+                    </div>
+                    <div className="text-white/70 font-bold text-sm mt-3 leading-relaxed">
+                      Efek lebih banyak, layar lebih dramatis.
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setGfxPreset('performance'); setVisualOpen(false); }}
+                    className={`p-5 rounded-[2rem] border text-left transition-all active:scale-[0.99] ${
+                      gfxPreset === 'performance' ? 'bg-emerald-500/15 border-emerald-500/25' : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${gfxPreset === 'performance' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/10 text-white/80'}`}>
+                        <Zap size={18} />
+                      </div>
+                      <div className="text-white font-black tracking-tight">Performa</div>
+                    </div>
+                    <div className="text-white/70 font-bold text-sm mt-3 leading-relaxed">
+                      Efek minimum biar lebih ringan.
+                    </div>
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
