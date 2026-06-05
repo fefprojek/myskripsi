@@ -776,12 +776,14 @@ const EnvMascotCard = memo(({
   regionName,
   regionStatus,
   attention,
+  avatarSrc,
 }: {
   onGuide: () => void;
   mode?: 'full' | 'compact';
   regionName?: string;
   regionStatus?: string | null;
   attention?: MascotAttention | null;
+  avatarSrc?: string | null;
 }) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const headRef = useRef<HTMLDivElement | null>(null);
@@ -1037,14 +1039,14 @@ const EnvMascotCard = memo(({
     }
     if (mode === 'compact') {
       return {
-        headline: 'Halo, aku Monyet Penjaga!',
+        headline: 'Halo, aku Maskot Penjaga!',
         body: 'Aku akan memandumu menjaga lingkungan. Pilih wilayah di peta yang butuh bantuan kita ya!',
       };
     }
     const options = [
       {
         headline: 'Salam Hijau, Sobat Bandung!',
-        body: 'Aku si Monyet Penjaga. Yuk, kita bersatu hijaukan Bandung Raya! Pilih wilayah merah/oranye di peta untuk mulai gerakan menanam pohon bersama warga lainnya!',
+        body: 'Aku Maskot Penjaga. Yuk, kita bersatu hijaukan Bandung Raya! Pilih wilayah merah/oranye di peta untuk mulai gerakan menanam pohon bersama warga lainnya!',
       },
       {
         headline: 'Ayo Bergerak Sekarang!',
@@ -1107,17 +1109,17 @@ const EnvMascotCard = memo(({
     if (state === 'aware') {
       return {
         hint: 'Halo Pahlawan!',
-        text: pick(['Siap menghijaukan Bandung hari ini, Sobat?', 'Ayo kita cari lahan gersang dan tanami pohon!', 'Aku si Monyet Penjaga siap memandumu!'], seed),
+        text: pick(['Siap menghijaukan Bandung hari ini, Sobat?', 'Ayo kita cari lahan gersang dan tanami pohon!', 'Aku siap memandumu!'], seed),
       };
     }
     if (machine.nudgeUntil) {
       return {
-        hint: 'Tips Monyet',
+        hint: 'Tips Maskot',
         text: pick(['Klik wilayah merah di peta, itu yang paling darurat!', 'Jangan ragu, setiap bibit pohonmu sangat berarti!', 'Ayo gerakkan jemarimu untuk masa depan hijau!'], seed),
       };
     }
     return {
-      hint: 'Monyet Penjaga',
+      hint: 'Maskot Penjaga',
       text: pick(['Ayo, pilih wilayah di peta dan mari kita menanam!', 'Jaga Bandung tetap sejuk, mari tanam pohon!', 'Klik wilayah yang butuh bantuanmu sekarang juga!'], seed),
     };
   }, [attention?.hint, attention?.message, machine.dialogNonce, machine.nudgeUntil, machine.state, regionName, regionStatus]);
@@ -1284,6 +1286,7 @@ const EnvMascotCard = memo(({
                 transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut' }}
               >
                 <div className="relative w-[86px] h-[128px]">
+                  <div className="absolute inset-0 transition-opacity" style={{ opacity: avatarSrc ? 0 : 1 }}>
                   <motion.div
                     ref={headRef}
                     className="absolute left-1/2 -translate-x-1/2 top-0 w-[64px] h-[64px] rounded-full border-2 border-[#4a2c19] shadow-[0_12px_24px_rgba(0,0,0,0.2)]"
@@ -1460,6 +1463,22 @@ const EnvMascotCard = memo(({
                     transition={{ repeat: Infinity, duration: 1.9, ease: 'easeInOut', delay: 0.05 }}
                     style={{ backgroundColor: accent.core }}
                   />
+                  </div>
+
+                  {avatarSrc && (
+                    <motion.div
+                      aria-hidden
+                      className="absolute inset-0 flex items-end justify-center pointer-events-none"
+                      initial={false}
+                      animate={{ y: machine.state === 'happy' ? [0, -2, 0] : 0, rotate: machine.state === 'worried' ? [-1.2, 1.2, -1.2] : 0 }}
+                      transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}
+                    >
+                      <div className="relative w-[86px] h-[128px] rounded-[2rem] overflow-hidden bg-white border border-white/70 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+                        <img src={avatarSrc} alt="Maskot" draggable={false} className="w-full h-full object-contain select-none" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.25),transparent_55%)]" />
+                      </div>
+                    </motion.div>
+                  )}
 
                   <AnimatePresence>
                     {effectivePose === 'plant' && (
@@ -2494,7 +2513,7 @@ const HeldTool = ({ actionId, accent, icon: Icon, actionProgress }: { actionId: 
   );
 };
 
-const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, actionProgress, direction }: { isWalking: boolean, actionId: string | null, toolIcon?: React.ElementType, accent: string, actionProgress?: number, direction: 'left' | 'right' }) => {
+const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, actionProgress, direction, skin }: { isWalking: boolean, actionId: string | null, toolIcon?: React.ElementType, accent: string, actionProgress?: number, direction: 'left' | 'right', skin?: string | null }) => {
   const isActing = Boolean(actionId);
   const isDigging = actionId === 'hole';
   const isPlanting = actionId === 'plant';
@@ -2504,6 +2523,7 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
   const blinkTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (skin) return;
     const schedule = () => {
       const nextMs = 1800 + Math.random() * 2600;
       blinkTimerRef.current = window.setTimeout(() => {
@@ -2516,7 +2536,73 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
       if (blinkTimerRef.current) window.clearTimeout(blinkTimerRef.current);
       blinkTimerRef.current = null;
     };
-  }, []);
+  }, [skin]);
+
+  if (skin) {
+    return (
+      <motion.div
+        animate={{
+          rotate: isDigging ? [-2.6, 0.8, -1.8] : isPlanting ? [-0.8, 0.8, -0.8] : isActing ? [-1.2, 1.2, -1.0] : isWalking ? [-0.8, 0.8, -0.8] : [-0.6, 0.6, -0.6],
+          y: isDigging ? [0, 1.2, 0] : isPlanting ? [crouch, crouch + 0.6, crouch] : isActing ? [0, 0.8, 0] : isWalking ? [0, -1.6, 0] : [0, 0.8, 0],
+        }}
+        transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 3.8, ease: 'easeInOut' }}
+        className={`relative flex flex-col items-center origin-bottom transition-transform duration-300 ${direction === 'left' ? '-scale-x-100' : 'scale-x-100'}`}
+      >
+        <motion.div
+          animate={{
+            y: isDigging ? [0, -1.6, 0] : isPlanting ? [-0.6, -1.2, -0.6] : isActing ? [0, -1.2, 0] : isWalking ? [0, -2.6, 0] : [0, -1, 0],
+            rotate: isWalking ? [-2, 2, -2] : 0
+          }}
+          transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 1.8, ease: 'easeInOut' }}
+          className="relative z-20"
+        >
+          <div className="relative w-14 h-14 rounded-[1.6rem] overflow-hidden bg-white/10 border border-white/15 shadow-2xl" style={{ filter: 'drop-shadow(0 16px 20px rgba(0,0,0,0.22))' }}>
+            <img
+              src={skin}
+              alt="Karakter"
+              draggable={false}
+              className="w-full h-full object-contain select-none"
+              style={{ imageRendering: 'auto' }}
+            />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_25%,rgba(255,255,255,0.22),transparent_55%)]" />
+          </div>
+        </motion.div>
+
+        {isActing && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2 }}
+            className="absolute -right-9 top-6 w-10 h-10 rounded-[1.15rem] bg-white/90 border border-black/10 shadow-2xl flex items-center justify-center"
+          >
+            <HeldTool actionId={actionId ?? ''} accent={accent} icon={ToolIcon} actionProgress={actionProgress} />
+          </motion.div>
+        )}
+
+        {!isActing && (
+          <motion.div
+            initial={false}
+            animate={{ opacity: 1, scale: [1, 1.05, 1], y: [0, -1, 0] }}
+            transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+            className="absolute -right-9 top-6 w-10 h-10 rounded-[1.15rem] bg-white/80 border border-black/10 shadow-xl flex items-center justify-center backdrop-blur-md"
+          >
+            <div className="w-8 h-8 rounded-[1rem] bg-white/70 border border-black/10 shadow-inner flex items-center justify-center" style={{ color: accent }}>
+              {ToolIcon ? <ToolIcon size={18} /> : <Sprout size={18} />}
+            </div>
+          </motion.div>
+        )}
+
+        <motion.div
+          animate={{ scale: isDigging ? [1, 0.92, 1] : isPlanting ? [1, 0.94, 1] : isActing ? [1, 0.94, 1] : isWalking ? [1, 0.93, 1] : [1, 0.95, 1] }}
+          transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 2.4, ease: 'easeInOut' }}
+          className="w-14 h-3 bg-black/20 rounded-full blur-sm mt-2"
+          style={{ background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.14) 58%, rgba(0,0,0,0.0) 76%)' }}
+        />
+
+        <CharacterActionFX actionId={actionId} accent={accent} toolIcon={ToolIcon} />
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -5498,6 +5584,17 @@ const TreeGame: React.FC = () => {
       return 'clean';
     }
   });
+  const [characterSkin, setCharacterSkin] = useState<string | null>(() => {
+    try {
+      const raw = window.localStorage.getItem('treegame:character-skin');
+      if (!raw) return null;
+      if (raw.startsWith('data:image/')) return raw;
+      return null;
+    } catch {
+      return null;
+    }
+  });
+  const characterFileInputRef = useRef<HTMLInputElement | null>(null);
   const [restoredRegionIds, setRestoredRegionIds] = useState<string[]>(() => {
     try {
       const raw = window.localStorage.getItem('treegame:restored-regions');
@@ -5679,6 +5776,54 @@ const TreeGame: React.FC = () => {
       window.localStorage.setItem('treegame:gfx-preset', gfxPreset);
     } catch {}
   }, [gfxPreset]);
+
+  useEffect(() => {
+    try {
+      if (characterSkin) window.localStorage.setItem('treegame:character-skin', characterSkin);
+      else window.localStorage.removeItem('treegame:character-skin');
+    } catch {}
+  }, [characterSkin]);
+
+  const requestCharacterSkinFile = useCallback(() => {
+    characterFileInputRef.current?.click();
+  }, [characterFileInputRef]);
+
+  const clearCharacterSkin = useCallback(() => {
+    setCharacterSkin(null);
+    setToast({ id: Date.now(), title: 'Karakter direset', subtitle: 'Kembali ke karakter default', tone: 'info' });
+  }, [setCharacterSkin, setToast]);
+
+  const onCharacterSkinFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    e.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setToast({ id: Date.now(), title: 'Format tidak didukung', subtitle: 'Pilih file gambar (PNG/JPG/WebP)', tone: 'warn' });
+      return;
+    }
+
+    const maxBytes = 2_500_000;
+    if (file.size > maxBytes) {
+      setToast({ id: Date.now(), title: 'Gambar terlalu besar', subtitle: 'Pilih gambar yang lebih kecil (maks ~2.5MB)', tone: 'warn' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => {
+      setToast({ id: Date.now(), title: 'Gagal memuat gambar', subtitle: 'Coba pilih file lain', tone: 'warn' });
+    };
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : null;
+      if (!result || !result.startsWith('data:image/')) {
+        setToast({ id: Date.now(), title: 'Gagal memuat gambar', subtitle: 'Coba pilih file lain', tone: 'warn' });
+        return;
+      }
+      setCharacterSkin(result);
+      setToast({ id: Date.now(), title: 'Karakter diganti', subtitle: file.name, tone: 'good' });
+    };
+    reader.readAsDataURL(file);
+  }, [setCharacterSkin, setToast]);
 
   useEffect(() => {
     if (phase !== 'finished') return;
@@ -6149,7 +6294,7 @@ const TreeGame: React.FC = () => {
           spawnActionParticles(nearTree.x, nearTree.y, '#3b82f6', 15);
           setTutorialActive(false);
           setUnlockedRadius(2500);
-          setToast({ id: Date.now(), title: 'TUTORIAL SELESAI', subtitle: 'Misi baru: Tanam 3 pohon lagi!', tone: 'good' });
+          setToast({ id: Date.now(), title: 'TUTORIAL SELESAI', subtitle: 'Level 1 dimulai: Tanam 3 pohon', tone: 'good' });
           // Update to sprout
           setActiveTrees(prevTrees => prevTrees.map(t => 
             t.id === nearTree.id ? { ...t, stage: 3, moisture: 100 } : t
@@ -7467,6 +7612,13 @@ const TreeGame: React.FC = () => {
 
   return (
     <div className="min-h-screen py-3 sm:py-4 px-4 font-sans select-none overflow-hidden relative">
+      <input
+        ref={characterFileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={onCharacterSkinFileChange}
+      />
       <div
         className="absolute inset-0 -z-10"
         style={{
@@ -7637,7 +7789,15 @@ const TreeGame: React.FC = () => {
                       </AnimatePresence>
 
                       <div className="mt-auto sticky bottom-0 pt-3 -mx-6 px-6 pb-3 bg-gradient-to-t from-slate-950/85 via-slate-950/65 to-transparent">
-                        <div className="flex items-center justify-end mb-2">
+                        <div className="flex items-center justify-end gap-2 mb-2">
+                          <button
+                            type="button"
+                            onClick={() => { setShowAnalysisMascot(true); requestCharacterSkinFile(); }}
+                            className="px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/20 shadow-sm text-[10px] font-black uppercase tracking-widest text-emerald-100 inline-flex items-center gap-2 active:scale-95 transition-transform"
+                          >
+                            <Sparkles size={14} />
+                            Ganti Maskot
+                          </button>
                           <button
                             type="button"
                             onClick={() => setShowAnalysisMascot(v => !v)}
@@ -7655,6 +7815,7 @@ const TreeGame: React.FC = () => {
                             regionStatus={(hoveredRegion || selectedRegion)?.status ?? null}
                             attention={mascotAttention}
                             onGuide={() => setGuideOpen(true)}
+                            avatarSrc={characterSkin}
                           />
                         )}
                       </div>
@@ -8184,6 +8345,7 @@ const TreeGame: React.FC = () => {
                         accent="#7d4a27"
                         actionProgress={actionProgress}
                         direction={charDirection}
+                        skin={characterSkin}
                       />
 
                       {/* Interaction Hint */}
@@ -8430,160 +8592,223 @@ const TreeGame: React.FC = () => {
                 </AnimatePresence>
 
                 {/* --- 2.2 MISSION TRACKER --- */}
-                {!tutorialActive && (
-                  <motion.div 
-                    initial={{ x: 300, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    className="absolute top-28 right-10 z-[100] w-64 bg-slate-900/80 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-2xl"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <div className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Misi Saat Ini</div>
-                        <div className="mt-1 text-sm font-black text-white tracking-tight">LEVEL {level}</div>
-                      </div>
-                      <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
-                        <Trophy size={18} />
+                <motion.div 
+                  initial={{ x: 300, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  className="absolute top-28 right-10 z-[100] w-72 bg-slate-900/80 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-2xl"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <div className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Alur Misi</div>
+                      <div className="mt-1 text-sm font-black text-white tracking-tight">
+                        {tutorialActive ? 'TUTORIAL' : `LEVEL ${level}`}
                       </div>
                     </div>
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
+                      <Trophy size={18} />
+                    </div>
+                  </div>
 
-                    {level === 1 ? (
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex justify-between text-[10px] font-black text-white/60 uppercase mb-2">
-                            <span>Tanam 3 Pohon</span>
-                            <span>{Math.min(3, level1PlantedAfterTutorial)}/3</span>
-                          </div>
-                          <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                            <motion.div
-                              className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
-                              animate={{ width: `${Math.min(100, (level1PlantedAfterTutorial / 3) * 100)}%` }}
-                            />
-                          </div>
+                  {tutorialActive ? (
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between text-[10px] font-black text-white/60 uppercase mb-2">
+                          <span>Selesaikan Tutorial</span>
+                          <span>{Math.min(4, Math.max(0, tutorialStep - 1))}/4</span>
                         </div>
-                        <div className="p-3 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-emerald-300">
-                            <Trees size={16} />
-                          </div>
-                          <div className="text-[9px] font-bold text-white/80 leading-tight">
-                            Tanam di titik lahan terdekat. Tekan <span className="text-white">E</span>.
-                          </div>
+                        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                            animate={{ width: `${Math.min(100, (Math.max(0, tutorialStep - 1) / 4) * 100)}%` }}
+                          />
                         </div>
                       </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex justify-between text-[10px] font-black text-white/60 uppercase mb-2">
-                            <span>Aktifkan 4 Lahan</span>
-                            <span>{level2CompletedCount}/4</span>
-                          </div>
-                          <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                            <motion.div
-                              className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
-                              animate={{ width: `${Math.min(100, (level2CompletedCount / 4) * 100)}%` }}
-                            />
-                          </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-2">
-                          {(['p1', 'p2', 'p3', 'p4'] as const).map((pid, idx) => {
-                            const done = (level2Stages[pid] ?? 0) >= 1;
-                            const isTarget = pid === activePlotId && !done;
-                            return (
-                              <div
-                                key={pid}
-                                className={`p-3 rounded-2xl border ${
-                                  done
-                                    ? 'bg-emerald-500/15 border-emerald-500/25'
-                                    : isTarget
-                                      ? 'bg-white/10 border-white/20'
-                                      : 'bg-white/5 border-white/10'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="text-[9px] font-black text-white/70 uppercase tracking-widest">Titik {idx + 1}</div>
-                                  <div className={`text-[9px] font-black uppercase ${done ? 'text-emerald-300' : isTarget ? 'text-yellow-300' : 'text-white/40'}`}>
-                                    {done ? 'Selesai' : isTarget ? 'Target' : 'Belum'}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        <div className="p-3 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
-                            <Droplets size={16} />
-                          </div>
-                          <div className="text-[9px] font-bold text-white/80 leading-tight">
-                            Tanam lalu siram sampai tumbuh (Tekan <span className="text-white">E</span>).
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="mt-4 p-3 rounded-2xl bg-black/25 border border-white/10">
-                      <div className="flex items-center justify-between">
-                        <div className="text-[9px] font-black text-white/60 uppercase tracking-widest">Mini Map</div>
-                        <div className="text-[9px] font-black text-white/35 uppercase tracking-widest">
-                          {Math.round(charPos.x)},{Math.round(charPos.y)}
-                        </div>
-                      </div>
-                      <div
-                        className="mt-2 relative w-full h-24 rounded-xl overflow-hidden"
-                        style={{
-                          backgroundImage:
-                            'radial-gradient(circle at 30% 30%, rgba(16,185,129,0.14) 0 80px, transparent 160px), radial-gradient(circle at 70% 60%, rgba(56,189,248,0.10) 0 90px, transparent 180px), linear-gradient(180deg, rgba(15,23,42,0.85), rgba(2,6,23,0.92))',
-                        }}
-                      >
-                        <div
-                          className="absolute inset-0 opacity-30"
-                          style={{
-                            backgroundImage:
-                              'linear-gradient(rgba(255,255,255,0.10) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.10) 1px, transparent 1px)',
-                            backgroundSize: '18px 18px',
-                          }}
-                        />
-                        {level === 2 && (
-                          (() => {
-                            const target = plots.find(p => p.id === activePlotId) ?? null;
-                            if (!target) return null;
-                            const left = `${Math.max(0, Math.min(1, target.cx / 3000)) * 100}%`;
-                            const top = `${Math.max(0, Math.min(1, target.cy / 3000)) * 100}%`;
-                            return (
-                              <motion.div
-                                className="absolute w-3 h-3 rounded-full bg-yellow-300 shadow-[0_0_18px_rgba(250,204,21,0.55)]"
-                                style={{ left, top, transform: 'translate(-50%, -50%)' }}
-                                animate={{ scale: [1, 1.25, 1], opacity: [0.8, 1, 0.8] }}
-                                transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }}
-                              />
-                            );
-                          })()
-                        )}
-                        {activeTrees.slice(0, 24).map(t => {
-                          const left = `${Math.max(0, Math.min(1, t.x / 3000)) * 100}%`;
-                          const top = `${Math.max(0, Math.min(1, t.y / 3000)) * 100}%`;
+                      <div className="space-y-2">
+                        {[
+                          { id: 1, label: 'Datangi titik lahan' },
+                          { id: 2, label: 'Gali (Tekan E)' },
+                          { id: 3, label: 'Tanam (Tekan E)' },
+                          { id: 4, label: 'Siram (Tekan E)' },
+                        ].map((s) => {
+                          const done = tutorialStep > s.id;
+                          const activeNow = tutorialStep === s.id;
                           return (
                             <div
-                              key={`mini-tree-${t.id}`}
-                              className="absolute w-1.5 h-1.5 rounded-full bg-emerald-300/80"
-                              style={{ left, top, transform: 'translate(-50%, -50%)' }}
-                            />
+                              key={s.id}
+                              className={`px-3 py-2 rounded-2xl border flex items-center justify-between ${
+                                done
+                                  ? 'bg-emerald-500/15 border-emerald-500/25'
+                                  : activeNow
+                                    ? 'bg-white/10 border-white/20'
+                                    : 'bg-white/5 border-white/10'
+                              }`}
+                            >
+                              <div className="text-[9px] font-black text-white/80 uppercase tracking-widest">{s.label}</div>
+                              <div className={`text-[9px] font-black uppercase ${done ? 'text-emerald-300' : activeNow ? 'text-yellow-300' : 'text-white/40'}`}>
+                                {done ? 'OK' : activeNow ? 'SEKARANG' : 'NANTI'}
+                              </div>
+                            </div>
                           );
                         })}
-                        {(() => {
-                          const left = `${Math.max(0, Math.min(1, charPos.x / 3000)) * 100}%`;
-                          const top = `${Math.max(0, Math.min(1, charPos.y / 3000)) * 100}%`;
-                          return (
-                            <div
-                              className="absolute w-3 h-3 rounded-full bg-white shadow-[0_0_18px_rgba(255,255,255,0.35)] border border-white/40"
-                              style={{ left, top, transform: 'translate(-50%, -50%)' }}
-                            />
-                          );
-                        })()}
+                      </div>
+
+                      <div className="p-3 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-emerald-300">
+                          <Info size={16} />
+                        </div>
+                        <div className="text-[9px] font-bold text-white/80 leading-tight">
+                          Ikuti petunjuk. Setelah selesai, masuk ke <span className="text-white">Level 1</span>.
+                        </div>
                       </div>
                     </div>
-                  </motion.div>
-                )}
+                  ) : level === 1 ? (
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between text-[10px] font-black text-white/60 uppercase mb-2">
+                          <span>Tanam 3 Pohon</span>
+                          <span>{Math.min(3, level1PlantedAfterTutorial)}/3</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                            animate={{ width: `${Math.min(100, (level1PlantedAfterTutorial / 3) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="p-3 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-emerald-300">
+                          <Trees size={16} />
+                        </div>
+                        <div className="text-[9px] font-bold text-white/80 leading-tight">
+                          Dekati lahan, tekan <span className="text-white">E</span> untuk tanam. Siram pohon yang kering.
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between text-[10px] font-black text-white/60 uppercase mb-2">
+                          <span>Aktifkan 4 Lahan</span>
+                          <span>{level2CompletedCount}/4</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                            animate={{ width: `${Math.min(100, (level2CompletedCount / 4) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {(['p1', 'p2', 'p3', 'p4'] as const).map((pid, idx) => {
+                          const done = (level2Stages[pid] ?? 0) >= 1;
+                          const isTarget = pid === activePlotId && !done;
+                          const t = plotTreeById.get(pid) ?? null;
+                          const hint =
+                            done
+                              ? 'Selesai'
+                              : t
+                                ? 'Siram'
+                                : 'Tanam';
+                          return (
+                            <div
+                              key={pid}
+                              className={`p-3 rounded-2xl border ${
+                                done
+                                  ? 'bg-emerald-500/15 border-emerald-500/25'
+                                  : isTarget
+                                    ? 'bg-white/10 border-white/20'
+                                    : 'bg-white/5 border-white/10'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="text-[9px] font-black text-white/70 uppercase tracking-widest">Titik {idx + 1}</div>
+                                <div className={`text-[9px] font-black uppercase ${done ? 'text-emerald-300' : isTarget ? 'text-yellow-300' : 'text-white/40'}`}>
+                                  {done ? 'OK' : isTarget ? 'TARGET' : ''}
+                                </div>
+                              </div>
+                              <div className="mt-1 text-[9px] font-bold text-white/60 uppercase tracking-wider">
+                                {hint} • Tekan E
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="p-3 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
+                          <Droplets size={16} />
+                        </div>
+                        <div className="text-[9px] font-bold text-white/80 leading-tight">
+                          Ikuti titik <span className="text-white">TARGET</span>: tanam, lalu siram sampai tumbuh.
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-4 p-3 rounded-2xl bg-black/25 border border-white/10">
+                    <div className="flex items-center justify-between">
+                      <div className="text-[9px] font-black text-white/60 uppercase tracking-widest">Mini Map</div>
+                      <div className="text-[9px] font-black text-white/35 uppercase tracking-widest">
+                        {Math.round(charPos.x)},{Math.round(charPos.y)}
+                      </div>
+                    </div>
+                    <div
+                      className="mt-2 relative w-full h-24 rounded-xl overflow-hidden"
+                      style={{
+                        backgroundImage:
+                          'radial-gradient(circle at 30% 30%, rgba(16,185,129,0.14) 0 80px, transparent 160px), radial-gradient(circle at 70% 60%, rgba(56,189,248,0.10) 0 90px, transparent 180px), linear-gradient(180deg, rgba(15,23,42,0.85), rgba(2,6,23,0.92))',
+                      }}
+                    >
+                      <div
+                        className="absolute inset-0 opacity-30"
+                        style={{
+                          backgroundImage:
+                            'linear-gradient(rgba(255,255,255,0.10) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.10) 1px, transparent 1px)',
+                          backgroundSize: '18px 18px',
+                        }}
+                      />
+                      {(!tutorialActive && level === 2) && (
+                        (() => {
+                          const target = plots.find(p => p.id === activePlotId) ?? null;
+                          if (!target) return null;
+                          const left = `${Math.max(0, Math.min(1, target.cx / 3000)) * 100}%`;
+                          const top = `${Math.max(0, Math.min(1, target.cy / 3000)) * 100}%`;
+                          return (
+                            <motion.div
+                              className="absolute w-3 h-3 rounded-full bg-yellow-300 shadow-[0_0_18px_rgba(250,204,21,0.55)]"
+                              style={{ left, top, transform: 'translate(-50%, -50%)' }}
+                              animate={{ scale: [1, 1.25, 1], opacity: [0.8, 1, 0.8] }}
+                              transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }}
+                            />
+                          );
+                        })()
+                      )}
+                      {activeTrees.slice(0, 24).map(t => {
+                        const left = `${Math.max(0, Math.min(1, t.x / 3000)) * 100}%`;
+                        const top = `${Math.max(0, Math.min(1, t.y / 3000)) * 100}%`;
+                        return (
+                          <div
+                            key={`mini-tree-${t.id}`}
+                            className="absolute w-1.5 h-1.5 rounded-full bg-emerald-300/80"
+                            style={{ left, top, transform: 'translate(-50%, -50%)' }}
+                          />
+                        );
+                      })}
+                      {(() => {
+                        const left = `${Math.max(0, Math.min(1, charPos.x / 3000)) * 100}%`;
+                        const top = `${Math.max(0, Math.min(1, charPos.y / 3000)) * 100}%`;
+                        return (
+                          <div
+                            className="absolute w-3 h-3 rounded-full bg-white shadow-[0_0_18px_rgba(255,255,255,0.35)] border border-white/40"
+                            style={{ left, top, transform: 'translate(-50%, -50%)' }}
+                          />
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </motion.div>
               </div>
 
               <AnimatePresence>
@@ -8835,7 +9060,7 @@ const TreeGame: React.FC = () => {
               exit={{ opacity: 0 }}
             >
               <motion.div
-                className="w-full max-w-2xl bg-slate-900/95 border border-white/10 rounded-[3rem] shadow-2xl overflow-hidden"
+                className="w-full max-w-2xl bg-slate-900/95 border border-white/10 rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
                 initial={{ scale: 0.96, y: 10 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.98, y: 10 }}
@@ -8857,59 +9082,119 @@ const TreeGame: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => { setGfxPreset('clean'); setVisualOpen(false); }}
-                    className={`p-5 rounded-[2rem] border text-left transition-all active:scale-[0.99] ${
-                      gfxPreset === 'clean' ? 'bg-emerald-500/15 border-emerald-500/25' : 'bg-white/5 border-white/10 hover:bg-white/10'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${gfxPreset === 'clean' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/10 text-white/80'}`}>
-                        <Eye size={18} />
+                <div className="overflow-y-auto">
+                  <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => { setGfxPreset('clean'); }}
+                      className={`p-5 rounded-[2rem] border text-left transition-all active:scale-[0.99] ${
+                        gfxPreset === 'clean' ? 'bg-emerald-500/15 border-emerald-500/25' : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${gfxPreset === 'clean' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/10 text-white/80'}`}>
+                          <Eye size={18} />
+                        </div>
+                        <div className="text-white font-black tracking-tight">Bersih</div>
                       </div>
-                      <div className="text-white font-black tracking-tight">Bersih</div>
-                    </div>
-                    <div className="text-white/70 font-bold text-sm mt-3 leading-relaxed">
-                      Fokus gameplay, efek tidak berlebihan.
-                    </div>
-                  </button>
+                      <div className="text-white/70 font-bold text-sm mt-3 leading-relaxed">
+                        Fokus gameplay, efek tidak berlebihan.
+                      </div>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => { setGfxPreset('cinematic'); setVisualOpen(false); }}
-                    className={`p-5 rounded-[2rem] border text-left transition-all active:scale-[0.99] ${
-                      gfxPreset === 'cinematic' ? 'bg-emerald-500/15 border-emerald-500/25' : 'bg-white/5 border-white/10 hover:bg-white/10'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${gfxPreset === 'cinematic' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/10 text-white/80'}`}>
-                        <Sparkles size={18} />
+                    <button
+                      type="button"
+                      onClick={() => { setGfxPreset('cinematic'); }}
+                      className={`p-5 rounded-[2rem] border text-left transition-all active:scale-[0.99] ${
+                        gfxPreset === 'cinematic' ? 'bg-emerald-500/15 border-emerald-500/25' : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${gfxPreset === 'cinematic' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/10 text-white/80'}`}>
+                          <Sparkles size={18} />
+                        </div>
+                        <div className="text-white font-black tracking-tight">Cinematic</div>
                       </div>
-                      <div className="text-white font-black tracking-tight">Cinematic</div>
-                    </div>
-                    <div className="text-white/70 font-bold text-sm mt-3 leading-relaxed">
-                      Efek lebih banyak, layar lebih dramatis.
-                    </div>
-                  </button>
+                      <div className="text-white/70 font-bold text-sm mt-3 leading-relaxed">
+                        Efek lebih banyak, layar lebih dramatis.
+                      </div>
+                    </button>
 
+                    <button
+                      type="button"
+                      onClick={() => { setGfxPreset('performance'); }}
+                      className={`p-5 rounded-[2rem] border text-left transition-all active:scale-[0.99] ${
+                        gfxPreset === 'performance' ? 'bg-emerald-500/15 border-emerald-500/25' : 'bg-white/5 border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${gfxPreset === 'performance' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/10 text-white/80'}`}>
+                          <Zap size={18} />
+                        </div>
+                        <div className="text-white font-black tracking-tight">Performa</div>
+                      </div>
+                      <div className="text-white/70 font-bold text-sm mt-3 leading-relaxed">
+                        Efek minimum biar lebih ringan.
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="px-8 pb-8">
+                  <div className="p-5 rounded-[2rem] bg-white/5 border border-white/10">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-black text-white/50 uppercase tracking-widest">Karakter</div>
+                        <div className="text-white font-black tracking-tight mt-1">Pakai Gambar Karakter Kamu</div>
+                        <div className="text-white/70 font-bold text-sm mt-2 leading-relaxed">
+                          Pilih gambar (PNG/JPG/WebP) untuk mengganti sprite karakter di dalam game.
+                        </div>
+                      </div>
+                      <div className="shrink-0 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={requestCharacterSkinFile}
+                          className="px-4 py-2 rounded-full bg-emerald-500/15 hover:bg-emerald-500/20 border border-emerald-500/25 text-emerald-200 text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform"
+                        >
+                          Ganti
+                        </button>
+                        {characterSkin && (
+                          <button
+                            type="button"
+                            onClick={clearCharacterSkin}
+                            className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-white/80 text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform"
+                          >
+                            Reset
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-2xl bg-black/20 border border-white/10 overflow-hidden flex items-center justify-center">
+                        {characterSkin ? (
+                          <img src={characterSkin} alt="Preview karakter" className="w-full h-full object-contain" draggable={false} />
+                        ) : (
+                          <div className="text-[9px] font-black text-white/45 uppercase tracking-widest">Default</div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-black text-white/50 uppercase tracking-widest">Status</div>
+                        <div className="text-white font-black tracking-tight">
+                          {characterSkin ? 'Custom aktif' : 'Default aktif'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                </div>
+
+                <div className="p-6 pt-0">
                   <button
                     type="button"
-                    onClick={() => { setGfxPreset('performance'); setVisualOpen(false); }}
-                    className={`p-5 rounded-[2rem] border text-left transition-all active:scale-[0.99] ${
-                      gfxPreset === 'performance' ? 'bg-emerald-500/15 border-emerald-500/25' : 'bg-white/5 border-white/10 hover:bg-white/10'
-                    }`}
+                    onClick={() => setVisualOpen(false)}
+                    className="w-full py-4 bg-white/10 hover:bg-white/15 text-white rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95 border border-white/10"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${gfxPreset === 'performance' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/10 text-white/80'}`}>
-                        <Zap size={18} />
-                      </div>
-                      <div className="text-white font-black tracking-tight">Performa</div>
-                    </div>
-                    <div className="text-white/70 font-bold text-sm mt-3 leading-relaxed">
-                      Efek minimum biar lebih ringan.
-                    </div>
+                    Terapkan & Tutup
                   </button>
                 </div>
               </motion.div>
