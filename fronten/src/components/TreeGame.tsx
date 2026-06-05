@@ -5595,6 +5595,22 @@ const TreeGame: React.FC = () => {
     }
   });
   const characterFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [claimOpen, setClaimOpen] = useState(false);
+  const [claimSubmitted, setClaimSubmitted] = useState<{ id: string; submittedAt: number } | null>(null);
+  const [claimForm, setClaimForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    nik: '',
+    address: '',
+    kecamatan: '',
+    kelurahan: '',
+    plantingLocation: '',
+    quantity: 1,
+    consent: true,
+  });
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const lastClaimAutoOpenAtRef = useRef<number>(0);
   const [restoredRegionIds, setRestoredRegionIds] = useState<string[]>(() => {
     try {
       const raw = window.localStorage.getItem('treegame:restored-regions');
@@ -5824,6 +5840,85 @@ const TreeGame: React.FC = () => {
     };
     reader.readAsDataURL(file);
   }, [setCharacterSkin, setToast]);
+
+  useEffect(() => {
+    if (phase !== 'finished') {
+      setClaimOpen(false);
+      return;
+    }
+    if (!selectedRegion || !selectedSeedling) return;
+    const now = Date.now();
+    if (now - lastClaimAutoOpenAtRef.current < 1500) return;
+    lastClaimAutoOpenAtRef.current = now;
+    setClaimError(null);
+    setClaimSubmitted(null);
+    setClaimForm({
+      name: '',
+      phone: '',
+      email: '',
+      nik: '',
+      address: '',
+      kecamatan: '',
+      kelurahan: '',
+      plantingLocation: selectedRegion.name,
+      quantity: 1,
+      consent: true,
+    });
+    setClaimOpen(true);
+  }, [phase, selectedRegion, selectedSeedling]);
+
+  const submitClaim = useCallback(() => {
+    if (!selectedRegion || !selectedSeedling) return;
+    const name = claimForm.name.trim();
+    const phoneRaw = claimForm.phone.trim();
+    const phoneDigits = phoneRaw.replace(/[^\d]/g, '');
+    const address = claimForm.address.trim();
+    const kecamatan = claimForm.kecamatan.trim();
+    const kelurahan = claimForm.kelurahan.trim();
+    const qty = Math.max(1, Math.min(5, Number.isFinite(claimForm.quantity) ? claimForm.quantity : 1));
+
+    if (!name) { setClaimError('Nama lengkap wajib diisi.'); return; }
+    if (phoneDigits.length < 10) { setClaimError('Nomor HP minimal 10 digit.'); return; }
+    if (!address) { setClaimError('Alamat wajib diisi.'); return; }
+    if (!kecamatan) { setClaimError('Kecamatan wajib diisi.'); return; }
+    if (!kelurahan) { setClaimError('Kelurahan/Desa wajib diisi.'); return; }
+    if (!claimForm.consent) { setClaimError('Centang persetujuan untuk melanjutkan.'); return; }
+
+    const id = `KLAIM-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(16).slice(2, 8).toUpperCase()}`;
+    const payload = {
+      id,
+      submittedAt: Date.now(),
+      region: { id: selectedRegion.id, name: selectedRegion.name },
+      seedling: { name: selectedSeedling.name },
+      quantity: qty,
+      person: {
+        name,
+        phone: phoneRaw,
+        email: claimForm.email.trim(),
+        nik: claimForm.nik.trim(),
+        address,
+        kecamatan,
+        kelurahan,
+      },
+      plantingLocation: claimForm.plantingLocation.trim(),
+      consent: claimForm.consent,
+    };
+
+    try {
+      const raw = window.localStorage.getItem('treegame:seed-claims');
+      const prev = raw ? (JSON.parse(raw) as unknown) : [];
+      const arr = Array.isArray(prev) ? prev : [];
+      window.localStorage.setItem('treegame:seed-claims', JSON.stringify([payload, ...arr].slice(0, 20)));
+    } catch {}
+
+    setClaimSubmitted({ id, submittedAt: Date.now() });
+    setClaimOpen(false);
+    setClaimError(null);
+    setToast({ id: Date.now(), title: 'Data klaim terkirim', subtitle: `Kode klaim: ${id}`, tone: 'good' });
+    window.setTimeout(() => {
+      setToast({ id: Date.now() + 1, title: 'Bibit bisa diambil', subtitle: 'Silakan ambil di Dinas Kehutanan dengan membawa KTP & kode klaim', tone: 'info' });
+    }, 900);
+  }, [claimForm, selectedRegion, selectedSeedling, setToast]);
 
   useEffect(() => {
     if (phase !== 'finished') return;
@@ -9043,10 +9138,225 @@ const TreeGame: React.FC = () => {
                 </div>
               </div>
 
+              {claimSubmitted && (
+                <div className="mb-8 p-6 rounded-3xl bg-slate-900 text-white text-left border border-emerald-500/25 shadow-[0_30px_90px_rgba(16,185,129,0.12)]">
+                  <div className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">Klaim Bibit Gratis</div>
+                  <div className="mt-1 flex items-center justify-between gap-4">
+                    <div className="text-2xl font-black tracking-tight">Klaim Terkirim</div>
+                    <div className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 text-emerald-200 text-[10px] font-black uppercase tracking-widest">
+                      Terkonfirmasi
+                    </div>
+                  </div>
+                  <div className="mt-2 text-white/80 font-bold text-sm leading-relaxed">Kode klaim kamu:</div>
+                  <div className="mt-3 px-4 py-3 rounded-2xl bg-white/10 border border-white/10 font-black tracking-widest text-[12px]">
+                    {claimSubmitted.id}
+                  </div>
+                  <div className="mt-3 text-[11px] text-white/75 font-bold leading-relaxed">
+                    Bibit bisa diambil di <span className="text-white">Dinas Kehutanan</span>. Bawa <span className="text-white">KTP</span> dan tunjukkan <span className="text-white">kode klaim</span> ini ke petugas.
+                  </div>
+                  <div className="mt-2 text-[11px] text-white/60 font-bold leading-relaxed">
+                    Jam layanan mengikuti jam kerja kantor dinas setempat.
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  type="button"
+                  onClick={() => { setClaimError(null); setClaimOpen(true); }}
+                  className="bg-emerald-50 px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-emerald-100 transition-all shadow-md active:scale-95 border border-emerald-200"
+                >
+                  Klaim Bibit Gratis
+                </button>
                 <button onClick={() => { setMapRestorationWave({ id: Date.now(), regionId: selectedRegion.id }); setPhase('selection'); setPlantingStep(0); setSelectedRegion(null); setSelectedSeedling(null); setLevel(1); setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 }); setActivePlotId('p1'); setLevelIntroOpen(false); setActionPlotId(null); setActionProgress(0); }} className="bg-slate-100 px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-slate-200 transition-all shadow-md active:scale-95">Mulai Baru</button>
                 <button onClick={() => navigate('/')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-emerald-700 shadow-lg transition-all active:scale-95">Selesai</button>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {claimOpen && phase === 'finished' && selectedRegion && selectedSeedling && (
+            <motion.div
+              className="fixed inset-0 z-[300] bg-slate-950/85 backdrop-blur-xl flex items-center justify-center p-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="w-full max-w-2xl bg-slate-900/95 border border-white/10 rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+                initial={{ scale: 0.96, y: 10 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.98, y: 10 }}
+              >
+                <div className="p-8 border-b border-white/10 flex items-start justify-between gap-6">
+                  <div>
+                    <div className="text-[10px] font-black text-emerald-300 uppercase tracking-[0.25em]">Dinas Kehutanan</div>
+                    <div className="text-3xl font-black text-white tracking-tighter mt-1">Klaim Bibit Gratis</div>
+                    <div className="text-white/70 font-bold mt-2 leading-relaxed">
+                      Isi data diri untuk klaim bibit gratis. Setelah klik Kirim Klaim, sistem membuat kode klaim untuk pengambilan bibit di Dinas Kehutanan.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setClaimOpen(false); setClaimError(null); }}
+                    className="w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/80 active:scale-95 transition-transform"
+                    aria-label="Tutup"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div className="overflow-y-auto">
+                  <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      {claimError && (
+                        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-400/20 text-red-100 text-[12px] font-bold">
+                          {claimError}
+                        </div>
+                      )}
+                    </div>
+
+                    <label className="block">
+                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Nama Lengkap *</div>
+                      <input
+                        value={claimForm.name}
+                        onChange={(e) => setClaimForm(f => ({ ...f, name: e.target.value }))}
+                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
+                        placeholder="Nama sesuai KTP"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Nomor HP *</div>
+                      <input
+                        value={claimForm.phone}
+                        onChange={(e) => setClaimForm(f => ({ ...f, phone: e.target.value }))}
+                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
+                        placeholder="08xxxxxxxxxx"
+                        inputMode="tel"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Email</div>
+                      <input
+                        value={claimForm.email}
+                        onChange={(e) => setClaimForm(f => ({ ...f, email: e.target.value }))}
+                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
+                        placeholder="nama@email.com"
+                        inputMode="email"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">NIK</div>
+                      <input
+                        value={claimForm.nik}
+                        onChange={(e) => setClaimForm(f => ({ ...f, nik: e.target.value }))}
+                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
+                        placeholder="16 digit"
+                        inputMode="numeric"
+                      />
+                    </label>
+
+                    <label className="block md:col-span-2">
+                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Alamat Lengkap *</div>
+                      <input
+                        value={claimForm.address}
+                        onChange={(e) => setClaimForm(f => ({ ...f, address: e.target.value }))}
+                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
+                        placeholder="Jalan, RT/RW, No Rumah"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Kecamatan *</div>
+                      <input
+                        value={claimForm.kecamatan}
+                        onChange={(e) => setClaimForm(f => ({ ...f, kecamatan: e.target.value }))}
+                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
+                        placeholder="Kecamatan"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Kelurahan/Desa *</div>
+                      <input
+                        value={claimForm.kelurahan}
+                        onChange={(e) => setClaimForm(f => ({ ...f, kelurahan: e.target.value }))}
+                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
+                        placeholder="Kelurahan/Desa"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Jumlah Bibit *</div>
+                      <select
+                        value={claimForm.quantity}
+                        onChange={(e) => setClaimForm(f => ({ ...f, quantity: Number(e.target.value) }))}
+                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
+                      >
+                        {[1, 2, 3, 4, 5].map(n => (
+                          <option key={n} value={n}>{n} bibit</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="block">
+                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Jenis Bibit</div>
+                      <input
+                        value={selectedSeedling.name}
+                        readOnly
+                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white/80 font-black"
+                      />
+                    </label>
+
+                    <label className="block md:col-span-2">
+                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Lokasi Penanaman (opsional)</div>
+                      <input
+                        value={claimForm.plantingLocation}
+                        onChange={(e) => setClaimForm(f => ({ ...f, plantingLocation: e.target.value }))}
+                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
+                        placeholder="Contoh: halaman rumah / RW / sekolah"
+                      />
+                    </label>
+
+                    <div className="md:col-span-2">
+                      <label className="flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
+                        <input
+                          type="checkbox"
+                          checked={claimForm.consent}
+                          onChange={(e) => setClaimForm(f => ({ ...f, consent: e.target.checked }))}
+                          className="mt-1"
+                        />
+                        <div className="min-w-0">
+                          <div className="text-white font-black text-[12px]">Saya bersedia dihubungi untuk verifikasi klaim bibit.</div>
+                          <div className="text-white/60 font-bold text-[11px] mt-1">Pastikan data benar agar klaim tidak ditolak.</div>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 border-t border-white/10 flex flex-col sm:flex-row gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => { setClaimOpen(false); setClaimError(null); }}
+                    className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/90 font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform"
+                  >
+                    Nanti
+                  </button>
+                  <button
+                    type="button"
+                    onClick={submitClaim}
+                    className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/25 text-white font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform inline-flex items-center justify-center gap-2"
+                  >
+                    <Sprout size={16} />
+                    Kirim Formulir
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
