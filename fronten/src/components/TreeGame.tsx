@@ -592,10 +592,15 @@ const Bird = memo(({ seed }: { seed: number }) => {
   );
 });
 
-const SeedlingIcon = ({ type }: { type: string }) => {
+const SeedlingIcon = ({ type, active = false }: { type: string; active?: boolean }) => {
   if (type === 'Mahoni') {
     return (
-      <svg viewBox="0 0 120 120" className="w-28 h-28 transform transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3 drop-shadow-2xl z-10">
+      <motion.svg
+        viewBox="0 0 120 120"
+        className="w-28 h-28 drop-shadow-2xl z-10"
+        animate={{ rotate: active ? [-2, 2, -2] : [0, 1.2, 0], y: active ? [0, -4, 0] : [0, -2, 0], scale: active ? [1, 1.05, 1] : [1, 1.02, 1] }}
+        transition={{ repeat: Infinity, duration: active ? 1.2 : 2.8, ease: 'easeInOut' }}
+      >
         <defs>
           <linearGradient id="mahoniGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#4ade80" />
@@ -610,22 +615,39 @@ const SeedlingIcon = ({ type }: { type: string }) => {
             <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.3" />
           </filter>
         </defs>
-        <ellipse cx="60" cy="105" rx="35" ry="8" fill="rgba(0,0,0,0.2)" />
-        <path d="M52 105 C52 80 45 60 45 60 L75 60 C75 60 68 80 68 105 Z" fill="url(#trunkGrad)" />
-        <path d="M60 65 L40 40 M60 60 L80 35" fill="none" stroke="url(#trunkGrad)" strokeWidth="6" strokeLinecap="round" />
-        <g filter="url(#leafShadow)">
+        <motion.ellipse cx="60" cy="105" rx="35" ry="8" fill="rgba(0,0,0,0.2)" animate={{ scaleX: active ? [1, 0.88, 1] : [1, 0.94, 1] }} transition={{ repeat: Infinity, duration: active ? 1.2 : 2.8, ease: 'easeInOut' }} />
+        <motion.path d="M52 105 C52 80 45 60 45 60 L75 60 C75 60 68 80 68 105 Z" fill="url(#trunkGrad)" animate={{ rotate: active ? [-1.2, 1.2, -1.2] : 0 }} transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }} style={{ originX: '60px', originY: '95px' }} />
+        <motion.path d="M60 65 L40 40 M60 60 L80 35" fill="none" stroke="url(#trunkGrad)" strokeWidth="6" strokeLinecap="round" animate={{ rotate: active ? [-1.5, 1.5, -1.5] : 0 }} transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }} style={{ originX: '60px', originY: '62px' }} />
+        <motion.g filter="url(#leafShadow)" animate={{ rotate: active ? [-3, 3, -3] : [-1.2, 1.2, -1.2] }} transition={{ repeat: Infinity, duration: active ? 1.2 : 2.4, ease: 'easeInOut' }} style={{ originX: '60px', originY: '45px' }}>
           <circle cx="60" cy="35" r="28" fill="url(#mahoniGrad)" />
           <circle cx="40" cy="45" r="22" fill="url(#mahoniGrad)" />
           <circle cx="80" cy="45" r="22" fill="url(#mahoniGrad)" />
           <circle cx="50" cy="20" r="18" fill="#4ade80" opacity="0.8" />
           <circle cx="70" cy="20" r="18" fill="#4ade80" opacity="0.8" />
-        </g>
-      </svg>
+        </motion.g>
+        {active && [...Array(3)].map((_, i) => (
+          <motion.circle
+            key={i}
+            cx={44 + i * 16}
+            cy={18 + (i % 2) * 6}
+            r="3.2"
+            fill="rgba(255,255,255,0.65)"
+            initial={{ opacity: 0, y: 2, scale: 0.6 }}
+            animate={{ opacity: [0, 0.8, 0], y: [2, -10, -16], scale: [0.6, 1, 0.7] }}
+            transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.18, ease: 'easeOut' }}
+          />
+        ))}
+      </motion.svg>
     );
   }
   if (type === 'Jati') {
     return (
-      <svg viewBox="0 0 120 120" className="w-28 h-28 transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 drop-shadow-2xl z-10">
+      <motion.svg
+        viewBox="0 0 120 120"
+        className="w-28 h-28 drop-shadow-2xl z-10"
+        animate={{ rotate: active ? [2, -2, 2] : [0, 1, 0], y: active ? [0, -4, 0] : [0, -2, 0], scale: active ? [1, 1.04, 1] : [1, 1.02, 1] }}
+        transition={{ repeat: Infinity, duration: active ? 1.15 : 2.6, ease: 'easeInOut' }}
+      >
         <defs>
           <linearGradient id="jatiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#bef264" />
@@ -633,16 +655,33 @@ const SeedlingIcon = ({ type }: { type: string }) => {
             <stop offset="100%" stopColor="#4d7c0f" />
           </linearGradient>
         </defs>
-        <ellipse cx="60" cy="105" rx="30" ry="6" fill="rgba(0,0,0,0.2)" />
+        <motion.ellipse cx="60" cy="105" rx="30" ry="6" fill="rgba(0,0,0,0.2)" animate={{ scaleX: active ? [1, 0.9, 1] : [1, 0.95, 1] }} transition={{ repeat: Infinity, duration: active ? 1.15 : 2.6, ease: 'easeInOut' }} />
         <path d="M60 105 C60 90 55 80 55 80" fill="none" stroke="#78350f" strokeWidth="7" strokeLinecap="round" />
-        <path d="M55 80 C20 70 5 30 60 10 C115 30 100 70 55 80 Z" fill="url(#jatiGrad)" stroke="#365314" strokeWidth="1" />
-        <path d="M55 80 C60 50 60 20 60 10 M58 65 C45 55 30 50 30 50 M58 65 C70 55 85 50 85 50 M59 45 C45 35 35 30 35 30 M59 45 C75 35 85 30 85 30 M60 25 C50 20 45 15 45 15 M60 25 C70 20 75 15 75 15" fill="none" stroke="#3f6212" strokeWidth="3" strokeLinecap="round" opacity="0.6" />
-      </svg>
+        <motion.path d="M55 80 C20 70 5 30 60 10 C115 30 100 70 55 80 Z" fill="url(#jatiGrad)" stroke="#365314" strokeWidth="1" animate={{ rotate: active ? [2.5, -2.5, 2.5] : [-1, 1, -1] }} transition={{ repeat: Infinity, duration: active ? 1.1 : 2.8, ease: 'easeInOut' }} style={{ originX: '60px', originY: '58px' }} />
+        <motion.path d="M55 80 C60 50 60 20 60 10 M58 65 C45 55 30 50 30 50 M58 65 C70 55 85 50 85 50 M59 45 C45 35 35 30 35 30 M59 45 C75 35 85 30 85 30 M60 25 C50 20 45 15 45 15 M60 25 C70 20 75 15 75 15" fill="none" stroke="#3f6212" strokeWidth="3" strokeLinecap="round" opacity="0.6" animate={{ opacity: active ? [0.45, 0.9, 0.45] : [0.5, 0.7, 0.5] }} transition={{ repeat: Infinity, duration: active ? 1.0 : 2.2, ease: 'easeInOut' }} />
+        {active && (
+          <motion.path
+            d="M55 80 C20 70 5 30 60 10 C115 30 100 70 55 80 Z"
+            fill="none"
+            stroke="rgba(255,255,255,0.55)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray="16 120"
+            animate={{ strokeDashoffset: [0, -136] }}
+            transition={{ repeat: Infinity, duration: 1.1, ease: 'linear' }}
+          />
+        )}
+      </motion.svg>
     );
   }
   if (type === 'Pinus') {
     return (
-      <svg viewBox="0 0 120 120" className="w-28 h-28 transform transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3 drop-shadow-2xl z-10">
+      <motion.svg
+        viewBox="0 0 120 120"
+        className="w-28 h-28 drop-shadow-2xl z-10"
+        animate={{ rotate: active ? [-2.4, 2.4, -2.4] : [-1, 1, -1], y: active ? [0, -4, 0] : [0, -2, 0], scale: active ? [1, 1.05, 1] : [1, 1.02, 1] }}
+        transition={{ repeat: Infinity, duration: active ? 1.0 : 2.4, ease: 'easeInOut' }}
+      >
         <defs>
           <linearGradient id="pinusGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#6ee7b7" />
@@ -657,15 +696,34 @@ const SeedlingIcon = ({ type }: { type: string }) => {
             <stop offset="100%" stopColor="#064e3b" />
           </linearGradient>
         </defs>
-        <ellipse cx="60" cy="105" rx="35" ry="8" fill="rgba(0,0,0,0.2)" />
+        <motion.ellipse cx="60" cy="105" rx="35" ry="8" fill="rgba(0,0,0,0.2)" animate={{ scaleX: active ? [1, 0.88, 1] : [1, 0.94, 1] }} transition={{ repeat: Infinity, duration: active ? 1.0 : 2.4, ease: 'easeInOut' }} />
         <path d="M55 105 L65 105 L62 70 L58 70 Z" fill="#451a03" />
-        <path d="M25 80 Q60 70 95 80 L60 30 Z" fill="url(#pinusGrad3)" />
-        <path d="M30 60 Q60 50 90 60 L60 15 Z" fill="url(#pinusGrad2)" />
-        <path d="M35 40 Q60 30 85 40 L60 5 Z" fill="url(#pinusGrad1)" />
-      </svg>
+        <motion.path d="M25 80 Q60 70 95 80 L60 30 Z" fill="url(#pinusGrad3)" animate={{ rotate: active ? [-2.8, 2.8, -2.8] : [-1.2, 1.2, -1.2] }} transition={{ repeat: Infinity, duration: active ? 1.0 : 2.0, ease: 'easeInOut' }} style={{ originX: '60px', originY: '80px' }} />
+        <motion.path d="M30 60 Q60 50 90 60 L60 15 Z" fill="url(#pinusGrad2)" animate={{ rotate: active ? [2.4, -2.4, 2.4] : [1, -1, 1] }} transition={{ repeat: Infinity, duration: active ? 0.95 : 1.8, ease: 'easeInOut' }} style={{ originX: '60px', originY: '60px' }} />
+        <motion.path d="M35 40 Q60 30 85 40 L60 5 Z" fill="url(#pinusGrad1)" animate={{ rotate: active ? [-2.0, 2.0, -2.0] : [-0.8, 0.8, -0.8] }} transition={{ repeat: Infinity, duration: active ? 0.9 : 1.6, ease: 'easeInOut' }} style={{ originX: '60px', originY: '38px' }} />
+        {active && [...Array(4)].map((_, i) => (
+          <motion.circle
+            key={i}
+            cx={48 + i * 8}
+            cy={52 - (i % 2) * 10}
+            r="2.5"
+            fill="rgba(191,219,254,0.85)"
+            initial={{ opacity: 0, scale: 0.6 }}
+            animate={{ opacity: [0, 0.9, 0], y: [0, -8 - i * 2, -14 - i * 2], x: [0, (i % 2 === 0 ? -2 : 2), 0], scale: [0.6, 1, 0.6] }}
+            transition={{ repeat: Infinity, duration: 0.95, delay: i * 0.14, ease: 'easeOut' }}
+          />
+        ))}
+      </motion.svg>
     );
   }
-  return <Trees size={64} className="text-emerald-700" />;
+  return (
+    <motion.div
+      animate={{ y: active ? [0, -4, 0] : [0, -2, 0], rotate: active ? [-4, 4, -4] : 0, scale: active ? [1, 1.06, 1] : [1, 1.02, 1] }}
+      transition={{ repeat: Infinity, duration: active ? 1.0 : 2.5, ease: 'easeInOut' }}
+    >
+      <Trees size={64} className="text-emerald-700" />
+    </motion.div>
+  );
 };
 
 const HDBar = ({
@@ -1694,6 +1752,16 @@ EnvMascotCard.displayName = 'EnvMascotCard';
 const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health, moisture, yPos }: { size: number, color: string, stage: number, actionProgress: number, icon?: React.ElementType, health: number, moisture: number, yPos: number }) => {
   const health01 = Math.max(0, Math.min(1, health / 100));
   const moisture01 = Math.max(0, Math.min(1, moisture / 100));
+  const matureScale = stage === 4 ? 0.9 : stage === 5 ? 1.15 : 1.3;
+  const canopyWidth = stage === 4 ? size * 0.9 : stage === 5 ? size * 1.02 : size * 1.14;
+  const canopyHeight = stage === 4 ? size * 0.72 : stage === 5 ? size * 0.82 : size * 0.92;
+  const trunkWidth = stage === 4 ? size * 0.16 : stage === 5 ? size * 0.19 : size * 0.22;
+  const trunkHeight = stage === 4 ? size * 0.36 : stage === 5 ? size * 0.43 : size * 0.5;
+  const trunkTone = moisture01 < 0.3 ? '#6b3f24' : health01 < 0.45 ? '#775035' : '#7a4b2f';
+  const barkShadow = health01 < 0.4 ? '#3f2617' : '#4a2b1b';
+  const crownTop = moisture01 < 0.3 ? '#7fbf3b' : health01 < 0.45 ? '#5f8f34' : '#9ad758';
+  const crownMid = moisture01 < 0.3 ? '#4f7f2f' : health01 < 0.45 ? '#43712c' : color;
+  const crownDeep = health01 < 0.35 ? '#355724' : '#214b2e';
   return (
     <motion.div 
       className="relative flex flex-col items-center justify-end" 
@@ -1828,7 +1896,7 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
             key="tree"
             initial={{ scale: 0.5, y: 20, opacity: 0 }}
             animate={{ 
-              scale: stage === 4 ? 0.9 : stage === 5 ? 1.15 : 1.3, 
+              scale: matureScale, 
               y: 0, 
               opacity: 1,
             }}
@@ -1841,48 +1909,143 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
               opacity: 0.75 + health01 * 0.25,
             }}
           >
-            {/* Trunk */}
-            <div className={`mx-auto rounded-t-full relative shadow-lg ${stage === 4 ? 'w-4 h-16' : stage === 5 ? 'w-5 h-20' : 'w-6 h-24'} bg-[#5d4037]`}>
-              <div className="absolute inset-y-0 left-1.5 w-1.5 bg-black/10 rounded-full" />
-            </div>
-            
-            {/* Foliage Layers */}
-            <div className={`absolute left-1/2 -translate-x-1/2 ${stage === 4 ? '-top-18 w-28 h-28' : stage === 5 ? '-top-24 w-32 h-32' : '-top-28 w-36 h-36'}`}>
-              <div className="absolute inset-0 rounded-full blur-lg opacity-30" style={{ backgroundColor: color }} />
-              <Trees size={stage === 4 ? 112 : stage === 5 ? 128 : 144} style={{ color }} className="drop-shadow-2xl" />
-              
-              {stage >= 5 && (
-                <>
-                  <motion.div 
-                    animate={{ y: [0, -3, 0], x: [0, 2, 0], rotate: [-2, 2, -2] }}
-                    transition={{ repeat: Infinity, duration: 4 }}
-                    className="absolute -top-6 -right-4"
-                  >
-                    <Trees size={56} style={{ color: color + 'EE' }} />
-                  </motion.div>
-                  <motion.div 
-                    animate={{ y: [0, 3, 0], x: [0, -2, 0], rotate: [2, -2, 2] }}
-                    transition={{ repeat: Infinity, duration: 5, delay: 0.5 }}
-                    className="absolute -top-2 -left-8"
-                  >
-                    <Trees size={48} style={{ color: color + 'DD' }} />
-                  </motion.div>
-                </>
-              )}
+            <div className="relative mx-auto" style={{ width: canopyWidth * 1.1, height: canopyHeight + trunkHeight + size * 0.08 }}>
+              {/* Crown shadow / mass */}
+              <motion.div
+                className="absolute left-1/2 -translate-x-1/2 rounded-[48%]"
+                animate={{ y: [0, -2, 0], rotate: [-1, 1, -1] }}
+                transition={{ repeat: Infinity, duration: 5.5, ease: 'easeInOut' }}
+                style={{
+                  top: size * 0.04,
+                  width: canopyWidth,
+                  height: canopyHeight,
+                  background:
+                    `radial-gradient(circle at 35% 28%, rgba(255,255,255,0.22) 0 14%, rgba(255,255,255,0.04) 30%, transparent 55%),
+                     radial-gradient(circle at 70% 78%, rgba(0,0,0,0.12) 0 22%, transparent 56%),
+                     linear-gradient(180deg, ${crownTop} 0%, ${crownMid} 52%, ${crownDeep} 100%)`,
+                  borderRadius: '42% 44% 38% 40% / 40% 42% 35% 37%',
+                  boxShadow: '0 24px 50px rgba(0,0,0,0.28), inset 0 -16px 22px rgba(12,28,16,0.22), inset 0 10px 18px rgba(255,255,255,0.05)',
+                }}
+              />
 
+              {/* Secondary leaf clusters */}
+              {[
+                { left: '12%', top: '18%', w: 0.34, h: 0.28, delay: 0 },
+                { left: '54%', top: '14%', w: 0.32, h: 0.26, delay: 0.35 },
+                { left: '2%', top: '34%', w: 0.3, h: 0.24, delay: 0.18 },
+                { left: '66%', top: '36%', w: 0.28, h: 0.24, delay: 0.52 },
+                { left: '32%', top: '0%', w: 0.36, h: 0.28, delay: 0.24 },
+              ].map((cluster, idx) => (
+                <motion.div
+                  key={idx}
+                  className="absolute rounded-[48%]"
+                  animate={{ y: [0, -2.5, 0], rotate: [-1.2, 1.2, -1.2] }}
+                  transition={{ repeat: Infinity, duration: 4.8 + idx * 0.35, delay: cluster.delay, ease: 'easeInOut' }}
+                  style={{
+                    left: cluster.left,
+                    top: cluster.top,
+                    width: canopyWidth * cluster.w,
+                    height: canopyHeight * cluster.h,
+                    background:
+                      `radial-gradient(circle at 32% 30%, rgba(255,255,255,0.18) 0 16%, rgba(255,255,255,0.03) 36%, transparent 54%),
+                       linear-gradient(180deg, ${crownTop} 0%, ${crownMid} 58%, ${crownDeep} 100%)`,
+                    boxShadow: 'inset 0 -10px 16px rgba(12,28,16,0.18), 0 10px 18px rgba(0,0,0,0.12)',
+                  }}
+                />
+              ))}
+
+              {/* Leaf texture */}
+              <div
+                className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+                style={{
+                  top: size * 0.04,
+                  width: canopyWidth,
+                  height: canopyHeight,
+                  backgroundImage:
+                    'radial-gradient(circle at 18% 28%, rgba(255,255,255,0.09) 0 2px, transparent 3px), radial-gradient(circle at 64% 22%, rgba(255,255,255,0.08) 0 2px, transparent 3px), radial-gradient(circle at 72% 56%, rgba(0,0,0,0.08) 0 2px, transparent 3px), radial-gradient(circle at 38% 64%, rgba(0,0,0,0.07) 0 2px, transparent 3px)',
+                  backgroundSize: '24px 24px, 28px 28px, 20px 20px, 22px 22px',
+                  backgroundPosition: '0 0, 10px 8px, 4px 12px, 14px 16px',
+                  borderRadius: '42% 44% 38% 40% / 40% 42% 35% 37%',
+                  mixBlendMode: 'soft-light',
+                  opacity: 0.9,
+                }}
+              />
+
+              {/* Branches */}
+              <div
+                className="absolute rounded-full origin-bottom-left"
+                style={{
+                  left: `calc(50% - ${trunkWidth * 0.1}px)`,
+                  top: canopyHeight * 0.6,
+                  width: canopyWidth * 0.22,
+                  height: Math.max(5, trunkWidth * 0.24),
+                  transform: 'rotate(-24deg)',
+                  background: `linear-gradient(90deg, ${barkShadow}, ${trunkTone})`,
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.18)',
+                }}
+              />
+              <div
+                className="absolute rounded-full origin-bottom-right"
+                style={{
+                  right: `calc(50% - ${trunkWidth * 0.06}px)`,
+                  top: canopyHeight * 0.55,
+                  width: canopyWidth * 0.2,
+                  height: Math.max(5, trunkWidth * 0.22),
+                  transform: 'rotate(28deg)',
+                  background: `linear-gradient(90deg, ${trunkTone}, ${barkShadow})`,
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.18)',
+                }}
+              />
+
+              {/* Trunk with bark texture */}
+              <div
+                className="absolute left-1/2 -translate-x-1/2 rounded-t-[45%] rounded-b-[30%] overflow-hidden"
+                style={{
+                  bottom: size * 0.05,
+                  width: trunkWidth,
+                  height: trunkHeight,
+                  background:
+                    `linear-gradient(90deg, ${barkShadow} 0%, ${trunkTone} 18%, #9c6b44 32%, ${trunkTone} 48%, ${barkShadow} 100%)`,
+                  boxShadow: '0 10px 24px rgba(0,0,0,0.24)',
+                }}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage:
+                      'repeating-linear-gradient(180deg, rgba(255,255,255,0.08) 0 5px, rgba(0,0,0,0.06) 5px 10px), repeating-linear-gradient(95deg, transparent 0 7px, rgba(0,0,0,0.08) 7px 9px)',
+                    mixBlendMode: 'overlay',
+                    opacity: 0.85,
+                  }}
+                />
+                <div className="absolute left-[26%] top-[10%] bottom-[10%] w-[10%] rounded-full bg-white/10 blur-[1px]" />
+                <div className="absolute right-[20%] top-[16%] bottom-[14%] w-[12%] rounded-full bg-black/15 blur-[1px]" />
+                <div className="absolute left-1/2 top-[34%] -translate-x-1/2 w-[34%] h-[12%] rounded-full bg-black/20" />
+              </div>
+
+              {/* Root flare */}
+              <div className="absolute left-1/2 -translate-x-1/2" style={{ bottom: size * 0.04, width: trunkWidth * 1.8, height: trunkWidth * 0.6 }}>
+                <div className="absolute left-[8%] bottom-0 w-[30%] h-[55%] rounded-full rotate-[18deg]" style={{ background: `linear-gradient(90deg, ${barkShadow}, ${trunkTone})` }} />
+                <div className="absolute left-[34%] bottom-0 w-[32%] h-[58%] rounded-full" style={{ background: `linear-gradient(90deg, ${barkShadow}, ${trunkTone})` }} />
+                <div className="absolute right-[8%] bottom-0 w-[28%] h-[52%] rounded-full -rotate-[18deg]" style={{ background: `linear-gradient(90deg, ${trunkTone}, ${barkShadow})` }} />
+              </div>
+
+              {/* Fruit / flower accents for mature tree */}
               {stage >= 6 && (
                 <div className="absolute inset-0">
-                  {[...Array(10)].map((_, i) => (
+                  {[...Array(9)].map((_, i) => (
                     <motion.div
                       key={i}
-                      initial={{ opacity: 0, scale: 0 }}
+                      initial={{ opacity: 0, scale: 0.4 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.05 * i }}
-                      className="absolute w-2.5 h-2.5 rounded-full shadow-sm"
+                      transition={{ delay: 0.04 * i }}
+                      className="absolute rounded-full shadow-md"
                       style={{
-                        backgroundColor: i % 2 === 0 ? '#ff7043' : '#ffeb3b',
-                        left: `${10 + (i * 7) % 80}%`,
-                        top: `${18 + (i * 11) % 60}%`,
+                        width: i % 3 === 0 ? 10 : 8,
+                        height: i % 3 === 0 ? 10 : 8,
+                        background: i % 2 === 0 ? 'radial-gradient(circle at 35% 35%, #fde68a 0 24%, #fb923c 42%, #c2410c 100%)' : 'radial-gradient(circle at 35% 35%, #fef08a 0 22%, #facc15 42%, #ca8a04 100%)',
+                        left: `${14 + (i * 9) % 68}%`,
+                        top: `${14 + (i * 13) % 44}%`,
                       }}
                     />
                   ))}
@@ -2517,10 +2680,13 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
   const isActing = Boolean(actionId);
   const isDigging = actionId === 'hole';
   const isPlanting = actionId === 'plant';
+  const isWatering = actionId === 'water';
   const p01 = Math.max(0, Math.min(1, (actionProgress ?? 0) / 100));
   const crouch = isPlanting ? (2 + p01 * 3) : 0;
   const [blinkTick, setBlinkTick] = useState(0);
   const blinkTimerRef = useRef<number | null>(null);
+  const actionDur = isDigging ? 0.52 : isWatering ? 0.62 : isPlanting ? 0.95 : isActing ? 0.75 : isWalking ? 0.55 : 3.8;
+  const actionEase = 'easeInOut';
 
   useEffect(() => {
     if (skin) return;
@@ -2542,18 +2708,41 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
     return (
       <motion.div
         animate={{
-          rotate: isDigging ? [-2.6, 0.8, -1.8] : isPlanting ? [-0.8, 0.8, -0.8] : isActing ? [-1.2, 1.2, -1.0] : isWalking ? [-0.8, 0.8, -0.8] : [-0.6, 0.6, -0.6],
-          y: isDigging ? [0, 1.2, 0] : isPlanting ? [crouch, crouch + 0.6, crouch] : isActing ? [0, 0.8, 0] : isWalking ? [0, -1.6, 0] : [0, 0.8, 0],
+          rotate:
+            isDigging ? [-5.5, 2.5, -4.5] :
+            isWatering ? [-4.2, 1.8, -3.5] :
+            isPlanting ? [-1.4, 1.2, -1.2] :
+            isActing ? [-1.8, 1.8, -1.6] :
+            isWalking ? [-0.8, 0.8, -0.8] :
+            [-0.6, 0.6, -0.6],
+          y:
+            isDigging ? [0, 2.4, 0] :
+            isWatering ? [0, 1.6, 0] :
+            isPlanting ? [crouch + 0.6, crouch + 1.2, crouch + 0.6] :
+            isActing ? [0, 1.0, 0] :
+            isWalking ? [0, -1.6, 0] :
+            [0, 0.8, 0],
+          x: isWatering ? [0, 1.2, 0] : 0,
         }}
-        transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 3.8, ease: 'easeInOut' }}
+        transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
         className={`relative flex flex-col items-center origin-bottom transition-transform duration-300 ${direction === 'left' ? '-scale-x-100' : 'scale-x-100'}`}
       >
         <motion.div
           animate={{
-            y: isDigging ? [0, -1.6, 0] : isPlanting ? [-0.6, -1.2, -0.6] : isActing ? [0, -1.2, 0] : isWalking ? [0, -2.6, 0] : [0, -1, 0],
-            rotate: isWalking ? [-2, 2, -2] : 0
+            y:
+              isDigging ? [0, -2.2, 0] :
+              isWatering ? [0, -1.6, 0] :
+              isPlanting ? [-0.6, -1.4, -0.6] :
+              isActing ? [0, -1.4, 0] :
+              isWalking ? [0, -2.6, 0] :
+              [0, -1, 0],
+            rotate:
+              isDigging ? [-2.6, 1.2, -2.0] :
+              isWatering ? [-1.6, 1.2, -1.2] :
+              isWalking ? [-2, 2, -2] :
+              0,
           }}
-          transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 1.8, ease: 'easeInOut' }}
+          transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
           className="relative z-20"
         >
           <div className="relative w-14 h-14 rounded-[1.6rem] overflow-hidden bg-white/10 border border-white/15 shadow-2xl" style={{ filter: 'drop-shadow(0 16px 20px rgba(0,0,0,0.22))' }}>
@@ -2573,9 +2762,23 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.2 }}
-            className="absolute -right-9 top-6 w-10 h-10 rounded-[1.15rem] bg-white/90 border border-black/10 shadow-2xl flex items-center justify-center"
+            className="absolute left-1/2 -translate-x-1/2 top-10 w-12 h-12 rounded-[1.25rem] bg-white/90 border border-black/10 shadow-2xl flex items-center justify-center"
           >
-            <HeldTool actionId={actionId ?? ''} accent={accent} icon={ToolIcon} actionProgress={actionProgress} />
+            <motion.div
+              animate={{
+                rotate:
+                  isDigging ? [-38, 12, -28] :
+                  isWatering ? [-14, 18, -10] :
+                  isPlanting ? [-6, 6, -6] :
+                  [-10, 10, -8],
+                x: isDigging ? [-6, 4, -3] : isWatering ? [2, 6, 3] : isPlanting ? [0, 1, 0] : 0,
+                y: isDigging ? [6, 12, 8] : isWatering ? [6, 8, 6] : isPlanting ? [8 + p01 * 4, 10 + p01 * 4, 8 + p01 * 4] : [6, 8, 6],
+              }}
+              transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
+              className="relative"
+            >
+              <HeldTool actionId={actionId ?? ''} accent={accent} icon={ToolIcon} actionProgress={actionProgress} />
+            </motion.div>
           </motion.div>
         )}
 
@@ -2594,7 +2797,7 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
 
         <motion.div
           animate={{ scale: isDigging ? [1, 0.92, 1] : isPlanting ? [1, 0.94, 1] : isActing ? [1, 0.94, 1] : isWalking ? [1, 0.93, 1] : [1, 0.95, 1] }}
-          transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 2.4, ease: 'easeInOut' }}
+          transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
           className="w-14 h-3 bg-black/20 rounded-full blur-sm mt-2"
           style={{ background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.14) 58%, rgba(0,0,0,0.0) 76%)' }}
         />
@@ -2607,18 +2810,41 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
   return (
     <motion.div
       animate={{
-        rotate: isDigging ? [-2.6, 0.8, -1.8] : isPlanting ? [-0.8, 0.8, -0.8] : isActing ? [-1.2, 1.2, -1.0] : isWalking ? [-0.8, 0.8, -0.8] : [-0.6, 0.6, -0.6],
-        y: isDigging ? [0, 1.2, 0] : isPlanting ? [crouch, crouch + 0.6, crouch] : isActing ? [0, 0.8, 0] : isWalking ? [0, -1.6, 0] : [0, 0.8, 0],
+        rotate:
+          isDigging ? [-5.5, 2.5, -4.5] :
+          isWatering ? [-4.2, 1.8, -3.5] :
+          isPlanting ? [-1.4, 1.2, -1.2] :
+          isActing ? [-1.8, 1.8, -1.6] :
+          isWalking ? [-0.8, 0.8, -0.8] :
+          [-0.6, 0.6, -0.6],
+        y:
+          isDigging ? [0, 2.4, 0] :
+          isWatering ? [0, 1.6, 0] :
+          isPlanting ? [crouch + 0.6, crouch + 1.2, crouch + 0.6] :
+          isActing ? [0, 1.0, 0] :
+          isWalking ? [0, -1.6, 0] :
+          [0, 0.8, 0],
+        x: isWatering ? [0, 1.2, 0] : 0,
       }}
-      transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 3.8, ease: 'easeInOut' }}
+      transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
       className={`relative flex flex-col items-center origin-bottom transition-transform duration-300 ${direction === 'left' ? '-scale-x-100' : 'scale-x-100'}`}
     >
       <motion.div 
         animate={{ 
-          y: isDigging ? [0, -1.6, 0] : isPlanting ? [-0.6, -1.2, -0.6] : isActing ? [0, -1.2, 0] : isWalking ? [0, -2.6, 0] : [0, -1, 0],
-          rotate: isWalking ? [-2, 2, -2] : 0
+          y:
+            isDigging ? [0, -2.2, 0] :
+            isWatering ? [0, -1.6, 0] :
+            isPlanting ? [-0.6, -1.4, -0.6] :
+            isActing ? [0, -1.4, 0] :
+            isWalking ? [0, -2.6, 0] :
+            [0, -1, 0],
+          rotate:
+            isDigging ? [-2.6, 1.2, -2.0] :
+            isWatering ? [-1.6, 1.2, -1.2] :
+            isWalking ? [-2, 2, -2] :
+            0
         }}
-        transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 1.8, ease: 'easeInOut' }}
+        transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
         className="relative z-20"
       >
         <div className="w-10 h-10 bg-[#7d4a27] rounded-full border-2 border-[#5d361b] flex items-end justify-center overflow-visible relative">
@@ -2661,11 +2887,24 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
 
       <motion.div 
         animate={{ 
-          rotate: isDigging ? [-2.2, 1.2, -1.6] : isPlanting ? [-1, 1, -1] : isActing ? [-1.4, 1.8, -1.2] : isWalking ? [-1.2, 1.2, -1.2] : [-0.8, 0.8, -0.8],
-          y: isDigging ? [0, 2, 0] : isPlanting ? [2 + crouch * 0.6, 3 + crouch * 0.6, 2 + crouch * 0.6] : isActing ? [0, 1.5, 0] : isWalking ? [0, -1.2, 0] : [0, 0.6, 0],
-          scaleY: isDigging ? [1, 0.98, 1] : isPlanting ? [1, 0.985, 1] : isActing ? [1, 0.985, 1] : isWalking ? [1, 0.995, 1] : [1, 1.015, 1],
+          rotate:
+            isDigging ? [-4, 2, -3.2] :
+            isWatering ? [-2.6, 1.4, -2.2] :
+            isPlanting ? [-1.2, 1.1, -1.1] :
+            isActing ? [-1.8, 2.2, -1.4] :
+            isWalking ? [-1.2, 1.2, -1.2] :
+            [-0.8, 0.8, -0.8],
+          y:
+            isDigging ? [0, 2.8, 0] :
+            isWatering ? [0.6, 2.2, 0.6] :
+            isPlanting ? [2.2 + crouch * 0.65, 3.4 + crouch * 0.65, 2.2 + crouch * 0.65] :
+            isActing ? [0, 1.8, 0] :
+            isWalking ? [0, -1.2, 0] :
+            [0, 0.6, 0],
+          scaleY: isDigging ? [1, 0.975, 1] : isPlanting ? [1, 0.985, 1] : isActing ? [1, 0.985, 1] : isWalking ? [1, 0.995, 1] : [1, 1.015, 1],
+          x: isWatering ? [0, 1, 0] : 0,
         }}
-        transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 2.4, ease: 'easeInOut' }}
+        transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
         className="w-12 h-14 bg-[#7d4a27] rounded-xl border-2 border-[#5d361b] -mt-1 relative z-10 shadow-md"
       >
         {/* Monkey Tail for Sprite */}
@@ -2682,18 +2921,40 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
         <div className="absolute inset-x-2 top-0 bottom-4 border-x-4 border-[#5d361b] opacity-20" />
         <motion.div 
           animate={{
-            rotate: isDigging ? [34, -6, 22] : isPlanting ? [10, 6, 10] : isActing ? [18, -18, 12] : isWalking ? [14, -14, 14] : [4, -4, 4],
-            y: isDigging ? [0, 3, 0] : isPlanting ? [4 + p01 * 3, 5 + p01 * 3, 4 + p01 * 3] : isActing ? [0, 1.5, 0] : 0,
+            rotate:
+              isDigging ? [54, -22, 46] :
+              isWatering ? [34, 8, 30] :
+              isPlanting ? [22, 10, 18] :
+              isActing ? [26, -22, 18] :
+              isWalking ? [14, -14, 14] :
+              [4, -4, 4],
+            y:
+              isDigging ? [0, 5, 1] :
+              isWatering ? [2, 3, 2] :
+              isPlanting ? [4 + p01 * 4, 6 + p01 * 4, 4 + p01 * 4] :
+              isActing ? [0, 1.8, 0] :
+              0,
           }}
-          transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 1.8, ease: 'easeInOut' }}
+          transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
           className="absolute -left-3 top-2 w-4 h-8 bg-[#7d4a27] rounded-full border-2 border-[#5d361b] origin-top" 
         />
         <motion.div 
           animate={{
-            rotate: isDigging ? [-6, 10, -4] : isPlanting ? [-10, -6, -10] : isActing ? [-14, 14, -10] : isWalking ? [-14, 14, -14] : [-4, 4, -4],
-            y: isDigging ? [1, 2, 1] : isPlanting ? [4 + p01 * 3, 5 + p01 * 3, 4 + p01 * 3] : isActing ? [0, 1, 0] : 0,
+            rotate:
+              isDigging ? [-16, 18, -10] :
+              isWatering ? [-44, -12, -36] :
+              isPlanting ? [-22, -12, -18] :
+              isActing ? [-16, 16, -12] :
+              isWalking ? [-14, 14, -14] :
+              [-4, 4, -4],
+            y:
+              isDigging ? [2, 3, 2] :
+              isWatering ? [5, 6, 5] :
+              isPlanting ? [4 + p01 * 4, 6 + p01 * 4, 4 + p01 * 4] :
+              isActing ? [0, 1.2, 0] :
+              0,
           }}
-          transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 1.8, ease: 'easeInOut' }}
+          transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
           className="absolute -right-3 top-2 w-4 h-8 bg-[#7d4a27] rounded-full border-2 border-[#5d361b] origin-top" 
         />
 
@@ -2702,9 +2963,23 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.2 }}
-            className="absolute -right-9 top-4 w-10 h-10 rounded-[1.15rem] bg-white/90 border border-black/10 shadow-2xl flex items-center justify-center"
+            className="absolute left-1/2 -translate-x-1/2 -top-3 w-12 h-12 rounded-[1.25rem] bg-white/90 border border-black/10 shadow-2xl flex items-center justify-center"
           >
-            <HeldTool actionId={actionId ?? ''} accent={accent} icon={ToolIcon} actionProgress={actionProgress} />
+            <motion.div
+              animate={{
+                rotate:
+                  isDigging ? [-40, 10, -30] :
+                  isWatering ? [-18, 22, -12] :
+                  isPlanting ? [-6, 6, -6] :
+                  [-10, 10, -8],
+                x: isDigging ? [-7, 5, -4] : isWatering ? [3, 7, 4] : isPlanting ? [0, 1, 0] : 0,
+                y: isDigging ? [10, 16, 12] : isWatering ? [8, 10, 8] : isPlanting ? [12 + p01 * 4, 14 + p01 * 4, 12 + p01 * 4] : [8, 10, 8],
+              }}
+              transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
+              className="relative"
+            >
+              <HeldTool actionId={actionId ?? ''} accent={accent} icon={ToolIcon} actionProgress={actionProgress} />
+            </motion.div>
           </motion.div>
         )}
       </motion.div>
@@ -2724,7 +2999,7 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
 
       <motion.div 
         animate={{ scale: isDigging ? [1, 0.92, 1] : isPlanting ? [1, 0.94, 1] : isActing ? [1, 0.94, 1] : isWalking ? [1, 0.93, 1] : [1, 0.95, 1] }}
-        transition={{ repeat: Infinity, duration: isDigging ? 0.48 : isPlanting ? 0.9 : isActing ? 0.7 : isWalking ? 0.55 : 2.4, ease: 'easeInOut' }}
+        transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
         className="w-12 h-3 bg-black/20 rounded-full blur-sm mt-1"
         style={{ background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.14) 58%, rgba(0,0,0,0.0) 76%)' }}
       />
@@ -3703,6 +3978,17 @@ type EnvImpact = {
   water: number;
   temp: number;
   bio: number;
+};
+
+const hexToRgba = (hex: string, a: number) => {
+  const clean = hex.replace('#', '').trim();
+  const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
+  const n = Number.parseInt(full, 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  const alpha = Math.max(0, Math.min(1, a));
+  return `rgba(${r},${g},${b},${alpha})`;
 };
 
 const seedlings: Seedling[] = [
@@ -5539,6 +5825,10 @@ const missions: Mission[] = [
   { id: 'm3', name: 'Hutan Harapan Raya', targetCO2: 20, timeLimit: 240, initialWater: 60, initialEnergy: 80, difficulty: 'hard' },
 ];
 
+const REGION_SELECT_LOCK_MS = 260;
+const REGION_LOADING_MS = 320;
+const GAME_ENTRY_LOADING_MS = 560;
+
 const TreeGame: React.FC = () => {
   const navigate = useNavigate();
   const [phase, setPhase] = useState<'selection' | 'seedling' | 'planting' | 'finished' | 'gameover'>('selection');
@@ -5569,6 +5859,11 @@ const TreeGame: React.FC = () => {
   const [level, setLevel] = useState(1);
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
   const [selectedSeedling, setSelectedSeedling] = useState<Seedling | null>(null);
+  const [seedlingDraft, setSeedlingDraft] = useState<Seedling | null>(null);
+  const [seedlingHoverId, setSeedlingHoverId] = useState<string | null>(null);
+  const [seedlingCardTilt, setSeedlingCardTilt] = useState<{ x: number; y: number } | null>(null);
+  const [seedlingSpotlight, setSeedlingSpotlight] = useState<{ x: number; y: number } | null>(null);
+  const seedlingSpotRafRef = useRef<number | null>(null);
   const [hoveredRegion, setHoveredRegion] = useState<Region | null>(null);
   const [mapFocusRegionId, setMapFocusRegionId] = useState<string | null>(null);
   const [mapFocusLock, setMapFocusLock] = useState(false);
@@ -5596,7 +5891,9 @@ const TreeGame: React.FC = () => {
   });
   const characterFileInputRef = useRef<HTMLInputElement | null>(null);
   const [claimOpen, setClaimOpen] = useState(false);
-  const [claimSubmitted, setClaimSubmitted] = useState<{ id: string; submittedAt: number } | null>(null);
+  const [claimEducationOpen, setClaimEducationOpen] = useState(false);
+  const [claimMode, setClaimMode] = useState<'success' | 'incomplete'>('success');
+  const [claimSubmitted, setClaimSubmitted] = useState<{ id: string; submittedAt: number; mode: 'success' | 'incomplete' } | null>(null);
   const [claimForm, setClaimForm] = useState({
     name: '',
     phone: '',
@@ -5842,16 +6139,17 @@ const TreeGame: React.FC = () => {
   }, [setCharacterSkin, setToast]);
 
   useEffect(() => {
-    if (phase !== 'finished') {
+    if (phase !== 'finished' && phase !== 'gameover') {
       setClaimOpen(false);
+      setClaimEducationOpen(false);
       return;
     }
     if (!selectedRegion || !selectedSeedling) return;
     const now = Date.now();
     if (now - lastClaimAutoOpenAtRef.current < 1500) return;
     lastClaimAutoOpenAtRef.current = now;
+    setClaimMode(phase === 'finished' ? 'success' : 'incomplete');
     setClaimError(null);
-    setClaimSubmitted(null);
     setClaimForm({
       name: '',
       phone: '',
@@ -5864,7 +6162,8 @@ const TreeGame: React.FC = () => {
       quantity: 1,
       consent: true,
     });
-    setClaimOpen(true);
+    setClaimOpen(false);
+    setClaimEducationOpen(true);
   }, [phase, selectedRegion, selectedSeedling]);
 
   const submitClaim = useCallback(() => {
@@ -5884,9 +6183,11 @@ const TreeGame: React.FC = () => {
     if (!kelurahan) { setClaimError('Kelurahan/Desa wajib diisi.'); return; }
     if (!claimForm.consent) { setClaimError('Centang persetujuan untuk melanjutkan.'); return; }
 
-    const id = `KLAIM-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(16).slice(2, 8).toUpperCase()}`;
+    const prefix = claimMode === 'success' ? 'KLAIM' : 'MINAT';
+    const id = `${prefix}-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(16).slice(2, 8).toUpperCase()}`;
     const payload = {
       id,
+      mode: claimMode,
       submittedAt: Date.now(),
       region: { id: selectedRegion.id, name: selectedRegion.name },
       seedling: { name: selectedSeedling.name },
@@ -5911,14 +6212,22 @@ const TreeGame: React.FC = () => {
       window.localStorage.setItem('treegame:seed-claims', JSON.stringify([payload, ...arr].slice(0, 20)));
     } catch {}
 
-    setClaimSubmitted({ id, submittedAt: Date.now() });
+    setClaimSubmitted({ id, submittedAt: Date.now(), mode: claimMode });
     setClaimOpen(false);
+    setClaimEducationOpen(false);
     setClaimError(null);
-    setToast({ id: Date.now(), title: 'Data klaim terkirim', subtitle: `Kode klaim: ${id}`, tone: 'good' });
+    if (claimMode === 'success') {
+      setToast({ id: Date.now(), title: 'Data klaim terkirim', subtitle: `Kode klaim: ${id}`, tone: 'good' });
+      window.setTimeout(() => {
+        setToast({ id: Date.now() + 1, title: 'Bibit bisa diambil', subtitle: 'Silakan ambil di Dinas Kehutanan dengan membawa KTP & kode klaim', tone: 'info' });
+      }, 900);
+      return;
+    }
+    setToast({ id: Date.now(), title: 'Formulir terkirim', subtitle: `Kode data: ${id}`, tone: 'good' });
     window.setTimeout(() => {
-      setToast({ id: Date.now() + 1, title: 'Bibit bisa diambil', subtitle: 'Silakan ambil di Dinas Kehutanan dengan membawa KTP & kode klaim', tone: 'info' });
+      setToast({ id: Date.now() + 1, title: 'Untuk klaim bibit gratis', subtitle: 'Selesaikan game sampai berhasil agar dapat kode klaim pengambilan', tone: 'info' });
     }, 900);
-  }, [claimForm, selectedRegion, selectedSeedling, setToast]);
+  }, [claimForm, claimMode, selectedRegion, selectedSeedling, setToast]);
 
   useEffect(() => {
     if (phase !== 'finished') return;
@@ -6284,6 +6593,45 @@ const TreeGame: React.FC = () => {
       lastFrameTsRef.current = null;
     };
   }, [pauseOpen, phase, tutorialActive, tutorialStep]);
+
+  useEffect(() => {
+    if (phase !== 'seedling') {
+      setSeedlingDraft(null);
+      setSeedlingHoverId(null);
+      setSeedlingCardTilt(null);
+      setSeedlingSpotlight(null);
+      if (seedlingSpotRafRef.current) window.cancelAnimationFrame(seedlingSpotRafRef.current);
+      seedlingSpotRafRef.current = null;
+    } else if (!seedlingDraft && selectedSeedling) {
+      setSeedlingDraft(selectedSeedling);
+    }
+  }, [phase, seedlingDraft, selectedSeedling]);
+
+  const seedlingProfile = useCallback((s: Seedling) => {
+    if (s.id === 's1') return { growth: 0.72, co2: 0.78, drought: 0.55, flood: 0.62, label: 'Pelindung cepat tumbuh' };
+    if (s.id === 's2') return { growth: 0.50, co2: 0.66, drought: 0.62, flood: 0.48, label: 'Kayu bernilai tinggi' };
+    return { growth: 0.64, co2: 0.70, drought: 0.78, flood: 0.44, label: 'Tahan kering & pegunungan' };
+  }, []);
+
+  const recommendedSeedlingId = useMemo(() => {
+    if (!selectedRegion) return 's1';
+    if (selectedRegion.status === 'gersang') return 's3';
+    if (selectedRegion.status === 'kritis') return 's1';
+    return 's2';
+  }, [selectedRegion]);
+
+  const activeSeedlingChoice = useMemo(() => {
+    if (seedlingDraft) return seedlingDraft;
+    return seedlings.find(s => s.id === recommendedSeedlingId) ?? seedlings[0];
+  }, [recommendedSeedlingId, seedlingDraft]);
+
+  const activeSeedlingCompatibility = useMemo(() => {
+    const prof = seedlingProfile(activeSeedlingChoice);
+    if (!selectedRegion) return 72;
+    if (selectedRegion.status === 'gersang') return Math.round((prof.drought * 0.5 + prof.growth * 0.2 + prof.co2 * 0.15 + prof.flood * 0.15) * 100);
+    if (selectedRegion.status === 'kritis') return Math.round((prof.co2 * 0.4 + prof.growth * 0.35 + prof.drought * 0.15 + prof.flood * 0.1) * 100);
+    return Math.round((prof.growth * 0.25 + prof.co2 * 0.2 + prof.drought * 0.2 + prof.flood * 0.35) * 100);
+  }, [activeSeedlingChoice, seedlingProfile, selectedRegion]);
 
   const spawnRestoration = useCallback((x: number, y: number, intensity: number = 1) => {
     const id = Date.now() + Math.floor(Math.random() * 100000);
@@ -7268,7 +7616,7 @@ const TreeGame: React.FC = () => {
       setMapFocusRegionId(null);
       regionSelectTimerRef.current = null;
       setMapTransition(null);
-    }, 920);
+    }, REGION_SELECT_LOCK_MS);
   };
 
   const commitRegionSelect = (region: Region) => {
@@ -7278,8 +7626,8 @@ const TreeGame: React.FC = () => {
       subtitle: 'Mempersiapkan pemilihan bibit & briefing misi…',
       accent: region.status === 'kritis' ? 'warn' : region.status === 'gersang' ? 'danger' : 'eco',
       tip: 'Pilih bibit yang sesuai kondisi wilayah. Setelah itu kamu langsung masuk ke gameplay.',
-      durationMs: 820,
-      stages: ['Memindai wilayah', 'Menyiapkan briefing', 'Memuat daftar bibit', 'Menyiapkan HUD & kontrol'],
+      durationMs: REGION_LOADING_MS,
+      stages: ['Memindai wilayah', 'Memuat briefing', 'Siap pilih bibit'],
     });
     setSelectedRegion(region);
     setPhase('seedling');
@@ -7307,18 +7655,18 @@ const TreeGame: React.FC = () => {
 
   const handleSeedlingSelect = (seedling: Seedling) => {
     setSelectedSeedling(seedling);
-    setPhase('planting');
     setGameLoading({
       id: Date.now(),
       title: 'Memuat Dunia Restorasi',
       subtitle: 'Membangun lahan, cuaca, partikel, dan sistem event…',
       accent: 'eco',
       tip: 'WASD/Arrow untuk bergerak, E untuk aksi. Fokus ke titik menyala saat Level 2.',
-      durationMs: 1350,
-      stages: ['Membangun lahan', 'Menyiapkan cuaca', 'Menyiapkan event', 'Sinkronisasi progres', 'Menyiapkan tutorial'],
+      durationMs: GAME_ENTRY_LOADING_MS,
+      stages: ['Membangun lahan', 'Menyiapkan event', 'Sinkronisasi tutorial'],
     });
     window.requestAnimationFrame(() => {
       startTransition(() => {
+        setPhase('planting');
         setLevel(1);
         setPlantingStep(0);
         setActionProgress(0);
@@ -7961,36 +8309,489 @@ const TreeGame: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className="bg-white/85 backdrop-blur-md p-8 rounded-[3rem] shadow-2xl border border-emerald-100/80 max-w-4xl mx-auto w-full overflow-hidden relative"
+              className="bg-white/80 backdrop-blur-xl p-8 rounded-[3rem] shadow-2xl border border-emerald-100/80 max-w-5xl mx-auto w-full overflow-hidden relative"
             >
-              <div className="absolute inset-0 pointer-events-none opacity-70" style={{ backgroundImage: 'radial-gradient(circle at 14% 18%, rgba(16,185,129,0.16) 0 220px, transparent 380px), radial-gradient(circle at 86% 22%, rgba(245,158,11,0.12) 0 240px, transparent 420px)' }} />
-              <div className="text-center mb-10">
-                <span className="bg-emerald-100 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-2 inline-block">
-                  Langkah 1: Pemilihan
-                </span>
-                <h2 className="text-3xl font-black text-gray-900">PILIH BIBIT POHON</h2>
-                <p className="text-gray-500 text-sm mt-2">Pilih jenis pohon yang paling cocok untuk direstorasi di {selectedRegion?.name}.</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {seedlings.map((s) => (
+              <div
+                className="absolute inset-0 pointer-events-none opacity-80"
+                style={{
+                  backgroundImage:
+                    'radial-gradient(circle at 14% 18%, rgba(16,185,129,0.22) 0 260px, transparent 520px), radial-gradient(circle at 86% 22%, rgba(56,189,248,0.16) 0 260px, transparent 520px), radial-gradient(circle at 50% 120%, rgba(245,158,11,0.14) 0 360px, transparent 680px)',
+                }}
+              />
+              <div
+                className="relative"
+                onMouseMove={(e) => {
+                  const el = e.currentTarget;
+                  const rect = el.getBoundingClientRect();
+                  const nx = Math.max(0, Math.min(1, (e.clientX - rect.left) / Math.max(1, rect.width)));
+                  const ny = Math.max(0, Math.min(1, (e.clientY - rect.top) / Math.max(1, rect.height)));
+                  if (seedlingSpotRafRef.current) window.cancelAnimationFrame(seedlingSpotRafRef.current);
+                  seedlingSpotRafRef.current = window.requestAnimationFrame(() => {
+                    setSeedlingSpotlight({ x: nx, y: ny });
+                    seedlingSpotRafRef.current = null;
+                  });
+                }}
+                onMouseLeave={() => {
+                  if (seedlingSpotRafRef.current) window.cancelAnimationFrame(seedlingSpotRafRef.current);
+                  seedlingSpotRafRef.current = null;
+                  setSeedlingSpotlight(null);
+                }}
+              >
+                <div
+                  className="absolute inset-[-24px] pointer-events-none rounded-[3.2rem]"
+                  style={{
+                    backgroundImage: `radial-gradient(circle at ${Math.round((seedlingSpotlight?.x ?? 0.5) * 100)}% ${Math.round((seedlingSpotlight?.y ?? 0.35) * 100)}%, rgba(255,255,255,0.70) 0 140px, rgba(16,185,129,0.22) 200px, transparent 520px)`,
+                    opacity: seedlingSpotlight ? 1 : 0.65,
+                    transition: 'opacity 180ms ease',
+                    filter: 'blur(0.2px)',
+                  }}
+                />
+                <motion.div
+                  className="absolute inset-[-24px] pointer-events-none opacity-60"
+                  animate={{ backgroundPosition: ['0% 0%', '0% 120%'] }}
+                  transition={{ repeat: Infinity, duration: 6.5, ease: 'linear' }}
+                  style={{
+                    backgroundImage:
+                      'repeating-linear-gradient(180deg, rgba(255,255,255,0.0) 0 12px, rgba(255,255,255,0.10) 12px 13px, rgba(255,255,255,0.0) 13px 26px)',
+                    mixBlendMode: 'overlay',
+                  }}
+                />
+                {[...Array(7)].map((_, i) => (
                   <motion.div
-                    key={s.id}
-                    whileHover={{ y: -5 }}
-                    onClick={() => handleSeedlingSelect(s)}
-                    className="cursor-pointer group"
-                  >
-                    <div className="bg-emerald-50 p-8 rounded-[2.5rem] border-2 border-transparent group-hover:border-primary transition-all flex flex-col items-center text-center h-full">
-                      <div className="w-40 h-40 bg-white rounded-full flex items-center justify-center mb-6 shadow-md group-hover:shadow-xl transition-all text-primary relative overflow-visible border-4 border-white">
-                        <div className="absolute inset-0 rounded-full opacity-60 overflow-hidden" style={{ backgroundImage: 'radial-gradient(circle at 30% 30%, rgba(16,185,129,0.18) 0 24px, transparent 46px)' }} />
-                        <SeedlingIcon type={s.name} />
-                      </div>
-                      <h3 className="text-xl font-black text-gray-900 mb-2">{s.name}</h3>
-                      <p className="text-xs text-gray-500 leading-relaxed mb-6">{s.description}</p>
-                      <div className="mt-auto w-full py-3 bg-white rounded-xl text-[10px] font-black text-primary uppercase border border-emerald-100">Pilih Bibit</div>
-                    </div>
-                  </motion.div>
+                    key={i}
+                    className="absolute pointer-events-none rounded-full"
+                    initial={{ opacity: 0 }}
+                    animate={{
+                      opacity: [0, 0.55, 0],
+                      x: ['-10%', '110%'],
+                      y: [`${18 + i * 10}%`, `${10 + i * 9}%`],
+                    }}
+                    transition={{ repeat: Infinity, duration: 10 + i * 1.2, delay: i * 0.9, ease: 'linear' }}
+                    style={{
+                      width: 10 + (i % 3) * 6,
+                      height: 10 + (i % 3) * 6,
+                      backgroundImage: 'radial-gradient(circle, rgba(16,185,129,0.28), rgba(56,189,248,0.10) 55%, transparent 72%)',
+                      filter: 'blur(0.2px)',
+                    }}
+                  />
                 ))}
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-8">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="bg-gradient-to-r from-emerald-200 to-sky-200 text-slate-900 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest inline-block border border-white/60 shadow-sm">
+                        Langkah 1: Pemilihan Bibit
+                      </span>
+                      {selectedRegion && (
+                        <span
+                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-2 ${
+                            selectedRegion.status === 'hijau'
+                              ? 'bg-emerald-500/12 text-emerald-800 border border-emerald-200'
+                              : selectedRegion.status === 'kritis'
+                                ? 'bg-amber-500/14 text-amber-900 border border-amber-200'
+                                : 'bg-red-500/14 text-red-900 border border-red-200'
+                          }`}
+                        >
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              selectedRegion.status === 'hijau'
+                                ? 'bg-emerald-500'
+                                : selectedRegion.status === 'kritis'
+                                  ? 'bg-amber-500'
+                                  : 'bg-red-500'
+                            }`}
+                          />
+                          {selectedRegion.name}
+                        </span>
+                      )}
+                    </div>
+                    <h2 className="text-3xl font-black text-gray-900 mt-3 tracking-tight">Pilih Bibit Pohon</h2>
+                    <p className="text-gray-500 text-sm mt-2 font-bold">
+                      Klik untuk preview. Klik 2x untuk langsung mulai.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playUiClick();
+                        setPhase('selection');
+                        setSelectedRegion(null);
+                        setSelectedSeedling(null);
+                        setHoveredRegion(null);
+                        setMapFocusRegionId(null);
+                        setMapTransition(null);
+                      }}
+                      className="px-4 py-3 rounded-2xl bg-white/70 hover:bg-white border border-emerald-100 text-[10px] font-black uppercase tracking-widest text-gray-700 active:scale-95 transition-transform shadow-sm"
+                    >
+                      Kembali
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSeedlingSelect(activeSeedlingChoice)}
+                      className="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform shadow-lg shadow-emerald-900/15"
+                    >
+                      Masuk Game
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    {
+                      title: 'Analisis Wilayah',
+                      value: selectedRegion?.name ?? 'Wilayah belum dipilih',
+                      subtitle: selectedRegion?.status === 'gersang' ? 'Area panas dan cenderung kering' : selectedRegion?.status === 'kritis' ? 'Perlu pohon cepat tumbuh' : 'Ekosistem relatif stabil',
+                      tone: selectedRegion?.status === 'gersang' ? 'amber' : selectedRegion?.status === 'kritis' ? 'rose' : 'emerald',
+                      icon: MapPin,
+                    },
+                    {
+                      title: 'Bibit Aktif',
+                      value: activeSeedlingChoice.name,
+                      subtitle: seedlingProfile(activeSeedlingChoice).label,
+                      tone: 'sky',
+                      icon: Sprout,
+                    },
+                    {
+                      title: 'Skor Kecocokan',
+                      value: `${activeSeedlingCompatibility}%`,
+                      subtitle: activeSeedlingCompatibility >= 80 ? 'Sangat direkomendasikan' : activeSeedlingCompatibility >= 65 ? 'Cocok untuk dicoba' : 'Bisa dibandingkan lagi',
+                      tone: activeSeedlingCompatibility >= 80 ? 'emerald' : activeSeedlingCompatibility >= 65 ? 'amber' : 'rose',
+                      icon: Sparkles,
+                    },
+                  ].map((item, idx) => (
+                    <motion.div
+                      key={item.title}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.06 }}
+                      className={`rounded-[2.2rem] border p-5 relative overflow-hidden ${
+                        item.tone === 'emerald'
+                          ? 'bg-emerald-500/10 border-emerald-200/70'
+                          : item.tone === 'amber'
+                            ? 'bg-amber-500/10 border-amber-200/70'
+                            : item.tone === 'rose'
+                              ? 'bg-rose-500/10 border-rose-200/70'
+                              : 'bg-sky-500/10 border-sky-200/70'
+                      }`}
+                    >
+                      <motion.div
+                        className="absolute inset-0 opacity-40"
+                        animate={{ x: ['-30%', '130%'] }}
+                        transition={{ repeat: Infinity, duration: 4.6 + idx * 0.5, ease: 'linear' }}
+                        style={{ backgroundImage: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)' }}
+                      />
+                      <div className="relative flex items-start gap-3">
+                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                          item.tone === 'emerald'
+                            ? 'bg-emerald-500/15 text-emerald-700'
+                            : item.tone === 'amber'
+                              ? 'bg-amber-500/15 text-amber-700'
+                              : item.tone === 'rose'
+                                ? 'bg-rose-500/15 text-rose-700'
+                                : 'bg-sky-500/15 text-sky-700'
+                        }`}>
+                          <item.icon size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">{item.title}</div>
+                          <div className="text-lg font-black text-slate-900 tracking-tight mt-1">{item.value}</div>
+                          <div className="text-[11px] font-bold text-slate-600 mt-1 leading-relaxed">{item.subtitle}</div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  <div className="lg:col-span-7">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {seedlings.map((s) => {
+                        const prof = seedlingProfile(s);
+                        const isActive = activeSeedlingChoice.id === s.id;
+                        const isRecommended = recommendedSeedlingId === s.id;
+                        const isHovered = seedlingHoverId === s.id;
+                        const accent = s.color;
+                        return (
+                          <motion.button
+                            key={s.id}
+                            type="button"
+                            whileHover={{ y: -4 }}
+                            whileTap={{ scale: 0.99 }}
+                            onMouseEnter={() => setSeedlingHoverId(s.id)}
+                            onMouseLeave={() => { setSeedlingHoverId(null); setSeedlingCardTilt(null); }}
+                            onMouseMove={(e) => {
+                              const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                              const cx = rect.left + rect.width / 2;
+                              const cy = rect.top + rect.height / 2;
+                              const dx = Math.max(-0.5, Math.min(0.5, (e.clientX - cx) / Math.max(1, rect.width)));
+                              const dy = Math.max(-0.5, Math.min(0.5, (e.clientY - cy) / Math.max(1, rect.height)));
+                              setSeedlingCardTilt({ x: dx, y: dy });
+                            }}
+                            onClick={() => {
+                              playUiClick();
+                              setSeedlingDraft(s);
+                            }}
+                            onDoubleClick={() => handleSeedlingSelect(s)}
+                            className={`relative text-left rounded-[2.2rem] border p-5 sm:p-6 transition-all overflow-hidden ${
+                              isActive
+                                ? 'bg-white border-white/60 shadow-[0_26px_70px_rgba(0,0,0,0.18)]'
+                                : 'bg-white/75 border-white/70 hover:bg-white shadow-sm'
+                            }`}
+                            style={{
+                              boxShadow: isActive ? `0 26px 70px ${hexToRgba(accent, 0.20)}` : undefined,
+                              transformStyle: 'preserve-3d',
+                              perspective: 900,
+                              transform:
+                                isHovered && seedlingCardTilt
+                                  ? `rotateX(${(-seedlingCardTilt.y * 10).toFixed(2)}deg) rotateY(${(seedlingCardTilt.x * 12).toFixed(2)}deg) translateY(-2px)`
+                                  : undefined,
+                              transition: isHovered ? 'transform 90ms linear' : 'transform 220ms ease',
+                            }}
+                          >
+                            <div
+                              className="absolute inset-0 pointer-events-none"
+                              style={{
+                                backgroundImage: isActive || isHovered
+                                  ? `radial-gradient(circle at 22% 20%, ${hexToRgba(accent, 0.22)} 0 180px, transparent 380px), radial-gradient(circle at 84% 18%, rgba(56,189,248,0.10) 0 160px, transparent 420px), linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.56) 100%)`
+                                  : `radial-gradient(circle at 22% 18%, ${hexToRgba(accent, 0.14)} 0 160px, transparent 360px), linear-gradient(180deg, rgba(255,255,255,0.70) 0%, rgba(255,255,255,0.55) 100%)`,
+                              }}
+                            />
+                            <div className="relative">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                  {isActive ? 'Dipilih' : isRecommended ? 'Rekomendasi' : 'Opsi'}
+                                </div>
+                                <div className="text-xl font-black text-gray-900 tracking-tight">{s.name}</div>
+                                <div className="text-[11px] font-bold text-gray-500 mt-1 leading-relaxed">{prof.label}</div>
+                              </div>
+                              <div
+                                className={`w-14 h-14 rounded-[1.4rem] border flex items-center justify-center shrink-0 relative overflow-hidden ${
+                                  isActive ? 'bg-white/90 border-white/70' : 'bg-white/85 border-white/70'
+                                }`}
+                                style={{ boxShadow: isHovered || isActive ? `0 18px 34px ${hexToRgba(accent, 0.22)}` : '0 10px 20px rgba(0,0,0,0.06)' }}
+                              >
+                                <div className="absolute inset-0 opacity-85" style={{ backgroundImage: `radial-gradient(circle at 30% 30%, ${hexToRgba(accent, 0.38)} 0 26px, transparent 54px)` }} />
+                                <motion.div
+                                  className="relative"
+                                  animate={{
+                                    y: isHovered ? [0, -2, 0] : [0, -1, 0],
+                                    rotate: isHovered ? [-2, 2, -2] : 0,
+                                  }}
+                                  transition={{ repeat: Infinity, duration: isHovered ? 0.9 : 2.2, ease: 'easeInOut' }}
+                                  style={{ color: accent, transform: 'translateZ(14px)' }}
+                                >
+                                  <SeedlingIcon type={s.name} active={isHovered || isActive} />
+                                </motion.div>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 text-[11px] font-bold text-gray-500 leading-relaxed line-clamp-3">
+                              {s.description}
+                            </div>
+
+                            <div className="mt-5 grid grid-cols-2 gap-3">
+                              {[
+                                { key: 'growth', label: 'Tumbuh', icon: Sprout, v: prof.growth, color: '#10b981' },
+                                { key: 'co2', label: 'Serap CO2', icon: Activity, v: prof.co2, color: '#22c55e' },
+                                { key: 'drought', label: 'Tahan Kering', icon: Wind, v: prof.drought, color: '#f59e0b' },
+                                { key: 'flood', label: 'Tahan Banjir', icon: Droplets, v: prof.flood, color: '#3b82f6' },
+                              ].map((m) => (
+                                <div key={m.key} className="rounded-2xl bg-white/80 border border-black/5 px-3 py-2">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div className="w-7 h-7 rounded-xl bg-black/5 border border-black/5 flex items-center justify-center shrink-0" style={{ color: m.color }}>
+                                        <m.icon size={14} />
+                                      </div>
+                                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 truncate">{m.label}</div>
+                                    </div>
+                                    <div className="text-[10px] font-black text-gray-700">{Math.round(m.v * 100)}%</div>
+                                  </div>
+                                  <div className="mt-2 h-2 rounded-full bg-black/5 overflow-hidden border border-black/5">
+                                    <motion.div
+                                      className="h-full rounded-full"
+                                      initial={false}
+                                      animate={{
+                                        width: `${Math.round(m.v * 100)}%`,
+                                        backgroundPosition: ['0% 50%', '110% 50%'],
+                                      }}
+                                      transition={{ width: { duration: 0.35, ease: 'easeOut' }, backgroundPosition: { repeat: Infinity, duration: 1.8, ease: 'linear' } }}
+                                      style={{
+                                        backgroundImage: `linear-gradient(90deg, ${m.color}, ${hexToRgba(m.color, 0.55)}, ${m.color})`,
+                                        backgroundSize: '200% 100%',
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="mt-4 flex items-center justify-between gap-3">
+                              <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                {isActive ? 'Preview aktif' : isHovered ? 'Sedang dibandingkan' : 'Klik untuk preview'}
+                              </div>
+                              <motion.div
+                                className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                  isActive
+                                    ? 'bg-emerald-500/12 border-emerald-300/70 text-emerald-800'
+                                    : 'bg-white/70 border-white/70 text-slate-700'
+                                }`}
+                                animate={isHovered || isActive ? { scale: [1, 1.04, 1] } : { scale: 1 }}
+                                transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+                              >
+                                {isActive ? 'Siap dipakai' : 'Double klik mulai'}
+                              </motion.div>
+                            </div>
+                            </div>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-5">
+                    <div className="rounded-[2.6rem] bg-slate-950/90 border border-white/10 p-6 sm:p-7 shadow-[0_40px_100px_rgba(0,0,0,0.35)] overflow-hidden relative">
+                      <div
+                        className="absolute inset-0 pointer-events-none opacity-90"
+                        style={{
+                          backgroundImage: `radial-gradient(circle at 18% 18%, ${hexToRgba(activeSeedlingChoice.color, 0.22)} 0 300px, transparent 560px), radial-gradient(circle at 78% 28%, rgba(56,189,248,0.14) 0 240px, transparent 560px), linear-gradient(180deg, rgba(2,6,23,0.22) 0%, rgba(2,6,23,0.58) 100%)`,
+                        }}
+                      />
+                      <div className="relative">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <div className="text-[10px] font-black text-white/55 uppercase tracking-[0.25em]">Preview Bibit</div>
+                            <div className="text-2xl font-black text-white tracking-tight mt-1">{activeSeedlingChoice.name}</div>
+                            <div className="mt-2 text-white/70 font-bold text-sm leading-relaxed">
+                              {activeSeedlingChoice.description}
+                            </div>
+                          </div>
+                          <motion.div
+                            initial={false}
+                            animate={{ rotate: [0, 6, 0], y: [0, -2, 0], scale: seedlingHoverId ? [1, 1.03, 1] : 1 }}
+                            transition={{ repeat: seedlingHoverId ? Infinity : 0, duration: 0.9, ease: 'easeInOut' }}
+                            className="w-16 h-16 rounded-[1.6rem] bg-white/10 border border-white/15 flex items-center justify-center shrink-0 relative overflow-hidden"
+                          >
+                            <motion.div
+                              className="absolute inset-[-14px] rounded-full"
+                              animate={{ opacity: [0.10, 0.28, 0.10], scale: [0.92, 1.18, 0.92] }}
+                              transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }}
+                              style={{ background: `radial-gradient(circle, ${hexToRgba(activeSeedlingChoice.color, 0.30)} 0 22px, transparent 62px)` }}
+                            />
+                            <div style={{ color: activeSeedlingChoice.color }}>
+                              <SeedlingIcon type={activeSeedlingChoice.name} active />
+                            </div>
+                          </motion.div>
+                        </div>
+
+                        <div className="mt-5 rounded-[2.2rem] bg-white/5 border border-white/10 p-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <div className="text-[10px] font-black text-white/55 uppercase tracking-widest">Kecocokan Wilayah</div>
+                              <div className="text-white font-black text-xl tracking-tight mt-1">{activeSeedlingCompatibility}%</div>
+                              <div className="text-white/60 font-bold text-[11px] mt-1">
+                                {activeSeedlingCompatibility >= 80 ? 'Sangat cocok untuk misi ini' : activeSeedlingCompatibility >= 65 ? 'Cocok, tapi masih bisa dibandingkan' : 'Kurang optimal, cek bibit lain'}
+                              </div>
+                            </div>
+                            <div className="relative w-20 h-20 shrink-0">
+                              <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
+                                <circle cx="40" cy="40" r="31" stroke="rgba(255,255,255,0.12)" strokeWidth="8" fill="none" />
+                                <motion.circle
+                                  cx="40"
+                                  cy="40"
+                                  r="31"
+                                  stroke={activeSeedlingChoice.color}
+                                  strokeWidth="8"
+                                  fill="none"
+                                  strokeLinecap="round"
+                                  strokeDasharray={194.78}
+                                  initial={false}
+                                  animate={{ strokeDashoffset: 194.78 * (1 - activeSeedlingCompatibility / 100) }}
+                                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                                />
+                              </svg>
+                              {[0, 1, 2].map((i) => (
+                                <motion.div
+                                  key={i}
+                                  className="absolute left-1/2 top-1/2 w-2.5 h-2.5 -ml-[5px] -mt-[5px] rounded-full"
+                                  style={{ backgroundColor: activeSeedlingChoice.color, boxShadow: `0 0 14px ${hexToRgba(activeSeedlingChoice.color, 0.55)}` }}
+                                  animate={{ rotate: 360, x: [0, 0], y: [0, 0] }}
+                                  transition={{ repeat: Infinity, duration: 3.2 + i * 0.7, ease: 'linear', delay: i * 0.2 }}
+                                  transformTemplate={() => `rotate(${(i * 120)}deg) translateY(-31px)`}
+                                />
+                              ))}
+                              <div className="absolute inset-0 flex items-center justify-center text-white font-black text-sm">
+                                {activeSeedlingCompatibility}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-6 grid grid-cols-2 gap-3">
+                          {(() => {
+                            const prof = seedlingProfile(activeSeedlingChoice);
+                            const rows = [
+                              { key: 'growth', label: 'Kecepatan Tumbuh', v: prof.growth, from: '#10b981', to: '#34d399', icon: Sprout },
+                              { key: 'co2', label: 'Serap CO2', v: prof.co2, from: '#22c55e', to: '#86efac', icon: Activity },
+                              { key: 'drought', label: 'Tahan Kering', v: prof.drought, from: '#f59e0b', to: '#fbbf24', icon: Wind },
+                              { key: 'flood', label: 'Tahan Banjir', v: prof.flood, from: '#3b82f6', to: '#93c5fd', icon: Droplets },
+                            ];
+                            return rows.map((r) => (
+                              <div key={r.key} className="rounded-[2rem] bg-white/5 border border-white/10 p-4">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className="w-9 h-9 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-white/80 shrink-0">
+                                      <r.icon size={16} />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="text-[10px] font-black text-white/55 uppercase tracking-widest truncate">{r.label}</div>
+                                      <div className="text-white font-black tracking-tight">{Math.round(r.v * 100)}%</div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="mt-3">
+                                  <HDBar value01={r.v} from={r.from} to={r.to} height={10} className="w-full" />
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+
+                        <div className="mt-6 rounded-[2rem] bg-white/5 border border-white/10 p-5">
+                          <div className="text-[10px] font-black text-white/55 uppercase tracking-widest">Saran untuk Wilayah</div>
+                          <div className="mt-2 text-white/80 font-bold text-sm leading-relaxed">
+                            {selectedRegion?.status === 'gersang'
+                              ? 'Wilayah gersang: prioritaskan bibit yang tahan kering dan stabil saat panas.'
+                              : selectedRegion?.status === 'kritis'
+                                ? 'Wilayah kritis: butuh bibit yang cepat memberi naungan dan menekan CO2.'
+                                : 'Wilayah hijau: fokus pada pohon bernilai tinggi dan menjaga kualitas ekosistem.'}
+                          </div>
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <span className="px-3 py-1 rounded-full bg-white/10 border border-white/10 text-white/80 text-[10px] font-black uppercase tracking-widest">
+                              Rekomendasi: {seedlings.find(s => s.id === recommendedSeedlingId)?.name ?? 'Mahoni'}
+                            </span>
+                            {recommendedSeedlingId === activeSeedlingChoice.id && (
+                              <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/20 text-emerald-200 text-[10px] font-black uppercase tracking-widest">
+                                Cocok
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSeedlingSelect(activeSeedlingChoice)}
+                          className="mt-6 w-full py-4 rounded-[2rem] text-white font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform shadow-lg border border-white/10"
+                          style={{
+                            backgroundImage: `linear-gradient(135deg, ${activeSeedlingChoice.color}, rgba(16,185,129,0.85))`,
+                            boxShadow: `0 22px 60px ${hexToRgba(activeSeedlingChoice.color, 0.22)}`,
+                          }}
+                        >
+                          Mulai Restorasi
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
@@ -9094,12 +9895,35 @@ const TreeGame: React.FC = () => {
                       </div>
                       <h2 className="text-4xl font-black text-white mb-4 tracking-tighter uppercase">MISI GAGAL</h2>
                       <p className="text-slate-400 mb-8 font-medium">Waktu habis atau pohon mati. Lingkungan masih dalam bahaya!</p>
-                      <button 
-                        onClick={() => window.location.reload()}
-                        className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-red-900/20"
-                      >
-                        Coba Lagi
-                      </button>
+                      {claimSubmitted?.mode === 'incomplete' && (
+                        <div className="mb-6 p-5 rounded-[2rem] bg-white/5 border border-white/10 text-left">
+                          <div className="text-[10px] font-black text-amber-300 uppercase tracking-widest">Form Data Diri</div>
+                          <div className="mt-1 text-xl font-black tracking-tight text-white">Terkirim</div>
+                          <div className="mt-2 text-white/80 font-bold text-sm leading-relaxed">Kode data kamu:</div>
+                          <div className="mt-3 px-4 py-3 rounded-2xl bg-white/10 border border-white/10 font-black tracking-widest text-[12px] text-white">
+                            {claimSubmitted.id}
+                          </div>
+                          <div className="mt-3 text-[11px] text-white/65 font-bold leading-relaxed">
+                            Selesaikan game sampai berhasil untuk mendapatkan kode klaim bibit gratis.
+                          </div>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => { setClaimMode('incomplete'); setClaimError(null); setClaimOpen(false); setClaimEducationOpen(true); }}
+                          className="w-full py-4 bg-white/10 hover:bg-white/15 text-white rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95 border border-white/10"
+                        >
+                          Isi Formulir
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => window.location.reload()}
+                          className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-red-900/20"
+                        >
+                          Coba Lagi
+                        </button>
+                      </div>
                     </motion.div>
                   </motion.div>
                 )}
@@ -9138,7 +9962,7 @@ const TreeGame: React.FC = () => {
                 </div>
               </div>
 
-              {claimSubmitted && (
+              {claimSubmitted?.mode === 'success' && (
                 <div className="mb-8 p-6 rounded-3xl bg-slate-900 text-white text-left border border-emerald-500/25 shadow-[0_30px_90px_rgba(16,185,129,0.12)]">
                   <div className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">Klaim Bibit Gratis</div>
                   <div className="mt-1 flex items-center justify-between gap-4">
@@ -9163,7 +9987,7 @@ const TreeGame: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
                   type="button"
-                  onClick={() => { setClaimError(null); setClaimOpen(true); }}
+                  onClick={() => { setClaimMode('success'); setClaimError(null); setClaimOpen(false); setClaimEducationOpen(true); }}
                   className="bg-emerald-50 px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-emerald-100 transition-all shadow-md active:scale-95 border border-emerald-200"
                 >
                   Klaim Bibit Gratis
@@ -9176,7 +10000,172 @@ const TreeGame: React.FC = () => {
         </AnimatePresence>
 
         <AnimatePresence>
-          {claimOpen && phase === 'finished' && selectedRegion && selectedSeedling && (
+          {claimEducationOpen && (phase === 'finished' || phase === 'gameover') && selectedRegion && selectedSeedling && (
+            <motion.div
+              className="fixed inset-0 z-[295] bg-slate-950/85 backdrop-blur-xl flex items-center justify-center p-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className={`w-full max-w-3xl rounded-[3rem] shadow-2xl overflow-hidden relative border ${
+                  claimMode === 'success'
+                    ? 'bg-slate-950/94 border-emerald-300/20 shadow-[0_40px_140px_rgba(16,185,129,0.20)]'
+                    : 'bg-slate-950/94 border-amber-300/20 shadow-[0_40px_140px_rgba(245,158,11,0.18)]'
+                }`}
+                initial={{ scale: 0.96, y: 12 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.98, y: 10 }}
+              >
+                <div
+                  className="absolute inset-0 pointer-events-none opacity-95"
+                  style={{
+                    backgroundImage:
+                      claimMode === 'success'
+                        ? 'radial-gradient(circle at 12% 14%, rgba(16,185,129,0.34) 0 240px, transparent 560px), radial-gradient(circle at 88% 18%, rgba(56,189,248,0.28) 0 220px, transparent 560px), radial-gradient(circle at 50% 110%, rgba(253,224,71,0.14) 0 280px, transparent 620px), linear-gradient(145deg, rgba(3,20,27,0.98) 0%, rgba(8,36,33,0.96) 38%, rgba(14,23,42,0.94) 100%)'
+                        : 'radial-gradient(circle at 12% 14%, rgba(245,158,11,0.30) 0 240px, transparent 560px), radial-gradient(circle at 88% 18%, rgba(244,63,94,0.18) 0 220px, transparent 560px), radial-gradient(circle at 50% 110%, rgba(59,130,246,0.16) 0 280px, transparent 620px), linear-gradient(145deg, rgba(28,15,6,0.98) 0%, rgba(36,20,7,0.96) 40%, rgba(14,23,42,0.94) 100%)',
+                  }}
+                />
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+
+                <div className="relative p-8 sm:p-10">
+                  <div className="flex items-start justify-between gap-5">
+                    <div>
+                      <div
+                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.25em] border ${
+                          claimMode === 'success'
+                            ? 'bg-emerald-500/12 border-emerald-400/20 text-emerald-200'
+                            : 'bg-amber-500/12 border-amber-400/20 text-amber-200'
+                        }`}
+                      >
+                        <Sparkles size={12} />
+                        {claimMode === 'success' ? 'Sosialisasi Klaim Bibit' : 'Edukasi Penanaman'}
+                      </div>
+                      <div className="mt-4 text-3xl sm:text-4xl font-black text-white tracking-tighter leading-tight">
+                        {claimMode === 'success' ? 'Sebelum Isi Form, Pahami Alur Pengambilan Bibit' : 'Sebelum Isi Form, Kenali Manfaat Menanam Pohon'}
+                      </div>
+                      <div className="mt-3 text-white/72 font-bold leading-relaxed max-w-2xl">
+                        {claimMode === 'success'
+                          ? `Bibit ${selectedSeedling.name} untuk wilayah ${selectedRegion.name} bisa diambil setelah proses verifikasi. Data diri membantu petugas menyiapkan distribusi bibit yang tepat sasaran.`
+                          : `Walau misi belum selesai, data yang kamu isi tetap berguna untuk pendataan minat penghijauan di ${selectedRegion.name}. Setelah paham edukasinya, kamu bisa lanjut isi formulir.`}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setClaimEducationOpen(false); setClaimError(null); }}
+                      className="w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/80 active:scale-95 transition-transform"
+                      aria-label="Tutup"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  <div
+                    className={`mt-6 rounded-[2.4rem] border p-5 sm:p-6 ${
+                      claimMode === 'success'
+                        ? 'bg-gradient-to-r from-emerald-400/14 via-teal-300/10 to-sky-400/12 border-emerald-200/15'
+                        : 'bg-gradient-to-r from-amber-400/14 via-orange-300/10 to-rose-400/12 border-amber-200/15'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div>
+                        <div className="text-[10px] font-black text-white/55 uppercase tracking-widest">Highlight Program</div>
+                        <div className="mt-1 text-white font-black text-xl tracking-tight">
+                          {claimMode === 'success' ? 'Klaim bibit diproses setelah verifikasi data' : 'Pendataan minat tanam tetap bernilai meski misi belum selesai'}
+                        </div>
+                        <div className="mt-2 text-white/75 font-bold text-sm leading-relaxed max-w-xl">
+                          {claimMode === 'success'
+                            ? 'Isi form dengan data yang valid agar distribusi bibit lebih cepat, tepat lokasi, dan mudah diverifikasi oleh petugas.'
+                            : 'Data minat penghijauan membantu pemetaan kebutuhan bibit di wilayahmu. Kamu tetap bisa lanjut, lalu coba lagi untuk mendapatkan klaim gratis.'}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`px-3 py-2 rounded-2xl border text-[10px] font-black uppercase tracking-widest ${
+                          claimMode === 'success'
+                            ? 'bg-emerald-500/14 border-emerald-300/20 text-emerald-100'
+                            : 'bg-amber-500/14 border-amber-300/20 text-amber-100'
+                        }`}>
+                          {selectedSeedling.name}
+                        </div>
+                        <div className="px-3 py-2 rounded-2xl bg-white/8 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/80">
+                          {selectedRegion.name}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {(claimMode === 'success'
+                      ? [
+                          { title: '1. Verifikasi Data', desc: 'Nama, nomor HP, dan alamat dipakai untuk verifikasi klaim serta memastikan bibit diterima orang yang tepat.', tone: 'emerald' },
+                          { title: '2. Ambil di Dinas', desc: 'Setelah form dikirim, kamu akan mendapatkan kode klaim. Bawa KTP dan kode itu saat pengambilan di Dinas Kehutanan.', tone: 'sky' },
+                          { title: '3. Tanam & Rawat', desc: 'Bibit yang diambil sebaiknya ditanam di lokasi yang sudah kamu rencanakan, lalu dirawat rutin agar tumbuh optimal.', tone: 'amber' },
+                        ]
+                      : [
+                          { title: '1. Pohon Menyerap CO2', desc: 'Satu pohon yang tumbuh baik membantu menyerap karbon dan memperbaiki kualitas udara di sekitar lingkungan.', tone: 'emerald' },
+                          { title: '2. Akar Menahan Air', desc: 'Pohon membantu tanah menyimpan air lebih lama, mengurangi risiko kekeringan dan limpasan saat hujan deras.', tone: 'sky' },
+                          { title: '3. Lanjutkan Sampai Berhasil', desc: 'Selesaikan misi sampai berhasil agar kamu mendapat kode klaim bibit gratis, bukan hanya data minat penanaman.', tone: 'amber' },
+                        ]
+                    ).map((item, idx) => (
+                      <div
+                        key={idx}
+                        className={`rounded-[2rem] border p-5 relative overflow-hidden ${
+                          item.tone === 'emerald'
+                            ? 'bg-gradient-to-br from-emerald-400/18 via-emerald-500/8 to-transparent border-emerald-300/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]'
+                            : item.tone === 'sky'
+                              ? 'bg-gradient-to-br from-sky-400/18 via-cyan-400/8 to-transparent border-sky-300/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]'
+                              : 'bg-gradient-to-br from-amber-400/18 via-orange-400/8 to-transparent border-amber-300/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]'
+                        }`}
+                      >
+                        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                        <div className="text-white font-black tracking-tight">{item.title}</div>
+                        <div className="mt-2 text-white/78 font-bold text-sm leading-relaxed">{item.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className={`mt-6 rounded-[2rem] border p-5 ${
+                    claimMode === 'success'
+                      ? 'bg-gradient-to-r from-slate-900/70 via-emerald-950/35 to-slate-900/70 border-emerald-300/12'
+                      : 'bg-gradient-to-r from-slate-900/70 via-amber-950/30 to-slate-900/70 border-amber-300/12'
+                  }`}>
+                    <div className="text-[10px] font-black text-white/55 uppercase tracking-widest">Pesan Singkat</div>
+                    <div className="mt-2 text-white/85 font-bold text-sm leading-relaxed">
+                      {claimMode === 'success'
+                        ? 'Program pembagian bibit bertujuan mendorong penanaman pohon yang benar, tepat lokasi, dan berkelanjutan. Isi data dengan benar agar proses distribusi lebih cepat.'
+                        : 'Penghijauan dimulai dari kesadaran. Walau belum selesai bermain, kamu tetap bisa berkontribusi dengan memahami manfaat pohon dan melanjutkan game sampai tuntas.'}
+                    </div>
+                  </div>
+
+                  <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => { setClaimEducationOpen(false); setClaimError(null); }}
+                      className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/90 font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform"
+                    >
+                      Nanti Saja
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setClaimEducationOpen(false); setClaimError(null); setClaimOpen(true); }}
+                      className={`px-6 py-3 rounded-2xl border text-white font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform inline-flex items-center justify-center gap-2 ${
+                        claimMode === 'success'
+                          ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 shadow-lg shadow-emerald-900/20'
+                          : 'bg-amber-600 hover:bg-amber-500 border-amber-500/25 shadow-lg shadow-amber-900/15'
+                      }`}
+                    >
+                      <Sparkles size={16} />
+                      Lanjut Isi Form
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {claimOpen && (phase === 'finished' || phase === 'gameover') && selectedRegion && selectedSeedling && (
             <motion.div
               className="fixed inset-0 z-[300] bg-slate-950/85 backdrop-blur-xl flex items-center justify-center p-6"
               initial={{ opacity: 0 }}
@@ -9184,17 +10173,51 @@ const TreeGame: React.FC = () => {
               exit={{ opacity: 0 }}
             >
               <motion.div
-                className="w-full max-w-2xl bg-slate-900/95 border border-white/10 rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+                className={`w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[88vh] relative border ${
+                  claimMode === 'success'
+                    ? 'bg-slate-950/92 border-emerald-300/18 shadow-[0_45px_150px_rgba(16,185,129,0.18)]'
+                    : 'bg-slate-950/92 border-amber-300/18 shadow-[0_45px_150px_rgba(245,158,11,0.16)]'
+                }`}
                 initial={{ scale: 0.96, y: 10 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.98, y: 10 }}
               >
-                <div className="p-8 border-b border-white/10 flex items-start justify-between gap-6">
-                  <div>
-                    <div className="text-[10px] font-black text-emerald-300 uppercase tracking-[0.25em]">Dinas Kehutanan</div>
-                    <div className="text-3xl font-black text-white tracking-tighter mt-1">Klaim Bibit Gratis</div>
-                    <div className="text-white/70 font-bold mt-2 leading-relaxed">
-                      Isi data diri untuk klaim bibit gratis. Setelah klik Kirim Klaim, sistem membuat kode klaim untuk pengambilan bibit di Dinas Kehutanan.
+                <div
+                  className="absolute inset-0 pointer-events-none opacity-95"
+                  style={{
+                    backgroundImage:
+                      claimMode === 'success'
+                        ? 'radial-gradient(circle at 14% 8%, rgba(16,185,129,0.28) 0 320px, transparent 640px), radial-gradient(circle at 88% 20%, rgba(56,189,248,0.20) 0 280px, transparent 620px), radial-gradient(circle at 55% 110%, rgba(250,204,21,0.12) 0 380px, transparent 720px), linear-gradient(145deg, rgba(2,6,23,0.92) 0%, rgba(5,24,23,0.94) 44%, rgba(15,23,42,0.96) 100%)'
+                        : 'radial-gradient(circle at 14% 8%, rgba(245,158,11,0.25) 0 320px, transparent 640px), radial-gradient(circle at 88% 20%, rgba(244,63,94,0.18) 0 280px, transparent 620px), radial-gradient(circle at 55% 110%, rgba(59,130,246,0.12) 0 380px, transparent 720px), linear-gradient(145deg, rgba(23,10,4,0.92) 0%, rgba(39,19,8,0.94) 44%, rgba(15,23,42,0.96) 100%)',
+                  }}
+                />
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+
+                <div className={`relative p-8 border-b flex items-start justify-between gap-6 ${
+                  claimMode === 'success' ? 'border-emerald-200/10' : 'border-amber-200/10'
+                }`}>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.25em] border ${
+                          claimMode === 'success'
+                            ? 'bg-emerald-500/12 border-emerald-400/20 text-emerald-200'
+                            : 'bg-amber-500/12 border-amber-400/20 text-amber-200'
+                        }`}
+                      >
+                        {claimMode === 'success' ? 'Dinas Kehutanan' : 'Data Diri'}
+                      </span>
+                      <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-widest">
+                        {selectedRegion.name}
+                      </span>
+                    </div>
+                    <div className="text-3xl font-black text-white tracking-tighter mt-3">
+                      {claimMode === 'success' ? 'Klaim Bibit Gratis' : 'Form Data Diri'}
+                    </div>
+                    <div className="text-white/78 font-bold mt-2 leading-relaxed max-w-2xl">
+                      {claimMode === 'success'
+                        ? 'Isi data diri untuk klaim bibit gratis. Setelah kirim, kamu mendapatkan kode klaim untuk pengambilan bibit.'
+                        : 'Kamu belum menyelesaikan misi. Isi data diri untuk pendataan. Untuk klaim bibit gratis, selesaikan game sampai berhasil.'}
                     </div>
                   </div>
                   <button
@@ -9207,153 +10230,291 @@ const TreeGame: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="overflow-y-auto">
-                  <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
+                <div className="relative flex-1 overflow-y-auto">
+                  <div className="p-7 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div className="lg:col-span-4">
+                      <div className={`rounded-[2.6rem] border p-6 ${
+                        claimMode === 'success'
+                          ? 'bg-gradient-to-b from-emerald-400/14 via-teal-400/8 to-slate-900/55 border-emerald-300/16 shadow-[inset_0_0_120px_rgba(16,185,129,0.14)]'
+                          : 'bg-gradient-to-b from-amber-400/14 via-orange-400/8 to-slate-900/55 border-amber-300/16 shadow-[inset_0_0_120px_rgba(245,158,11,0.12)]'
+                      }`}>
+                        <div className="text-[10px] font-black text-white/55 uppercase tracking-[0.25em]">Ringkasan</div>
+                        <div className="mt-4 space-y-3">
+                          <div className="rounded-3xl bg-black/20 border border-white/10 p-4 backdrop-blur-sm">
+                            <div className="text-[10px] font-black text-white/55 uppercase tracking-widest">Wilayah</div>
+                            <div className="text-white font-black tracking-tight mt-1">{selectedRegion.name}</div>
+                          </div>
+                          <div className="rounded-3xl bg-black/20 border border-white/10 p-4 backdrop-blur-sm">
+                            <div className="text-[10px] font-black text-white/55 uppercase tracking-widest">Jenis Bibit</div>
+                            <div className="text-white font-black tracking-tight mt-1">{selectedSeedling.name}</div>
+                          </div>
+                          <div className="rounded-3xl bg-black/20 border border-white/10 p-4 backdrop-blur-sm">
+                            <div className="text-[10px] font-black text-white/55 uppercase tracking-widest">Status</div>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <span
+                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                  claimMode === 'success'
+                                    ? 'bg-emerald-500/12 border-emerald-400/20 text-emerald-200'
+                                    : 'bg-amber-500/12 border-amber-400/20 text-amber-200'
+                                }`}
+                              >
+                                {claimMode === 'success' ? 'Berhasil' : 'Belum Selesai'}
+                              </span>
+                              <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-widest">
+                                {claimForm.quantity} bibit
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className={`mt-5 rounded-[2rem] border p-4 text-[11px] font-bold leading-relaxed ${
+                          claimMode === 'success'
+                            ? 'bg-emerald-950/25 border-emerald-300/12 text-white/75'
+                            : 'bg-amber-950/25 border-amber-300/12 text-white/75'
+                        }`}>
+                          {claimMode === 'success'
+                            ? 'Setelah terkirim, kamu bisa mengambil bibit di Dinas Kehutanan dengan membawa KTP & kode klaim.'
+                            : 'Form ini untuk pendataan. Selesaikan game untuk mendapatkan kode klaim bibit gratis.'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="lg:col-span-8">
                       {claimError && (
-                        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-400/20 text-red-100 text-[12px] font-bold">
+                        <div className="mb-4 p-4 rounded-[2rem] bg-red-500/10 border border-red-400/20 text-red-100 text-[12px] font-bold">
                           {claimError}
                         </div>
                       )}
-                    </div>
 
-                    <label className="block">
-                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Nama Lengkap *</div>
-                      <input
-                        value={claimForm.name}
-                        onChange={(e) => setClaimForm(f => ({ ...f, name: e.target.value }))}
-                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
-                        placeholder="Nama sesuai KTP"
-                      />
-                    </label>
+                      <div className={`rounded-[2.6rem] border p-6 ${
+                        claimMode === 'success'
+                          ? 'bg-gradient-to-br from-white/8 via-emerald-500/6 to-transparent border-emerald-300/12'
+                          : 'bg-gradient-to-br from-white/8 via-amber-500/6 to-transparent border-amber-300/12'
+                      }`}>
+                        <div className="text-[10px] font-black text-white/55 uppercase tracking-[0.25em]">Data Pribadi</div>
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <label className="block">
+                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Nama Lengkap *</div>
+                            <input
+                              value={claimForm.name}
+                              onChange={(e) => setClaimForm(f => ({ ...f, name: e.target.value }))}
+                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
+                                claimMode === 'success'
+                                  ? 'bg-emerald-950/16 border-emerald-200/12 focus:border-emerald-300/45 focus:ring-2 focus:ring-emerald-300/15'
+                                  : 'bg-amber-950/16 border-amber-200/12 focus:border-amber-300/45 focus:ring-2 focus:ring-amber-300/15'
+                              }`}
+                              placeholder="Nama sesuai KTP"
+                            />
+                          </label>
 
-                    <label className="block">
-                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Nomor HP *</div>
-                      <input
-                        value={claimForm.phone}
-                        onChange={(e) => setClaimForm(f => ({ ...f, phone: e.target.value }))}
-                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
-                        placeholder="08xxxxxxxxxx"
-                        inputMode="tel"
-                      />
-                    </label>
-
-                    <label className="block">
-                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Email</div>
-                      <input
-                        value={claimForm.email}
-                        onChange={(e) => setClaimForm(f => ({ ...f, email: e.target.value }))}
-                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
-                        placeholder="nama@email.com"
-                        inputMode="email"
-                      />
-                    </label>
-
-                    <label className="block">
-                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">NIK</div>
-                      <input
-                        value={claimForm.nik}
-                        onChange={(e) => setClaimForm(f => ({ ...f, nik: e.target.value }))}
-                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
-                        placeholder="16 digit"
-                        inputMode="numeric"
-                      />
-                    </label>
-
-                    <label className="block md:col-span-2">
-                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Alamat Lengkap *</div>
-                      <input
-                        value={claimForm.address}
-                        onChange={(e) => setClaimForm(f => ({ ...f, address: e.target.value }))}
-                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
-                        placeholder="Jalan, RT/RW, No Rumah"
-                      />
-                    </label>
-
-                    <label className="block">
-                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Kecamatan *</div>
-                      <input
-                        value={claimForm.kecamatan}
-                        onChange={(e) => setClaimForm(f => ({ ...f, kecamatan: e.target.value }))}
-                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
-                        placeholder="Kecamatan"
-                      />
-                    </label>
-
-                    <label className="block">
-                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Kelurahan/Desa *</div>
-                      <input
-                        value={claimForm.kelurahan}
-                        onChange={(e) => setClaimForm(f => ({ ...f, kelurahan: e.target.value }))}
-                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
-                        placeholder="Kelurahan/Desa"
-                      />
-                    </label>
-
-                    <label className="block">
-                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Jumlah Bibit *</div>
-                      <select
-                        value={claimForm.quantity}
-                        onChange={(e) => setClaimForm(f => ({ ...f, quantity: Number(e.target.value) }))}
-                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
-                      >
-                        {[1, 2, 3, 4, 5].map(n => (
-                          <option key={n} value={n}>{n} bibit</option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="block">
-                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Jenis Bibit</div>
-                      <input
-                        value={selectedSeedling.name}
-                        readOnly
-                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white/80 font-black"
-                      />
-                    </label>
-
-                    <label className="block md:col-span-2">
-                      <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Lokasi Penanaman (opsional)</div>
-                      <input
-                        value={claimForm.plantingLocation}
-                        onChange={(e) => setClaimForm(f => ({ ...f, plantingLocation: e.target.value }))}
-                        className="mt-2 w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold outline-none focus:border-emerald-400/40"
-                        placeholder="Contoh: halaman rumah / RW / sekolah"
-                      />
-                    </label>
-
-                    <div className="md:col-span-2">
-                      <label className="flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
-                        <input
-                          type="checkbox"
-                          checked={claimForm.consent}
-                          onChange={(e) => setClaimForm(f => ({ ...f, consent: e.target.checked }))}
-                          className="mt-1"
-                        />
-                        <div className="min-w-0">
-                          <div className="text-white font-black text-[12px]">Saya bersedia dihubungi untuk verifikasi klaim bibit.</div>
-                          <div className="text-white/60 font-bold text-[11px] mt-1">Pastikan data benar agar klaim tidak ditolak.</div>
+                          <label className="block">
+                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">NIK</div>
+                            <input
+                              value={claimForm.nik}
+                              onChange={(e) => setClaimForm(f => ({ ...f, nik: e.target.value }))}
+                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
+                                claimMode === 'success'
+                                  ? 'bg-emerald-950/16 border-emerald-200/12 focus:border-emerald-300/45 focus:ring-2 focus:ring-emerald-300/15'
+                                  : 'bg-amber-950/16 border-amber-200/12 focus:border-amber-300/45 focus:ring-2 focus:ring-amber-300/15'
+                              }`}
+                              placeholder="16 digit"
+                              inputMode="numeric"
+                            />
+                          </label>
                         </div>
-                      </label>
+                      </div>
+
+                      <div className={`mt-5 rounded-[2.6rem] border p-6 ${
+                        claimMode === 'success'
+                          ? 'bg-gradient-to-br from-white/8 via-sky-500/6 to-transparent border-sky-300/12'
+                          : 'bg-gradient-to-br from-white/8 via-rose-500/6 to-transparent border-rose-300/12'
+                      }`}>
+                        <div className="text-[10px] font-black text-white/55 uppercase tracking-[0.25em]">Kontak</div>
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <label className="block">
+                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Nomor HP *</div>
+                            <input
+                              value={claimForm.phone}
+                              onChange={(e) => setClaimForm(f => ({ ...f, phone: e.target.value }))}
+                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
+                                claimMode === 'success'
+                                  ? 'bg-sky-950/16 border-sky-200/12 focus:border-sky-300/45 focus:ring-2 focus:ring-sky-300/15'
+                                  : 'bg-rose-950/16 border-rose-200/12 focus:border-rose-300/45 focus:ring-2 focus:ring-rose-300/15'
+                              }`}
+                              placeholder="08xxxxxxxxxx"
+                              inputMode="tel"
+                            />
+                          </label>
+
+                          <label className="block">
+                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Email</div>
+                            <input
+                              value={claimForm.email}
+                              onChange={(e) => setClaimForm(f => ({ ...f, email: e.target.value }))}
+                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
+                                claimMode === 'success'
+                                  ? 'bg-sky-950/16 border-sky-200/12 focus:border-sky-300/45 focus:ring-2 focus:ring-sky-300/15'
+                                  : 'bg-rose-950/16 border-rose-200/12 focus:border-rose-300/45 focus:ring-2 focus:ring-rose-300/15'
+                              }`}
+                              placeholder="nama@email.com"
+                              inputMode="email"
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className={`mt-5 rounded-[2.6rem] border p-6 ${
+                        claimMode === 'success'
+                          ? 'bg-gradient-to-br from-white/8 via-teal-500/6 to-transparent border-teal-300/12'
+                          : 'bg-gradient-to-br from-white/8 via-orange-500/6 to-transparent border-orange-300/12'
+                      }`}>
+                        <div className="text-[10px] font-black text-white/55 uppercase tracking-[0.25em]">Alamat</div>
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <label className="block md:col-span-2">
+                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Alamat Lengkap *</div>
+                            <input
+                              value={claimForm.address}
+                              onChange={(e) => setClaimForm(f => ({ ...f, address: e.target.value }))}
+                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
+                                claimMode === 'success'
+                                  ? 'bg-teal-950/16 border-teal-200/12 focus:border-teal-300/45 focus:ring-2 focus:ring-teal-300/15'
+                                  : 'bg-orange-950/16 border-orange-200/12 focus:border-orange-300/45 focus:ring-2 focus:ring-orange-300/15'
+                              }`}
+                              placeholder="Jalan, RT/RW, No Rumah"
+                            />
+                          </label>
+
+                          <label className="block">
+                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Kecamatan *</div>
+                            <input
+                              value={claimForm.kecamatan}
+                              onChange={(e) => setClaimForm(f => ({ ...f, kecamatan: e.target.value }))}
+                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
+                                claimMode === 'success'
+                                  ? 'bg-teal-950/16 border-teal-200/12 focus:border-teal-300/45 focus:ring-2 focus:ring-teal-300/15'
+                                  : 'bg-orange-950/16 border-orange-200/12 focus:border-orange-300/45 focus:ring-2 focus:ring-orange-300/15'
+                              }`}
+                              placeholder="Kecamatan"
+                            />
+                          </label>
+
+                          <label className="block">
+                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Kelurahan/Desa *</div>
+                            <input
+                              value={claimForm.kelurahan}
+                              onChange={(e) => setClaimForm(f => ({ ...f, kelurahan: e.target.value }))}
+                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
+                                claimMode === 'success'
+                                  ? 'bg-teal-950/16 border-teal-200/12 focus:border-teal-300/45 focus:ring-2 focus:ring-teal-300/15'
+                                  : 'bg-orange-950/16 border-orange-200/12 focus:border-orange-300/45 focus:ring-2 focus:ring-orange-300/15'
+                              }`}
+                              placeholder="Kelurahan/Desa"
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className={`mt-5 rounded-[2.6rem] border p-6 ${
+                        claimMode === 'success'
+                          ? 'bg-gradient-to-br from-white/8 via-emerald-500/6 to-transparent border-emerald-300/12'
+                          : 'bg-gradient-to-br from-white/8 via-amber-500/6 to-transparent border-amber-300/12'
+                      }`}>
+                        <div className="text-[10px] font-black text-white/55 uppercase tracking-[0.25em]">
+                          {claimMode === 'success' ? 'Detail Klaim' : 'Detail Formulir'}
+                        </div>
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <label className="block">
+                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Jumlah Bibit *</div>
+                            <select
+                              value={claimForm.quantity}
+                              onChange={(e) => setClaimForm(f => ({ ...f, quantity: Number(e.target.value) }))}
+                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
+                                claimMode === 'success'
+                                  ? 'bg-emerald-950/16 border-emerald-200/12 focus:border-emerald-300/45 focus:ring-2 focus:ring-emerald-300/15'
+                                  : 'bg-amber-950/16 border-amber-200/12 focus:border-amber-300/45 focus:ring-2 focus:ring-amber-300/15'
+                              }`}
+                            >
+                              {[1, 2, 3, 4, 5].map(n => (
+                                <option key={n} value={n}>{n} bibit</option>
+                              ))}
+                            </select>
+                          </label>
+
+                          <label className="block">
+                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Jenis Bibit</div>
+                            <input
+                              value={selectedSeedling.name}
+                              readOnly
+                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white/85 font-black ${
+                                claimMode === 'success'
+                                  ? 'bg-emerald-950/14 border-emerald-200/12'
+                                  : 'bg-amber-950/14 border-amber-200/12'
+                              }`}
+                            />
+                          </label>
+
+                          <label className="block md:col-span-2">
+                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Lokasi Penanaman (opsional)</div>
+                            <input
+                              value={claimForm.plantingLocation}
+                              onChange={(e) => setClaimForm(f => ({ ...f, plantingLocation: e.target.value }))}
+                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
+                                claimMode === 'success'
+                                  ? 'bg-emerald-950/16 border-emerald-200/12 focus:border-emerald-300/45 focus:ring-2 focus:ring-emerald-300/15'
+                                  : 'bg-amber-950/16 border-amber-200/12 focus:border-amber-300/45 focus:ring-2 focus:ring-amber-300/15'
+                              }`}
+                              placeholder="Contoh: halaman rumah / RW / sekolah"
+                            />
+                          </label>
+                        </div>
+
+                        <div className="mt-5">
+                          <label className={`flex items-start gap-3 p-4 rounded-[2rem] border ${
+                            claimMode === 'success'
+                              ? 'bg-emerald-950/18 border-emerald-200/12'
+                              : 'bg-amber-950/18 border-amber-200/12'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={claimForm.consent}
+                              onChange={(e) => setClaimForm(f => ({ ...f, consent: e.target.checked }))}
+                              className="mt-1 accent-emerald-500"
+                            />
+                            <div className="min-w-0">
+                              <div className="text-white font-black text-[12px]">Saya bersedia dihubungi untuk verifikasi.</div>
+                              <div className="text-white/60 font-bold text-[11px] mt-1 leading-relaxed">
+                                Pastikan data benar agar proses verifikasi berjalan lancar.
+                              </div>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-6 border-t border-white/10 flex flex-col sm:flex-row gap-3 justify-end">
+                <div className={`relative p-6 border-t backdrop-blur-xl flex flex-col sm:flex-row gap-3 justify-end ${
+                  claimMode === 'success'
+                    ? 'border-emerald-200/10 bg-gradient-to-r from-slate-950/62 via-emerald-950/20 to-slate-950/62'
+                    : 'border-amber-200/10 bg-gradient-to-r from-slate-950/62 via-amber-950/20 to-slate-950/62'
+                }`}>
                   <button
                     type="button"
                     onClick={() => { setClaimOpen(false); setClaimError(null); }}
                     className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/90 font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform"
                   >
-                    Nanti
+                    Tutup
                   </button>
                   <button
                     type="button"
                     onClick={submitClaim}
-                    className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/25 text-white font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform inline-flex items-center justify-center gap-2"
+                    className={`px-6 py-3 rounded-2xl border text-white font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform inline-flex items-center justify-center gap-2 ${
+                      claimMode === 'success'
+                        ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 shadow-lg shadow-emerald-900/20'
+                        : 'bg-amber-600 hover:bg-amber-500 border-amber-500/25 shadow-lg shadow-amber-900/15'
+                    }`}
                   >
                     <Sprout size={16} />
-                    Kirim Formulir
+                    {claimMode === 'success' ? 'Kirim Klaim' : 'Kirim Formulir'}
                   </button>
                 </div>
               </motion.div>
