@@ -1752,6 +1752,11 @@ EnvMascotCard.displayName = 'EnvMascotCard';
 const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health, moisture, yPos }: { size: number, color: string, stage: number, actionProgress: number, icon?: React.ElementType, health: number, moisture: number, yPos: number }) => {
   const health01 = Math.max(0, Math.min(1, health / 100));
   const moisture01 = Math.max(0, Math.min(1, moisture / 100));
+  const swayR = (() => {
+    const x = Math.sin((yPos * 0.17 + size * 0.031) * 999.123) * 10000;
+    return x - Math.floor(x);
+  })();
+  const swayDuration = 4 + swayR * 2;
   const matureScale = stage === 4 ? 0.9 : stage === 5 ? 1.15 : 1.3;
   const canopyWidth = stage === 4 ? size * 0.9 : stage === 5 ? size * 1.02 : size * 1.14;
   const canopyHeight = stage === 4 ? size * 0.72 : stage === 5 ? size * 0.82 : size * 0.92;
@@ -1771,7 +1776,7 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
         skewX: stage >= 4 ? [-0.4, 0.4, -0.4] : [0, 0, 0]
       }}
       transition={{ 
-        duration: 4 + Math.random() * 2, 
+        duration: swayDuration,
         repeat: Infinity, 
         ease: "easeInOut" 
       }}
@@ -1804,8 +1809,14 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
                   : 'radial-gradient(circle at 40% 35%, rgba(255,255,255,0.12) 0 24px, transparent 48px)',
           }}
         />
-        {/* Soil texture detail */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/dark-matter.png")' }} />
+        <div
+          className="absolute inset-0 opacity-25 pointer-events-none"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(35deg, rgba(255,255,255,0.05) 0 2px, rgba(0,0,0,0) 2px 12px), repeating-linear-gradient(135deg, rgba(0,0,0,0.14) 0 1px, rgba(0,0,0,0) 1px 10px), radial-gradient(circle at 40% 55%, rgba(0,0,0,0.20) 0 26px, transparent 62px)',
+            mixBlendMode: 'overlay',
+          }}
+        />
         
         <motion.div
           initial={false}
@@ -10008,7 +10019,7 @@ const TreeGame: React.FC = () => {
               exit={{ opacity: 0 }}
             >
               <motion.div
-                className={`w-full max-w-3xl rounded-[3rem] shadow-2xl overflow-hidden relative border ${
+                className={`w-full max-w-3xl rounded-[3rem] shadow-2xl overflow-hidden relative border max-h-[88vh] flex flex-col ${
                   claimMode === 'success'
                     ? 'bg-slate-950/94 border-emerald-300/20 shadow-[0_40px_140px_rgba(16,185,129,0.20)]'
                     : 'bg-slate-950/94 border-amber-300/20 shadow-[0_40px_140px_rgba(245,158,11,0.18)]'
@@ -10028,7 +10039,7 @@ const TreeGame: React.FC = () => {
                 />
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
 
-                <div className="relative p-8 sm:p-10">
+                <div className="relative flex-1 overflow-y-auto p-8 sm:p-10">
                   <div className="flex items-start justify-between gap-5">
                     <div>
                       <div
@@ -10136,28 +10147,28 @@ const TreeGame: React.FC = () => {
                         : 'Penghijauan dimulai dari kesadaran. Walau belum selesai bermain, kamu tetap bisa berkontribusi dengan memahami manfaat pohon dan melanjutkan game sampai tuntas.'}
                     </div>
                   </div>
+                </div>
 
-                  <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-end">
-                    <button
-                      type="button"
-                      onClick={() => { setClaimEducationOpen(false); setClaimError(null); }}
-                      className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/90 font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform"
-                    >
-                      Nanti Saja
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setClaimEducationOpen(false); setClaimError(null); setClaimOpen(true); }}
-                      className={`px-6 py-3 rounded-2xl border text-white font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform inline-flex items-center justify-center gap-2 ${
-                        claimMode === 'success'
-                          ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 shadow-lg shadow-emerald-900/20'
-                          : 'bg-amber-600 hover:bg-amber-500 border-amber-500/25 shadow-lg shadow-amber-900/15'
-                      }`}
-                    >
-                      <Sparkles size={16} />
-                      Lanjut Isi Form
-                    </button>
-                  </div>
+                <div className="relative p-6 border-t border-white/10 bg-black/20 backdrop-blur-xl flex flex-col sm:flex-row gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => { setClaimEducationOpen(false); setClaimError(null); }}
+                    className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/90 font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform"
+                  >
+                    Nanti Saja
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setClaimEducationOpen(false); setClaimError(null); setClaimOpen(true); }}
+                    className={`px-6 py-3 rounded-2xl border text-white font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform inline-flex items-center justify-center gap-2 ${
+                      claimMode === 'success'
+                        ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 shadow-lg shadow-emerald-900/20'
+                        : 'bg-amber-600 hover:bg-amber-500 border-amber-500/25 shadow-lg shadow-amber-900/15'
+                    }`}
+                  >
+                    <Sparkles size={16} />
+                    Lanjut Isi Form
+                  </button>
                 </div>
               </motion.div>
             </motion.div>
