@@ -2341,22 +2341,23 @@ const CharacterActionFX = ({ actionId, accent, toolIcon: ToolIcon }: { actionId:
     <div className="absolute inset-0 pointer-events-none">
       {(isSoil || isFertilizer) && (
         <div className="absolute left-6 top-10">
-          {[...Array(10)].map((_, i) => (
+          {[...Array(isFertilizer ? 14 : 10)].map((_, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
               animate={{
                 opacity: [0, 1, 0],
-                scale: [0.6, 1, 0.7],
-                x: [-4 + (i % 5) * 3, -12 + (i % 5) * 6],
-                y: [0, -16 - (i % 4) * 6],
+                scale: isFertilizer ? [0.45, 0.95, 0.55] : [0.6, 1, 0.7],
+                x: isFertilizer ? [-2 + (i % 4) * 5, -16 + (i % 4) * 10] : [-4 + (i % 5) * 3, -12 + (i % 5) * 6],
+                y: isFertilizer ? [0, -10 - (i % 5) * 4, -2] : [0, -16 - (i % 4) * 6],
+                rotate: isFertilizer ? [-40, 20, -12] : 0,
               }}
-              transition={{ duration: 0.55 + (i % 4) * 0.05, delay: 0.02 * i }}
+              transition={{ duration: (isFertilizer ? 0.68 : 0.55) + (i % 4) * 0.05, delay: 0.02 * i }}
               className="absolute rounded-full"
               style={{
-                width: 5 + (i % 3),
-                height: 5 + (i % 3),
-                backgroundColor: isFertilizer ? '#111827' : '#5d4037',
+                width: isFertilizer ? 2 + (i % 2) : 5 + (i % 3),
+                height: isFertilizer ? 2 + (i % 2) : 5 + (i % 3),
+                backgroundColor: isFertilizer ? (i % 3 === 0 ? '#84cc16' : i % 3 === 1 ? '#65a30d' : '#111827') : '#5d4037',
                 filter: 'blur(0.2px)',
               }}
             />
@@ -2365,15 +2366,27 @@ const CharacterActionFX = ({ actionId, accent, toolIcon: ToolIcon }: { actionId:
       )}
 
       {isPlant && (
-        <motion.div
-          initial={{ opacity: 0, y: -6, scale: 0.9 }}
-          animate={{ opacity: 1, y: [ -6, 2, 0 ], scale: [0.9, 1, 1] }}
-          transition={{ duration: 0.7 }}
-          className="absolute left-7 top-4"
-          style={{ color: accent }}
-        >
-          {ToolIcon ? <ToolIcon size={18} /> : <Sprout size={18} />}
-        </motion.div>
+        <div className="absolute left-5 top-2">
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.88 }}
+            animate={{ opacity: 1, y: [-8, 2, 6, 3], scale: [0.9, 1.02, 0.94, 0.98], rotate: [0, -6, 4, 0] }}
+            transition={{ duration: 0.9, ease: 'easeInOut' }}
+            className="relative"
+            style={{ color: accent }}
+          >
+            {ToolIcon ? <ToolIcon size={18} /> : <Sprout size={18} />}
+          </motion.div>
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full bg-emerald-300/80"
+              initial={{ opacity: 0, x: 10, y: 18, scale: 0.6 }}
+              animate={{ opacity: [0, 0.8, 0], x: [10, 4 - i * 3, -2 - i], y: [18, 12 - i * 2, 9 - i], scale: [0.6, 1, 0.7] }}
+              transition={{ duration: 0.72, delay: 0.08 * i, repeat: Infinity, repeatDelay: 0.22 }}
+              style={{ width: 3 + i, height: 3 + i }}
+            />
+          ))}
+        </div>
       )}
 
       {isWater && (
@@ -2554,16 +2567,29 @@ const HeldTool = ({ actionId, accent, icon: Icon, actionProgress }: { actionId: 
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: [0.95, 1, 0.98], rotate: [-8, 10, -6] }}
-        transition={{ repeat: Infinity, duration: 0.55 }}
+        animate={{ opacity: 1, scale: [0.94, 1.02, 0.96], rotate: [-18, 18, -10], y: [0, 2, -1, 0] }}
+        transition={{ repeat: Infinity, duration: 0.72, ease: 'easeInOut' }}
         className="relative w-8 h-8"
       >
-        <div className="absolute left-1 top-1 w-6 h-7 bg-[#f59e0b]/30 border border-black/10 rounded-2xl shadow-md" />
+        <div className="absolute left-1 top-2 w-6 h-6 bg-[#f59e0b]/30 border border-black/10 rounded-[1.1rem] shadow-md" />
         <div className="absolute left-2 top-3 w-4 h-2 bg-white/40 rounded-full" />
-        <div className="absolute right-0 top-5 w-3 h-3 bg-[#9ca3af] rounded-xl shadow-md border border-black/10" />
-        <div className="absolute right-0 top-5 w-3 h-3 flex items-center justify-center text-[#111827]">
+        <div className="absolute right-0 top-4 w-3 h-4 bg-[#9ca3af] rounded-xl shadow-md border border-black/10" />
+        <div className="absolute right-0 top-4 w-3 h-4 flex flex-col items-center justify-center gap-0.5 text-[#111827]">
           <div className="w-1 h-1 bg-[#111827] rounded-full" />
+          <div className="w-1 h-1 bg-[#65a30d] rounded-full" />
         </div>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full"
+            initial={{ opacity: 0, x: 18, y: 18, scale: 0.5 }}
+            animate={{ opacity: [0, 0.9, 0], x: [18, 14 - i * 2, 9 - i * 3], y: [18, 13 + i, 22 + i * 2], scale: [0.5, 0.9, 0.55] }}
+            transition={{ duration: 0.7, delay: 0.05 * i, repeat: Infinity, repeatDelay: 0.15 }}
+            style={{ width: 2 + (i % 2), height: 2 + (i % 2), backgroundColor: i % 2 === 0 ? '#84cc16' : '#111827' }}
+          />
+        ))}
+        <div className="absolute left-0 top-5 w-4 h-1 bg-black/10 rounded-full blur-[0.3px]" />
+        <div className="absolute left-2 top-7 w-3 h-1 bg-black/10 rounded-full blur-[0.2px]" />
       </motion.div>
     );
   }
@@ -2573,20 +2599,25 @@ const HeldTool = ({ actionId, accent, icon: Icon, actionProgress }: { actionId: 
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: [0.98, 1.02, 1] }}
-        transition={{ repeat: Infinity, duration: 0.9, ease: 'easeInOut' }}
+        animate={{ opacity: 1, scale: [0.98, 1.02, 1], rotate: [-4, 3, 0] }}
+        transition={{ repeat: Infinity, duration: 0.95, ease: 'easeInOut' }}
         className="relative w-8 h-8"
       >
         <div className="absolute left-1/2 -translate-x-1/2 bottom-1 w-6 h-2 rounded-full bg-black/10 blur-[0.2px]" />
         <div className="absolute left-1/2 -translate-x-1/2 bottom-1.5 w-5 h-2 rounded-full bg-[#5d4037]/25 border border-black/10" />
         <motion.div
-          animate={{ y: -2 + p01 * 10, rotate: p01 > 0.7 ? [0, 6, 0] : 0, scale: 1 - p01 * 0.12 }}
-          transition={{ type: 'spring', damping: 18, stiffness: 260 }}
+          animate={{ y: -4 + p01 * 12, rotate: p01 > 0.42 ? [0, -10, 4, 0] : 0, scale: [1, 1.04, 1 - p01 * 0.14, 1 - p01 * 0.1] }}
+          transition={{ type: 'spring', damping: 16, stiffness: 240 }}
           className="absolute left-1/2 -translate-x-1/2 top-0"
           style={{ color: accent }}
         >
           {Icon ? <Icon size={20} /> : <Sprout size={20} />}
         </motion.div>
+        <motion.div
+          className="absolute left-1/2 -translate-x-1/2 bottom-2 w-4 h-2 rounded-full bg-[#3f6212]/20"
+          animate={{ scaleX: [0.8, 1.12, 0.92], opacity: [0.2, 0.5, 0.25] }}
+          transition={{ repeat: Infinity, duration: 0.9, ease: 'easeInOut' }}
+        />
         <AnimatePresence>
           {plantTick > 0 && (
             <motion.div
@@ -2687,16 +2718,50 @@ const HeldTool = ({ actionId, accent, icon: Icon, actionProgress }: { actionId: 
   );
 };
 
-const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, actionProgress, direction, skin }: { isWalking: boolean, actionId: string | null, toolIcon?: React.ElementType, accent: string, actionProgress?: number, direction: 'left' | 'right', skin?: string | null }) => {
+const PreparationLoadout = ({ accent, isWalking }: { accent: string, isWalking: boolean }) => {
+  return (
+    <>
+      <motion.div
+        className="absolute -left-7 top-6 z-0"
+        animate={{ rotate: isWalking ? [-10, -4, -10] : [-8, -5, -8], y: isWalking ? [0, -1, 0] : [0, 0.6, 0] }}
+        transition={{ repeat: Infinity, duration: isWalking ? 0.6 : 2.2, ease: 'easeInOut' }}
+      >
+        <div className="relative w-4 h-20">
+          <div className="absolute left-1/2 top-2 -translate-x-1/2 w-1.5 h-14 rounded-full bg-[#8b5a2b] shadow-md" />
+          <div className="absolute left-1/2 top-0 -translate-x-1/2 w-5 h-5 rounded-t-[0.9rem] rounded-b-[0.35rem] bg-slate-300 border border-slate-500 shadow-lg" />
+          <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-6 h-2 rounded-full bg-black/15 blur-sm" />
+        </div>
+      </motion.div>
+      <motion.div
+        className="absolute -right-10 top-8 z-30"
+        animate={{ rotate: isWalking ? [4, 10, 4] : [6, 8, 6], y: isWalking ? [0, -2, 0] : [0, -1, 0] }}
+        transition={{ repeat: Infinity, duration: isWalking ? 0.65 : 1.8, ease: 'easeInOut' }}
+      >
+        <div className="relative w-10 h-10 rounded-[1rem] border border-black/10 shadow-xl backdrop-blur-md bg-white/80 flex items-center justify-center">
+          <div className="absolute inset-1 rounded-[0.85rem] border border-white/35 bg-[linear-gradient(180deg,rgba(146,64,14,0.88),rgba(120,53,15,0.96))]" />
+          <div className="absolute top-1 left-2 right-2 h-1 rounded-full bg-white/20" />
+          <div className="relative flex items-center justify-center" style={{ color: accent }}>
+            <Trees size={16} />
+          </div>
+          <div className="absolute -top-2 -right-1 w-4 h-4 rounded-full bg-emerald-500/90 border border-emerald-200/60 shadow-md" />
+          <div className="absolute -top-1 left-2 w-2 h-5 rounded-full bg-emerald-300/90 rotate-[-20deg]" />
+        </div>
+      </motion.div>
+    </>
+  );
+};
+
+const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, actionProgress, direction, skin, preparationMode = false }: { isWalking: boolean, actionId: string | null, toolIcon?: React.ElementType, accent: string, actionProgress?: number, direction: 'left' | 'right', skin?: string | null, preparationMode?: boolean }) => {
   const isActing = Boolean(actionId);
   const isDigging = actionId === 'hole';
+  const isFertilizing = actionId === 'fertilizer';
   const isPlanting = actionId === 'plant';
   const isWatering = actionId === 'water';
   const p01 = Math.max(0, Math.min(1, (actionProgress ?? 0) / 100));
-  const crouch = isPlanting ? (2 + p01 * 3) : 0;
+  const crouch = isPlanting ? (2 + p01 * 3.8) : isFertilizing ? (1.4 + p01 * 2.1) : 0;
   const [blinkTick, setBlinkTick] = useState(0);
   const blinkTimerRef = useRef<number | null>(null);
-  const actionDur = isDigging ? 0.52 : isWatering ? 0.62 : isPlanting ? 0.95 : isActing ? 0.75 : isWalking ? 0.55 : 3.8;
+  const actionDur = isDigging ? 0.52 : isWatering ? 0.62 : isFertilizing ? 0.82 : isPlanting ? 1.02 : isActing ? 0.75 : isWalking ? 0.55 : 3.8;
   const actionEase = 'easeInOut';
 
   useEffect(() => {
@@ -2722,34 +2787,40 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
           rotate:
             isDigging ? [-5.5, 2.5, -4.5] :
             isWatering ? [-4.2, 1.8, -3.5] :
-            isPlanting ? [-1.4, 1.2, -1.2] :
+            isFertilizing ? [-3.2, 4.2, -2.4] :
+            isPlanting ? [-2.6, 2.2, -1.8] :
             isActing ? [-1.8, 1.8, -1.6] :
             isWalking ? [-0.8, 0.8, -0.8] :
             [-0.6, 0.6, -0.6],
           y:
             isDigging ? [0, 2.4, 0] :
             isWatering ? [0, 1.6, 0] :
-            isPlanting ? [crouch + 0.6, crouch + 1.2, crouch + 0.6] :
+            isFertilizing ? [crouch + 0.2, crouch + 1, crouch + 0.4] :
+            isPlanting ? [crouch + 0.8, crouch + 1.8, crouch + 0.9] :
             isActing ? [0, 1.0, 0] :
             isWalking ? [0, -1.6, 0] :
             [0, 0.8, 0],
-          x: isWatering ? [0, 1.2, 0] : 0,
+          x: isWatering ? [0, 1.2, 0] : isFertilizing ? [0, 0.8, 0] : isPlanting ? [0, -0.8, 0] : 0,
         }}
         transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
         className={`relative flex flex-col items-center origin-bottom transition-transform duration-300 ${direction === 'left' ? '-scale-x-100' : 'scale-x-100'}`}
       >
+        {preparationMode && <PreparationLoadout accent={accent} isWalking={isWalking} />}
         <motion.div
           animate={{
             y:
               isDigging ? [0, -2.2, 0] :
               isWatering ? [0, -1.6, 0] :
-              isPlanting ? [-0.6, -1.4, -0.6] :
+              isFertilizing ? [-0.4, -1.8, -0.6] :
+              isPlanting ? [-0.8, -2.1, -0.7] :
               isActing ? [0, -1.4, 0] :
               isWalking ? [0, -2.6, 0] :
               [0, -1, 0],
             rotate:
               isDigging ? [-2.6, 1.2, -2.0] :
               isWatering ? [-1.6, 1.2, -1.2] :
+              isFertilizing ? [-3.4, 2.8, -2.2] :
+              isPlanting ? [-2.4, 2.2, -1.6] :
               isWalking ? [-2, 2, -2] :
               0,
           }}
@@ -2780,10 +2851,11 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
                 rotate:
                   isDigging ? [-38, 12, -28] :
                   isWatering ? [-14, 18, -10] :
-                  isPlanting ? [-6, 6, -6] :
+                  isFertilizing ? [24, -18, 12, -8] :
+                  isPlanting ? [-18, 12, -8, 2] :
                   [-10, 10, -8],
-                x: isDigging ? [-6, 4, -3] : isWatering ? [2, 6, 3] : isPlanting ? [0, 1, 0] : 0,
-                y: isDigging ? [6, 12, 8] : isWatering ? [6, 8, 6] : isPlanting ? [8 + p01 * 4, 10 + p01 * 4, 8 + p01 * 4] : [6, 8, 6],
+                x: isDigging ? [-6, 4, -3] : isWatering ? [2, 6, 3] : isFertilizing ? [5, -1, 4, 0] : isPlanting ? [-2, 3, 1, 0] : 0,
+                y: isDigging ? [6, 12, 8] : isWatering ? [6, 8, 6] : isFertilizing ? [7, 4, 10, 6] : isPlanting ? [7 + p01 * 5, 11 + p01 * 6, 13 + p01 * 3, 9 + p01 * 2] : [6, 8, 6],
               }}
               transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
               className="relative"
@@ -2824,34 +2896,40 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
         rotate:
           isDigging ? [-5.5, 2.5, -4.5] :
           isWatering ? [-4.2, 1.8, -3.5] :
-          isPlanting ? [-1.4, 1.2, -1.2] :
+          isFertilizing ? [-3.4, 4.4, -2.6] :
+          isPlanting ? [-2.8, 2.2, -1.8] :
           isActing ? [-1.8, 1.8, -1.6] :
           isWalking ? [-0.8, 0.8, -0.8] :
           [-0.6, 0.6, -0.6],
         y:
           isDigging ? [0, 2.4, 0] :
           isWatering ? [0, 1.6, 0] :
-          isPlanting ? [crouch + 0.6, crouch + 1.2, crouch + 0.6] :
+          isFertilizing ? [crouch + 0.4, crouch + 1.2, crouch + 0.5] :
+          isPlanting ? [crouch + 0.8, crouch + 1.9, crouch + 0.9] :
           isActing ? [0, 1.0, 0] :
           isWalking ? [0, -1.6, 0] :
           [0, 0.8, 0],
-        x: isWatering ? [0, 1.2, 0] : 0,
+        x: isWatering ? [0, 1.2, 0] : isFertilizing ? [0, 0.8, 0] : isPlanting ? [0, -0.8, 0] : 0,
       }}
       transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
       className={`relative flex flex-col items-center origin-bottom transition-transform duration-300 ${direction === 'left' ? '-scale-x-100' : 'scale-x-100'}`}
     >
+      {preparationMode && <PreparationLoadout accent={accent} isWalking={isWalking} />}
       <motion.div 
         animate={{ 
           y:
             isDigging ? [0, -2.2, 0] :
             isWatering ? [0, -1.6, 0] :
-            isPlanting ? [-0.6, -1.4, -0.6] :
+            isFertilizing ? [-0.4, -1.9, -0.7] :
+            isPlanting ? [-0.8, -2.2, -0.8] :
             isActing ? [0, -1.4, 0] :
             isWalking ? [0, -2.6, 0] :
             [0, -1, 0],
           rotate:
             isDigging ? [-2.6, 1.2, -2.0] :
             isWatering ? [-1.6, 1.2, -1.2] :
+            isFertilizing ? [-3.2, 2.6, -2.1] :
+            isPlanting ? [-2.6, 2.2, -1.7] :
             isWalking ? [-2, 2, -2] :
             0
         }}
@@ -2901,18 +2979,20 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
           rotate:
             isDigging ? [-4, 2, -3.2] :
             isWatering ? [-2.6, 1.4, -2.2] :
-            isPlanting ? [-1.2, 1.1, -1.1] :
+            isFertilizing ? [-3.2, 3.6, -2.4] :
+            isPlanting ? [-2.2, 2, -1.5] :
             isActing ? [-1.8, 2.2, -1.4] :
             isWalking ? [-1.2, 1.2, -1.2] :
             [-0.8, 0.8, -0.8],
           y:
             isDigging ? [0, 2.8, 0] :
             isWatering ? [0.6, 2.2, 0.6] :
-            isPlanting ? [2.2 + crouch * 0.65, 3.4 + crouch * 0.65, 2.2 + crouch * 0.65] :
+            isFertilizing ? [1.6 + crouch * 0.5, 2.8 + crouch * 0.55, 1.8 + crouch * 0.45] :
+            isPlanting ? [2.4 + crouch * 0.72, 3.8 + crouch * 0.8, 2.5 + crouch * 0.72] :
             isActing ? [0, 1.8, 0] :
             isWalking ? [0, -1.2, 0] :
             [0, 0.6, 0],
-          scaleY: isDigging ? [1, 0.975, 1] : isPlanting ? [1, 0.985, 1] : isActing ? [1, 0.985, 1] : isWalking ? [1, 0.995, 1] : [1, 1.015, 1],
+          scaleY: isDigging ? [1, 0.975, 1] : isFertilizing ? [1, 0.98, 1] : isPlanting ? [1, 0.982, 1] : isActing ? [1, 0.985, 1] : isWalking ? [1, 0.995, 1] : [1, 1.015, 1],
           x: isWatering ? [0, 1, 0] : 0,
         }}
         transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
@@ -2935,14 +3015,16 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
             rotate:
               isDigging ? [54, -22, 46] :
               isWatering ? [34, 8, 30] :
-              isPlanting ? [22, 10, 18] :
+              isFertilizing ? [48, -10, 34, 12] :
+              isPlanting ? [30, -4, 22, 8] :
               isActing ? [26, -22, 18] :
               isWalking ? [14, -14, 14] :
               [4, -4, 4],
             y:
               isDigging ? [0, 5, 1] :
               isWatering ? [2, 3, 2] :
-              isPlanting ? [4 + p01 * 4, 6 + p01 * 4, 4 + p01 * 4] :
+              isFertilizing ? [3, 1, 6, 2] :
+              isPlanting ? [4 + p01 * 4, 8 + p01 * 5, 10 + p01 * 2, 5 + p01 * 2] :
               isActing ? [0, 1.8, 0] :
               0,
           }}
@@ -2954,14 +3036,16 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
             rotate:
               isDigging ? [-16, 18, -10] :
               isWatering ? [-44, -12, -36] :
-              isPlanting ? [-22, -12, -18] :
+              isFertilizing ? [-54, -8, -36, -18] :
+              isPlanting ? [-28, -16, -24, -10] :
               isActing ? [-16, 16, -12] :
               isWalking ? [-14, 14, -14] :
               [-4, 4, -4],
             y:
               isDigging ? [2, 3, 2] :
               isWatering ? [5, 6, 5] :
-              isPlanting ? [4 + p01 * 4, 6 + p01 * 4, 4 + p01 * 4] :
+              isFertilizing ? [5, 7, 3, 6] :
+              isPlanting ? [4 + p01 * 4, 7 + p01 * 5, 11 + p01 * 3, 5 + p01 * 2] :
               isActing ? [0, 1.2, 0] :
               0,
           }}
@@ -2981,10 +3065,11 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
                 rotate:
                   isDigging ? [-40, 10, -30] :
                   isWatering ? [-18, 22, -12] :
-                  isPlanting ? [-6, 6, -6] :
+                  isFertilizing ? [26, -18, 14, -8] :
+                  isPlanting ? [-18, 12, -8, 2] :
                   [-10, 10, -8],
-                x: isDigging ? [-7, 5, -4] : isWatering ? [3, 7, 4] : isPlanting ? [0, 1, 0] : 0,
-                y: isDigging ? [10, 16, 12] : isWatering ? [8, 10, 8] : isPlanting ? [12 + p01 * 4, 14 + p01 * 4, 12 + p01 * 4] : [8, 10, 8],
+                x: isDigging ? [-7, 5, -4] : isWatering ? [3, 7, 4] : isFertilizing ? [5, -1, 4, 0] : isPlanting ? [-2, 3, 1, 0] : 0,
+                y: isDigging ? [10, 16, 12] : isWatering ? [8, 10, 8] : isFertilizing ? [8, 4, 11, 7] : isPlanting ? [11 + p01 * 5, 15 + p01 * 6, 17 + p01 * 3, 12 + p01 * 2] : [8, 10, 8],
               }}
               transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
               className="relative"
@@ -5941,6 +6026,9 @@ const TreeGame: React.FC = () => {
       return [];
     }
   });
+  const [level2Combo, setLevel2Combo] = useState(0);
+  const [level2ComboExpiresAt, setLevel2ComboExpiresAt] = useState<number | null>(null);
+  const [level2LastCompletedAt, setLevel2LastCompletedAt] = useState<number | null>(null);
   const [mapRegionFxAt, setMapRegionFxAt] = useState<Record<string, number>>({});
   const [mapStatusAnimByRegionId, setMapStatusAnimByRegionId] = useState<Record<string, { from: Region['status']; to: Region['status']; at: number }>>({});
   const [mapRestorationWave, setMapRestorationWave] = useState<{ id: number; regionId: string } | null>(null);
@@ -5949,6 +6037,8 @@ const TreeGame: React.FC = () => {
   const [mapAlert, setMapAlert] = useState<{ id: number; title: string; subtitle: string; tone: 'warn' | 'info' | 'good' } | null>(null);
   const regionSelectTimerRef = useRef<number | null>(null);
   const [plantingStep, setPlantingStep] = useState(0);
+  const level1Target = 2;
+  const level2ComboWindowMs = 14000;
   const [isDragging, setIsDragging] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
   const [charDirection, setCharDirection] = useState<'left' | 'right'>('right');
@@ -6748,7 +6838,7 @@ const TreeGame: React.FC = () => {
           spawnActionParticles(nearTree.x, nearTree.y, '#3b82f6', 15);
           setTutorialActive(false);
           setUnlockedRadius(2500);
-          setToast({ id: Date.now(), title: 'TUTORIAL SELESAI', subtitle: 'Level 1 dimulai: Tanam 3 pohon', tone: 'good' });
+          setToast({ id: Date.now(), title: 'TUTORIAL SELESAI', subtitle: 'Level 1 dimulai: ambil bibit dan siapkan alat tanam', tone: 'good' });
           // Update to sprout
           setActiveTrees(prevTrees => prevTrees.map(t => 
             t.id === nearTree.id ? { ...t, stage: 3, moisture: 100 } : t
@@ -6905,8 +6995,26 @@ const TreeGame: React.FC = () => {
       if (level === 2) {
         const watered = next.find(t => t.id === id) ?? null;
         const plotId = watered ? (plots.find(p => p.cx === watered.x && p.cy === watered.y)?.id ?? null) : null;
-        if (plotId && watered && watered.stage >= 3) {
+        const alreadyCompleted = plotId ? (level2Stages[plotId] ?? 0) >= 1 : false;
+        if (plotId && watered && watered.stage >= 3 && !alreadyCompleted) {
           setLevel2Stages(s => ({ ...s, [plotId]: 1 }));
+          const comboActive = Boolean(level2LastCompletedAt && Date.now() - level2LastCompletedAt <= level2ComboWindowMs);
+          const nextCombo = comboActive ? Math.min(5, level2Combo + 1) : 1;
+          const waterBonus = Math.min(20, 6 + nextCombo * 3);
+          const energyBonus = Math.min(18, 5 + nextCombo * 2);
+
+          setLevel2Combo(nextCombo);
+          setLevel2LastCompletedAt(Date.now());
+          setLevel2ComboExpiresAt(Date.now() + level2ComboWindowMs);
+          setWater(prev => Math.min(100, prev + waterBonus));
+          setEnergy(prev => Math.min(100, prev + energyBonus));
+          spawnFloatText(watered.x, watered.y - 68, nextCombo > 1 ? `Combo x${nextCombo}` : 'Rush aktif!', 'good');
+          setToast({
+            id: Date.now() + 5,
+            title: nextCombo > 1 ? `Combo Restorasi x${nextCombo}!` : 'Bonus Rush aktif',
+            subtitle: `Bonus +${waterBonus} air, +${energyBonus} energi. Kejar target berikutnya sebelum 14 detik habis!`,
+            tone: 'good',
+          });
           const nextPlot = plotOrder.find(pid => {
             const p = plots.find(pp => pp.id === pid);
             if (!p) return false;
@@ -6935,7 +7043,7 @@ const TreeGame: React.FC = () => {
       const plantedAfterTutorial = Math.max(0, activeTrees.length - 1);
       const level2Done = (['p1', 'p2', 'p3', 'p4'] as const).reduce((acc, pid) => acc + ((level2Stages[pid] ?? 0) >= 1 ? 1 : 0), 0);
       const needsProgress =
-        level === 1 ? plantedAfterTutorial < 3 : level === 2 ? level2Done < 4 : false;
+        level === 1 ? plantedAfterTutorial < level1Target : level === 2 ? level2Done < 4 : false;
 
       if (!tutorialActive && !levelIntroOpen) {
 
@@ -6951,8 +7059,8 @@ const TreeGame: React.FC = () => {
             idleReminderAtRef.current = now;
             setToast({
               id: now + 3,
-              title: 'Ayo mulai menanam',
-              subtitle: level === 1 ? 'Tanam 3 pohon untuk lanjut ke Level 2' : 'Ikuti titik yang menyala lalu tanam & siram',
+              title: level === 1 ? 'Ayo siapkan perlengkapan' : 'Ayo mulai menanam',
+              subtitle: level === 1 ? 'Selesaikan 2 persiapan awal: ambil bibit dan cek alat tanam' : 'Kejar target berikutnya untuk memicu combo bonus',
               tone: 'info',
             });
           }
@@ -7166,16 +7274,16 @@ const TreeGame: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [activeEvent, activeTrees, clampWorld, co2Level, currentMission, effectiveWeather, level, level2Stages, levelIntroOpen, pauseOpen, pestTreeId, phase, pollutionSources, spawnRestoration, tutorialActive, weather]);
+  }, [activeEvent, activeTrees, clampWorld, co2Level, currentMission, effectiveWeather, level, level1Target, level2Stages, levelIntroOpen, pauseOpen, pestTreeId, phase, pollutionSources, spawnRestoration, tutorialActive, weather]);
 
 
   const level1Steps = [
-    { id: 'hole', title: 'Gali Lubang', icon: Shovel, text: 'Gunakan Sekop untuk menggali lubang tanam. Pastikan tanah cukup gembur untuk perkembangan akar.', edu: 'Lubang tanam yang cukup dalam membantu akar menyebar, meningkatkan stabilitas pohon dan daya serap air hujan.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
-    { id: 'fertilizer', title: 'Pupuk Dasar', icon: Thermometer, text: 'Taburkan pupuk organik. Nutrisi ini akan membantu bibit bertahan di fase awal penanaman.', edu: 'Pupuk organik memperbaiki struktur tanah dan meningkatkan mikroorganisme yang penting untuk kesehatan tanaman.', impact: { co2: 1, water: 2, temp: 0, bio: 2 } satisfies EnvImpact },
-    { id: 'plant', title: 'Letakkan Bibit', icon: Trees, text: 'Letakkan bibit ke dalam lubang dengan hati-hati. Pastikan posisinya tegak lurus.', edu: 'Posisi bibit yang tegak mencegah akar patah dan membantu pertumbuhan batang lebih kuat.', impact: { co2: 2, water: 1, temp: 1, bio: 1 } satisfies EnvImpact },
-    { id: 'cover', title: 'Tutup Tanah', icon: Sprout, text: 'Tutup kembali lubang dengan tanah dan tekan perlahan agar bibit tertanam kokoh.', edu: 'Menutup tanah rapat mengurangi kantong udara, menjaga kelembaban, dan melindungi akar dari panas berlebih.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
-    { id: 'water', title: 'Penyiraman', icon: Droplets, text: 'Siram dengan air yang cukup agar tanah lembab dan merangsang pertumbuhan tunas baru.', edu: 'Air membantu akar menyerap nutrisi. Tanah lembab stabil membuat bibit lebih tahan terhadap stres cuaca.', impact: { co2: 1, water: 4, temp: 0, bio: 1 } satisfies EnvImpact },
-    { id: 'sun', title: 'Perawatan Matahari', icon: Sun, text: 'Pastikan tanaman mendapat sinar matahari yang cukup untuk proses fotosintesis.', edu: 'Fotosintesis mengubah CO₂ menjadi oksigen. Pohon dewasa membantu menurunkan suhu dan meningkatkan kualitas udara.', impact: { co2: 4, water: 1, temp: 3, bio: 2 } satisfies EnvImpact },
+    { id: 'hole', title: 'Ambil Bibit', icon: Trees, text: 'Ambil bibit utama dari pos distribusi dan pastikan jenisnya sesuai dengan wilayah yang akan dipulihkan.', edu: 'Pemilihan bibit yang tepat sejak awal membuat proses restorasi lebih efektif dan peluang hidup tanaman lebih tinggi.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
+    { id: 'fertilizer', title: 'Siapkan Pupuk', icon: Thermometer, text: 'Siapkan pupuk organik dasar agar perlengkapan tanam sudah lengkap sebelum masuk ke area kerja.', edu: 'Pupuk organik memperbaiki struktur tanah dan membantu akar muda beradaptasi setelah bibit ditanam.', impact: { co2: 1, water: 2, temp: 0, bio: 2 } satisfies EnvImpact },
+    { id: 'plant', title: 'Cek Sekop & Sarung Tangan', icon: Shovel, text: 'Periksa sekop, sarung tangan, dan perlengkapan inti agar penanaman berjalan aman dan cepat.', edu: 'Peralatan yang siap pakai mengurangi kesalahan saat tanam dan membantu pekerjaan lapangan lebih efisien.', impact: { co2: 2, water: 1, temp: 1, bio: 1 } satisfies EnvImpact },
+    { id: 'cover', title: 'Rapikan Area Kerja', icon: Sprout, text: 'Susun area kerja dan tandai titik tanam supaya proses penanaman nanti lebih terarah.', edu: 'Penataan area tanam yang rapi membuat tim lebih mudah bergerak dan mencegah bibit tertukar lokasi.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
+    { id: 'water', title: 'Isi Cadangan Air', icon: Droplets, text: 'Isi cadangan air untuk penyiraman awal agar bibit tidak kekurangan kelembaban setelah ditanam.', edu: 'Cadangan air penting untuk fase awal tanam karena akar muda masih sangat sensitif terhadap kekeringan.', impact: { co2: 1, water: 4, temp: 0, bio: 1 } satisfies EnvImpact },
+    { id: 'sun', title: 'Briefing Lokasi Tanam', icon: Sun, text: 'Tinjau pencahayaan dan kondisi lapangan sebagai briefing terakhir sebelum masuk ke Level 2.', edu: 'Mengenali kondisi cahaya, arah angin, dan lokasi tanam membuat keputusan penanaman jauh lebih tepat.', impact: { co2: 4, water: 1, temp: 3, bio: 2 } satisfies EnvImpact },
   ];
 
   const level2Steps = [
@@ -7238,6 +7346,14 @@ const TreeGame: React.FC = () => {
   }, [dayPhase, effectiveWeather, gfx.sunBloom]);
 
   const getActionHint = (stepId: string) => {
+    if (level === 1) {
+      if (stepId === 'hole') return 'Klik untuk ambil bibit';
+      if (stepId === 'fertilizer') return 'Klik untuk siapkan pupuk';
+      if (stepId === 'plant') return 'Klik untuk cek alat';
+      if (stepId === 'cover') return 'Klik untuk rapikan area';
+      if (stepId === 'water') return 'Klik untuk isi air';
+      if (stepId === 'sun') return 'Klik untuk briefing';
+    }
     if (stepId === 'hole') return 'Klik untuk menggali';
     if (stepId === 'fertilizer') return 'Klik untuk memberi pupuk';
     if (stepId === 'plant') return 'Klik untuk menanam';
@@ -7329,11 +7445,14 @@ const TreeGame: React.FC = () => {
     if (phase !== 'planting') return;
     if (tutorialActive) return;
     if (level !== 1) return;
-    if (level1PlantedAfterTutorial < 3) return;
+    if (level1PlantedAfterTutorial < level1Target) return;
     if (levelIntroOpen) return;
 
     setLevel(2);
     setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 });
+    setLevel2Combo(0);
+    setLevel2ComboExpiresAt(null);
+    setLevel2LastCompletedAt(null);
     setActivePlotId('p1');
     setLevelIntroOpen(true);
     setToast({ id: Date.now(), title: 'Level 1 selesai!', subtitle: 'Level 2 terbuka', tone: 'good' });
@@ -7341,7 +7460,7 @@ const TreeGame: React.FC = () => {
     const startX = Math.round(gameAreaSize.width * 0.32);
     const startY = Math.round(gameAreaSize.height * 0.36);
     teleportPlayer(startX, startY);
-  }, [gameAreaSize.height, gameAreaSize.width, level, level1PlantedAfterTutorial, levelIntroOpen, phase, tutorialActive]);
+  }, [gameAreaSize.height, gameAreaSize.width, level, level1PlantedAfterTutorial, level1Target, levelIntroOpen, phase, tutorialActive]);
 
   useEffect(() => {
     if (phase !== 'planting') return;
@@ -7350,6 +7469,21 @@ const TreeGame: React.FC = () => {
     if (level2CompletedCount < 4) return;
     setPhase('finished');
   }, [level, level2CompletedCount, phase, tutorialActive]);
+
+  useEffect(() => {
+    if (!level2ComboExpiresAt) return;
+    const remaining = level2ComboExpiresAt - Date.now();
+    if (remaining <= 0) {
+      setLevel2Combo(0);
+      setLevel2ComboExpiresAt(null);
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      setLevel2Combo(0);
+      setLevel2ComboExpiresAt(null);
+    }, remaining + 40);
+    return () => window.clearTimeout(timeout);
+  }, [level2ComboExpiresAt]);
 
   const ensureAudioContext = () => {
     if (!audioOn) return null;
@@ -7936,7 +8070,20 @@ const TreeGame: React.FC = () => {
       6;
 
     spawnFloatText(fxX, fxY, `+${xpDelta} XP`, 'xp');
-    spawnFloatText(fxX, fxY + 18, stepId === 'hole' ? 'Berhasil menggali' : 'Aksi berhasil', 'good');
+    spawnFloatText(
+      fxX,
+      fxY + 18,
+      level === 1
+        ? stepId === 'hole'
+          ? 'Bibit siap dibawa'
+          : stepId === 'plant'
+            ? 'Alat tanam siap'
+            : 'Persiapan selesai'
+        : stepId === 'hole'
+          ? 'Berhasil menggali'
+          : 'Aksi berhasil',
+      'good'
+    );
     const moistureDelta =
       stepId === 'water' ? 24 :
       stepId === 'sun' ? -10 :
@@ -9248,11 +9395,22 @@ const TreeGame: React.FC = () => {
                       <CharacterSprite 
                         isWalking={isWalking} 
                         actionId={actionId} 
-                        toolIcon={actionId === 'hole' ? Shovel : actionId === 'plant' ? Trees : actionId === 'clean' ? ShieldCheck : actionId === 'pest' ? AlertTriangle : undefined}
+                        toolIcon={
+                          actionId === 'hole'
+                            ? level === 1 ? Trees : Shovel
+                            : actionId === 'plant'
+                              ? level === 1 ? Shovel : Trees
+                              : actionId === 'clean'
+                                ? ShieldCheck
+                                : actionId === 'pest'
+                                  ? AlertTriangle
+                                  : undefined
+                        }
                         accent="#7d4a27"
                         actionProgress={actionProgress}
                         direction={charDirection}
                         skin={characterSkin}
+                        preparationMode={level === 1}
                       />
 
                       {/* Interaction Hint */}
@@ -9370,29 +9528,29 @@ const TreeGame: React.FC = () => {
                         {level === 1 ? (
                           <div className="space-y-4">
                             <div className="text-white/90 font-bold leading-relaxed">
-                              Ikuti panduan pemula, lalu tanam <span className="text-emerald-400 font-black">3 pohon</span> untuk membuka area berikutnya.
+                              Setelah tutorial, masuk ke fase persiapan: <span className="text-emerald-400 font-black">ambil bibit</span> dan <span className="text-emerald-400 font-black">siapkan alat tanam</span> sebelum mulai restorasi.
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                                <div className="text-[10px] font-black text-white/50 uppercase tracking-widest">Gerak</div>
-                                <div className="mt-1 text-white font-black">WASD</div>
+                                <div className="text-[10px] font-black text-white/50 uppercase tracking-widest">Karakter</div>
+                                <div className="mt-1 text-white font-black">Bawa bibit</div>
                               </div>
                               <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                                <div className="text-[10px] font-black text-white/50 uppercase tracking-widest">Aksi</div>
-                                <div className="mt-1 text-white font-black">Tekan E</div>
+                                <div className="text-[10px] font-black text-white/50 uppercase tracking-widest">Peralatan</div>
+                                <div className="mt-1 text-white font-black">Cangkul siap pakai</div>
                               </div>
                             </div>
                           </div>
                         ) : (
                           <div className="space-y-4">
                             <div className="text-white/90 font-bold leading-relaxed">
-                              Area terbuka. Aktifkan <span className="text-emerald-400 font-black">4 titik lahan</span> dengan cara tanam dan siram sampai tumbuh.
+                              Area terbuka. Aktifkan <span className="text-emerald-400 font-black">4 titik lahan</span> dengan cara tanam dan siram sampai tumbuh, lalu kejar target berikutnya cepat untuk memicu combo bonus.
                             </div>
                             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3">
                               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-emerald-400">
                                 <MapPin size={18} />
                               </div>
-                              <div className="text-[11px] font-black text-white/70 uppercase tracking-wider">Ikuti titik yang menyala</div>
+                              <div className="text-[11px] font-black text-white/70 uppercase tracking-wider">Ikuti titik yang menyala dan jaga combo</div>
                             </div>
                           </div>
                         )}
@@ -9403,7 +9561,7 @@ const TreeGame: React.FC = () => {
                             setToast({
                               id: Date.now(),
                               title: `LEVEL ${level}`,
-                              subtitle: level === 1 ? 'Ikuti tutorial lalu tanam 3 pohon' : 'Aktifkan 4 lahan dengan tanam & siram',
+                              subtitle: level === 1 ? 'Ambil bibit dan siapkan alat tanam' : 'Aktifkan 4 lahan dan kejar combo bonus',
                               tone: 'info',
                             });
                           }}
@@ -9573,13 +9731,13 @@ const TreeGame: React.FC = () => {
                     <div className="space-y-4">
                       <div>
                         <div className="flex justify-between text-[10px] font-black text-white/60 uppercase mb-2">
-                          <span>Tanam 3 Pohon</span>
-                          <span>{Math.min(3, level1PlantedAfterTutorial)}/3</span>
+                          <span>Persiapan Menanam</span>
+                          <span>{Math.min(level1Target, level1PlantedAfterTutorial)}/{level1Target}</span>
                         </div>
                         <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
                           <motion.div
                             className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
-                            animate={{ width: `${Math.min(100, (level1PlantedAfterTutorial / 3) * 100)}%` }}
+                            animate={{ width: `${Math.min(100, (level1PlantedAfterTutorial / level1Target) * 100)}%` }}
                           />
                         </div>
                       </div>
@@ -9588,7 +9746,7 @@ const TreeGame: React.FC = () => {
                           <Trees size={16} />
                         </div>
                         <div className="text-[9px] font-bold text-white/80 leading-tight">
-                          Dekati lahan, tekan <span className="text-white">E</span> untuk tanam. Siram pohon yang kering.
+                          Selesaikan 2 persiapan awal: ambil bibit lalu cek alat tanam agar Level 2 terasa siap dimainkan.
                         </div>
                       </div>
                     </div>
@@ -9643,12 +9801,47 @@ const TreeGame: React.FC = () => {
                         })}
                       </div>
 
+                      <div className={`p-3 rounded-2xl border ${
+                        level2Combo > 0 && level2ComboExpiresAt
+                          ? 'bg-amber-500/10 border-amber-400/25 shadow-[0_0_30px_rgba(251,191,36,0.12)]'
+                          : 'bg-white/5 border-white/10'
+                      }`}>
+                        <div className="flex items-start gap-3">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                            level2Combo > 0 && level2ComboExpiresAt ? 'bg-amber-400/20 text-amber-200' : 'bg-white/10 text-white/70'
+                          }`}>
+                            <Sparkles size={16} />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="text-[9px] font-black text-white/80 uppercase tracking-widest">Combo Restorasi</div>
+                              <div className={`text-[9px] font-black uppercase ${level2Combo > 0 ? 'text-amber-200' : 'text-white/40'}`}>
+                                {level2Combo > 0 ? `x${level2Combo}` : 'Siap'}
+                              </div>
+                            </div>
+                            <div className="mt-1 text-[9px] font-bold text-white/70 leading-relaxed">
+                              Selesaikan target berikutnya dalam 14 detik untuk bonus air dan energi tambahan.
+                            </div>
+                            <div className="mt-3 h-1.5 rounded-full bg-black/25 overflow-hidden">
+                              <motion.div
+                                className="h-full bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-300"
+                                animate={{
+                                  width: `${level2ComboExpiresAt
+                                    ? Math.max(0, Math.min(100, ((level2ComboExpiresAt - Date.now()) / level2ComboWindowMs) * 100))
+                                    : 0}%`
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="p-3 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-3">
                         <div className="w-8 h-8 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
                           <Droplets size={16} />
                         </div>
                         <div className="text-[9px] font-bold text-white/80 leading-tight">
-                          Ikuti titik <span className="text-white">TARGET</span>: tanam, lalu siram sampai tumbuh.
+                          Ikuti titik <span className="text-white">TARGET</span>: tanam, lalu siram sampai tumbuh. Jika cepat, combo bonus akan aktif.
                         </div>
                       </div>
                     </div>
@@ -10013,49 +10206,37 @@ const TreeGame: React.FC = () => {
         <AnimatePresence>
           {claimEducationOpen && (phase === 'finished' || phase === 'gameover') && selectedRegion && selectedSeedling && (
             <motion.div
-              className="fixed inset-0 z-[295] bg-slate-950/85 backdrop-blur-xl flex items-center justify-center p-6"
+              className="fixed inset-0 z-[295] bg-emerald-950/12 backdrop-blur-md flex items-center justify-center p-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
               <motion.div
-                className={`w-full max-w-3xl rounded-[3rem] shadow-2xl overflow-hidden relative border max-h-[88vh] flex flex-col ${
-                  claimMode === 'success'
-                    ? 'bg-slate-950/94 border-emerald-300/20 shadow-[0_40px_140px_rgba(16,185,129,0.20)]'
-                    : 'bg-slate-950/94 border-amber-300/20 shadow-[0_40px_140px_rgba(245,158,11,0.18)]'
-                }`}
+                className="w-full max-w-3xl rounded-[3rem] shadow-[0_40px_120px_rgba(16,185,129,0.18)] overflow-hidden relative border max-h-[88vh] flex flex-col bg-white border-emerald-200"
                 initial={{ scale: 0.96, y: 12 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.98, y: 10 }}
               >
                 <div
-                  className="absolute inset-0 pointer-events-none opacity-95"
+                  className="absolute inset-0 pointer-events-none opacity-100"
                   style={{
                     backgroundImage:
-                      claimMode === 'success'
-                        ? 'radial-gradient(circle at 12% 14%, rgba(16,185,129,0.34) 0 240px, transparent 560px), radial-gradient(circle at 88% 18%, rgba(56,189,248,0.28) 0 220px, transparent 560px), radial-gradient(circle at 50% 110%, rgba(253,224,71,0.14) 0 280px, transparent 620px), linear-gradient(145deg, rgba(3,20,27,0.98) 0%, rgba(8,36,33,0.96) 38%, rgba(14,23,42,0.94) 100%)'
-                        : 'radial-gradient(circle at 12% 14%, rgba(245,158,11,0.30) 0 240px, transparent 560px), radial-gradient(circle at 88% 18%, rgba(244,63,94,0.18) 0 220px, transparent 560px), radial-gradient(circle at 50% 110%, rgba(59,130,246,0.16) 0 280px, transparent 620px), linear-gradient(145deg, rgba(28,15,6,0.98) 0%, rgba(36,20,7,0.96) 40%, rgba(14,23,42,0.94) 100%)',
+                      'radial-gradient(circle at 10% 12%, rgba(16,185,129,0.12) 0 220px, transparent 520px), radial-gradient(circle at 88% 16%, rgba(134,239,172,0.24) 0 180px, transparent 440px), linear-gradient(180deg, rgba(240,253,244,0.98) 0%, rgba(255,255,255,0.98) 48%, rgba(236,253,245,0.96) 100%)',
                   }}
                 />
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-300 via-emerald-500 to-emerald-300" />
 
                 <div className="relative flex-1 overflow-y-auto p-8 sm:p-10">
                   <div className="flex items-start justify-between gap-5">
                     <div>
-                      <div
-                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.25em] border ${
-                          claimMode === 'success'
-                            ? 'bg-emerald-500/12 border-emerald-400/20 text-emerald-200'
-                            : 'bg-amber-500/12 border-amber-400/20 text-amber-200'
-                        }`}
-                      >
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.25em] border bg-emerald-50 border-emerald-200 text-emerald-700">
                         <Sparkles size={12} />
                         {claimMode === 'success' ? 'Sosialisasi Klaim Bibit' : 'Edukasi Penanaman'}
                       </div>
-                      <div className="mt-4 text-3xl sm:text-4xl font-black text-white tracking-tighter leading-tight">
+                      <div className="mt-4 text-3xl sm:text-4xl font-black text-emerald-950 tracking-tighter leading-tight max-w-2xl">
                         {claimMode === 'success' ? 'Sebelum Isi Form, Pahami Alur Pengambilan Bibit' : 'Sebelum Isi Form, Kenali Manfaat Menanam Pohon'}
                       </div>
-                      <div className="mt-3 text-white/72 font-bold leading-relaxed max-w-2xl">
+                      <div className="mt-3 text-emerald-900/75 font-bold leading-relaxed max-w-2xl">
                         {claimMode === 'success'
                           ? `Bibit ${selectedSeedling.name} untuk wilayah ${selectedRegion.name} bisa diambil setelah proses verifikasi. Data diri membantu petugas menyiapkan distribusi bibit yang tepat sasaran.`
                           : `Walau misi belum selesai, data yang kamu isi tetap berguna untuk pendataan minat penghijauan di ${selectedRegion.name}. Setelah paham edukasinya, kamu bisa lanjut isi formulir.`}
@@ -10064,41 +10245,31 @@ const TreeGame: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => { setClaimEducationOpen(false); setClaimError(null); }}
-                      className="w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/80 active:scale-95 transition-transform"
+                      className="w-12 h-12 rounded-2xl bg-white hover:bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 active:scale-95 transition-transform shadow-sm"
                       aria-label="Tutup"
                     >
                       <X size={18} />
                     </button>
                   </div>
 
-                  <div
-                    className={`mt-6 rounded-[2.4rem] border p-5 sm:p-6 ${
-                      claimMode === 'success'
-                        ? 'bg-gradient-to-r from-emerald-400/14 via-teal-300/10 to-sky-400/12 border-emerald-200/15'
-                        : 'bg-gradient-to-r from-amber-400/14 via-orange-300/10 to-rose-400/12 border-amber-200/15'
-                    }`}
-                  >
+                  <div className="mt-6 rounded-[2.4rem] border p-5 sm:p-6 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 border-emerald-200">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       <div>
-                        <div className="text-[10px] font-black text-white/55 uppercase tracking-widest">Highlight Program</div>
-                        <div className="mt-1 text-white font-black text-xl tracking-tight">
+                        <div className="text-[10px] font-black text-emerald-700/70 uppercase tracking-widest">Highlight Program</div>
+                        <div className="mt-1 text-emerald-950 font-black text-xl tracking-tight">
                           {claimMode === 'success' ? 'Klaim bibit diproses setelah verifikasi data' : 'Pendataan minat tanam tetap bernilai meski misi belum selesai'}
                         </div>
-                        <div className="mt-2 text-white/75 font-bold text-sm leading-relaxed max-w-xl">
+                        <div className="mt-2 text-emerald-900/75 font-bold text-sm leading-relaxed max-w-xl">
                           {claimMode === 'success'
                             ? 'Isi form dengan data yang valid agar distribusi bibit lebih cepat, tepat lokasi, dan mudah diverifikasi oleh petugas.'
                             : 'Data minat penghijauan membantu pemetaan kebutuhan bibit di wilayahmu. Kamu tetap bisa lanjut, lalu coba lagi untuk mendapatkan klaim gratis.'}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className={`px-3 py-2 rounded-2xl border text-[10px] font-black uppercase tracking-widest ${
-                          claimMode === 'success'
-                            ? 'bg-emerald-500/14 border-emerald-300/20 text-emerald-100'
-                            : 'bg-amber-500/14 border-amber-300/20 text-amber-100'
-                        }`}>
+                        <div className="px-3 py-2 rounded-2xl border text-[10px] font-black uppercase tracking-widest bg-emerald-600 text-white border-emerald-600">
                           {selectedSeedling.name}
                         </div>
-                        <div className="px-3 py-2 rounded-2xl bg-white/8 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/80">
+                        <div className="px-3 py-2 rounded-2xl bg-white border border-emerald-200 text-[10px] font-black uppercase tracking-widest text-emerald-800">
                           {selectedRegion.name}
                         </div>
                       </div>
@@ -10109,39 +10280,35 @@ const TreeGame: React.FC = () => {
                     {(claimMode === 'success'
                       ? [
                           { title: '1. Verifikasi Data', desc: 'Nama, nomor HP, dan alamat dipakai untuk verifikasi klaim serta memastikan bibit diterima orang yang tepat.', tone: 'emerald' },
-                          { title: '2. Ambil di Dinas', desc: 'Setelah form dikirim, kamu akan mendapatkan kode klaim. Bawa KTP dan kode itu saat pengambilan di Dinas Kehutanan.', tone: 'sky' },
-                          { title: '3. Tanam & Rawat', desc: 'Bibit yang diambil sebaiknya ditanam di lokasi yang sudah kamu rencanakan, lalu dirawat rutin agar tumbuh optimal.', tone: 'amber' },
+                          { title: '2. Ambil di Dinas', desc: 'Setelah form dikirim, kamu akan mendapatkan kode klaim. Bawa KTP dan kode itu saat pengambilan di Dinas Kehutanan.', tone: 'soft' },
+                          { title: '3. Tanam & Rawat', desc: 'Bibit yang diambil sebaiknya ditanam di lokasi yang sudah kamu rencanakan, lalu dirawat rutin agar tumbuh optimal.', tone: 'deep' },
                         ]
                       : [
                           { title: '1. Pohon Menyerap CO2', desc: 'Satu pohon yang tumbuh baik membantu menyerap karbon dan memperbaiki kualitas udara di sekitar lingkungan.', tone: 'emerald' },
-                          { title: '2. Akar Menahan Air', desc: 'Pohon membantu tanah menyimpan air lebih lama, mengurangi risiko kekeringan dan limpasan saat hujan deras.', tone: 'sky' },
-                          { title: '3. Lanjutkan Sampai Berhasil', desc: 'Selesaikan misi sampai berhasil agar kamu mendapat kode klaim bibit gratis, bukan hanya data minat penanaman.', tone: 'amber' },
+                          { title: '2. Akar Menahan Air', desc: 'Pohon membantu tanah menyimpan air lebih lama, mengurangi risiko kekeringan dan limpasan saat hujan deras.', tone: 'soft' },
+                          { title: '3. Lanjutkan Sampai Berhasil', desc: 'Selesaikan misi sampai berhasil agar kamu mendapat kode klaim bibit gratis, bukan hanya data minat penanaman.', tone: 'deep' },
                         ]
                     ).map((item, idx) => (
                       <div
                         key={idx}
                         className={`rounded-[2rem] border p-5 relative overflow-hidden ${
                           item.tone === 'emerald'
-                            ? 'bg-gradient-to-br from-emerald-400/18 via-emerald-500/8 to-transparent border-emerald-300/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]'
-                            : item.tone === 'sky'
-                              ? 'bg-gradient-to-br from-sky-400/18 via-cyan-400/8 to-transparent border-sky-300/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]'
-                              : 'bg-gradient-to-br from-amber-400/18 via-orange-400/8 to-transparent border-amber-300/18 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]'
+                            ? 'bg-gradient-to-br from-emerald-50 via-white to-white border-emerald-200'
+                            : item.tone === 'soft'
+                              ? 'bg-gradient-to-br from-white via-emerald-50 to-white border-emerald-150'
+                              : 'bg-gradient-to-br from-emerald-100/70 via-white to-emerald-50 border-emerald-300'
                         }`}
                       >
-                        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-                        <div className="text-white font-black tracking-tight">{item.title}</div>
-                        <div className="mt-2 text-white/78 font-bold text-sm leading-relaxed">{item.desc}</div>
+                        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-300 via-emerald-500 to-emerald-300" />
+                        <div className="text-emerald-950 font-black tracking-tight">{item.title}</div>
+                        <div className="mt-2 text-emerald-900/80 font-bold text-sm leading-relaxed">{item.desc}</div>
                       </div>
                     ))}
                   </div>
 
-                  <div className={`mt-6 rounded-[2rem] border p-5 ${
-                    claimMode === 'success'
-                      ? 'bg-gradient-to-r from-slate-900/70 via-emerald-950/35 to-slate-900/70 border-emerald-300/12'
-                      : 'bg-gradient-to-r from-slate-900/70 via-amber-950/30 to-slate-900/70 border-amber-300/12'
-                  }`}>
-                    <div className="text-[10px] font-black text-white/55 uppercase tracking-widest">Pesan Singkat</div>
-                    <div className="mt-2 text-white/85 font-bold text-sm leading-relaxed">
+                  <div className="mt-6 rounded-[2rem] border p-5 bg-emerald-50 border-emerald-200">
+                    <div className="text-[10px] font-black text-emerald-700/70 uppercase tracking-widest">Pesan Singkat</div>
+                    <div className="mt-2 text-emerald-900/85 font-bold text-sm leading-relaxed">
                       {claimMode === 'success'
                         ? 'Program pembagian bibit bertujuan mendorong penanaman pohon yang benar, tepat lokasi, dan berkelanjutan. Isi data dengan benar agar proses distribusi lebih cepat.'
                         : 'Penghijauan dimulai dari kesadaran. Walau belum selesai bermain, kamu tetap bisa berkontribusi dengan memahami manfaat pohon dan melanjutkan game sampai tuntas.'}
@@ -10149,22 +10316,18 @@ const TreeGame: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="relative p-6 border-t border-white/10 bg-black/20 backdrop-blur-xl flex flex-col sm:flex-row gap-3 justify-end">
+                <div className="relative p-6 border-t border-emerald-200 bg-white/90 backdrop-blur-xl flex flex-col sm:flex-row gap-3 justify-end">
                   <button
                     type="button"
                     onClick={() => { setClaimEducationOpen(false); setClaimError(null); }}
-                    className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/90 font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform"
+                    className="px-6 py-3 rounded-2xl bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-800 font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform"
                   >
                     Nanti Saja
                   </button>
                   <button
                     type="button"
                     onClick={() => { setClaimEducationOpen(false); setClaimError(null); setClaimOpen(true); }}
-                    className={`px-6 py-3 rounded-2xl border text-white font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform inline-flex items-center justify-center gap-2 ${
-                      claimMode === 'success'
-                        ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 shadow-lg shadow-emerald-900/20'
-                        : 'bg-amber-600 hover:bg-amber-500 border-amber-500/25 shadow-lg shadow-amber-900/15'
-                    }`}
+                    className="px-6 py-3 rounded-2xl border text-white font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 border-emerald-600 shadow-lg shadow-emerald-900/15"
                   >
                     <Sparkles size={16} />
                     Lanjut Isi Form
@@ -10178,54 +10341,40 @@ const TreeGame: React.FC = () => {
         <AnimatePresence>
           {claimOpen && (phase === 'finished' || phase === 'gameover') && selectedRegion && selectedSeedling && (
             <motion.div
-              className="fixed inset-0 z-[300] bg-slate-950/85 backdrop-blur-xl flex items-center justify-center p-6"
+              className="fixed inset-0 z-[300] bg-emerald-950/12 backdrop-blur-md flex items-center justify-center p-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
               <motion.div
-                className={`w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[88vh] relative border ${
-                  claimMode === 'success'
-                    ? 'bg-slate-950/92 border-emerald-300/18 shadow-[0_45px_150px_rgba(16,185,129,0.18)]'
-                    : 'bg-slate-950/92 border-amber-300/18 shadow-[0_45px_150px_rgba(245,158,11,0.16)]'
-                }`}
+                className="w-full max-w-4xl rounded-[3rem] shadow-[0_45px_140px_rgba(16,185,129,0.18)] overflow-hidden flex flex-col max-h-[88vh] relative border bg-white border-emerald-200"
                 initial={{ scale: 0.96, y: 10 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.98, y: 10 }}
               >
                 <div
-                  className="absolute inset-0 pointer-events-none opacity-95"
+                  className="absolute inset-0 pointer-events-none opacity-100"
                   style={{
                     backgroundImage:
-                      claimMode === 'success'
-                        ? 'radial-gradient(circle at 14% 8%, rgba(16,185,129,0.28) 0 320px, transparent 640px), radial-gradient(circle at 88% 20%, rgba(56,189,248,0.20) 0 280px, transparent 620px), radial-gradient(circle at 55% 110%, rgba(250,204,21,0.12) 0 380px, transparent 720px), linear-gradient(145deg, rgba(2,6,23,0.92) 0%, rgba(5,24,23,0.94) 44%, rgba(15,23,42,0.96) 100%)'
-                        : 'radial-gradient(circle at 14% 8%, rgba(245,158,11,0.25) 0 320px, transparent 640px), radial-gradient(circle at 88% 20%, rgba(244,63,94,0.18) 0 280px, transparent 620px), radial-gradient(circle at 55% 110%, rgba(59,130,246,0.12) 0 380px, transparent 720px), linear-gradient(145deg, rgba(23,10,4,0.92) 0%, rgba(39,19,8,0.94) 44%, rgba(15,23,42,0.96) 100%)',
+                      'radial-gradient(circle at 12% 10%, rgba(16,185,129,0.12) 0 280px, transparent 560px), radial-gradient(circle at 90% 18%, rgba(167,243,208,0.22) 0 220px, transparent 520px), linear-gradient(180deg, rgba(240,253,244,0.98) 0%, rgba(255,255,255,0.98) 46%, rgba(236,253,245,0.96) 100%)',
                   }}
                 />
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-300 via-emerald-500 to-emerald-300" />
 
-                <div className={`relative p-8 border-b flex items-start justify-between gap-6 ${
-                  claimMode === 'success' ? 'border-emerald-200/10' : 'border-amber-200/10'
-                }`}>
+                <div className="relative p-8 border-b border-emerald-200 flex items-start justify-between gap-6">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.25em] border ${
-                          claimMode === 'success'
-                            ? 'bg-emerald-500/12 border-emerald-400/20 text-emerald-200'
-                            : 'bg-amber-500/12 border-amber-400/20 text-amber-200'
-                        }`}
-                      >
+                      <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.25em] border bg-emerald-50 border-emerald-200 text-emerald-700">
                         {claimMode === 'success' ? 'Dinas Kehutanan' : 'Data Diri'}
                       </span>
-                      <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-widest">
+                      <span className="px-3 py-1 rounded-full bg-white border border-emerald-200 text-emerald-800 text-[10px] font-black uppercase tracking-widest">
                         {selectedRegion.name}
                       </span>
                     </div>
-                    <div className="text-3xl font-black text-white tracking-tighter mt-3">
+                    <div className="text-3xl font-black text-emerald-950 tracking-tighter mt-3">
                       {claimMode === 'success' ? 'Klaim Bibit Gratis' : 'Form Data Diri'}
                     </div>
-                    <div className="text-white/78 font-bold mt-2 leading-relaxed max-w-2xl">
+                    <div className="text-emerald-900/75 font-bold mt-2 leading-relaxed max-w-2xl">
                       {claimMode === 'success'
                         ? 'Isi data diri untuk klaim bibit gratis. Setelah kirim, kamu mendapatkan kode klaim untuk pengambilan bibit.'
                         : 'Kamu belum menyelesaikan misi. Isi data diri untuk pendataan. Untuk klaim bibit gratis, selesaikan game sampai berhasil.'}
@@ -10234,7 +10383,7 @@ const TreeGame: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => { setClaimOpen(false); setClaimError(null); }}
-                    className="w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/80 active:scale-95 transition-transform"
+                    className="w-12 h-12 rounded-2xl bg-white hover:bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 active:scale-95 transition-transform shadow-sm"
                     aria-label="Tutup"
                   >
                     <X size={18} />
@@ -10244,44 +10393,30 @@ const TreeGame: React.FC = () => {
                 <div className="relative flex-1 overflow-y-auto">
                   <div className="p-7 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <div className="lg:col-span-4">
-                      <div className={`rounded-[2.6rem] border p-6 ${
-                        claimMode === 'success'
-                          ? 'bg-gradient-to-b from-emerald-400/14 via-teal-400/8 to-slate-900/55 border-emerald-300/16 shadow-[inset_0_0_120px_rgba(16,185,129,0.14)]'
-                          : 'bg-gradient-to-b from-amber-400/14 via-orange-400/8 to-slate-900/55 border-amber-300/16 shadow-[inset_0_0_120px_rgba(245,158,11,0.12)]'
-                      }`}>
-                        <div className="text-[10px] font-black text-white/55 uppercase tracking-[0.25em]">Ringkasan</div>
+                      <div className="rounded-[2.6rem] border p-6 bg-gradient-to-b from-emerald-50 via-white to-emerald-50 border-emerald-200 shadow-[inset_0_0_80px_rgba(16,185,129,0.06)]">
+                        <div className="text-[10px] font-black text-emerald-700/70 uppercase tracking-[0.25em]">Ringkasan</div>
                         <div className="mt-4 space-y-3">
-                          <div className="rounded-3xl bg-black/20 border border-white/10 p-4 backdrop-blur-sm">
-                            <div className="text-[10px] font-black text-white/55 uppercase tracking-widest">Wilayah</div>
-                            <div className="text-white font-black tracking-tight mt-1">{selectedRegion.name}</div>
+                          <div className="rounded-3xl bg-white border border-emerald-150 p-4">
+                            <div className="text-[10px] font-black text-emerald-700/70 uppercase tracking-widest">Wilayah</div>
+                            <div className="text-emerald-950 font-black tracking-tight mt-1">{selectedRegion.name}</div>
                           </div>
-                          <div className="rounded-3xl bg-black/20 border border-white/10 p-4 backdrop-blur-sm">
-                            <div className="text-[10px] font-black text-white/55 uppercase tracking-widest">Jenis Bibit</div>
-                            <div className="text-white font-black tracking-tight mt-1">{selectedSeedling.name}</div>
+                          <div className="rounded-3xl bg-white border border-emerald-150 p-4">
+                            <div className="text-[10px] font-black text-emerald-700/70 uppercase tracking-widest">Jenis Bibit</div>
+                            <div className="text-emerald-950 font-black tracking-tight mt-1">{selectedSeedling.name}</div>
                           </div>
-                          <div className="rounded-3xl bg-black/20 border border-white/10 p-4 backdrop-blur-sm">
-                            <div className="text-[10px] font-black text-white/55 uppercase tracking-widest">Status</div>
+                          <div className="rounded-3xl bg-white border border-emerald-150 p-4">
+                            <div className="text-[10px] font-black text-emerald-700/70 uppercase tracking-widest">Status</div>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
-                              <span
-                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                                  claimMode === 'success'
-                                    ? 'bg-emerald-500/12 border-emerald-400/20 text-emerald-200'
-                                    : 'bg-amber-500/12 border-amber-400/20 text-amber-200'
-                                }`}
-                              >
+                              <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border bg-emerald-600 text-white border-emerald-600">
                                 {claimMode === 'success' ? 'Berhasil' : 'Belum Selesai'}
                               </span>
-                              <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-widest">
+                              <span className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-black uppercase tracking-widest">
                                 {claimForm.quantity} bibit
                               </span>
                             </div>
                           </div>
                         </div>
-                        <div className={`mt-5 rounded-[2rem] border p-4 text-[11px] font-bold leading-relaxed ${
-                          claimMode === 'success'
-                            ? 'bg-emerald-950/25 border-emerald-300/12 text-white/75'
-                            : 'bg-amber-950/25 border-amber-300/12 text-white/75'
-                        }`}>
+                        <div className="mt-5 rounded-[2rem] border p-4 text-[11px] font-bold leading-relaxed bg-emerald-50 border-emerald-200 text-emerald-900/80">
                           {claimMode === 'success'
                             ? 'Setelah terkirim, kamu bisa mengambil bibit di Dinas Kehutanan dengan membawa KTP & kode klaim.'
                             : 'Form ini untuk pendataan. Selesaikan game untuk mendapatkan kode klaim bibit gratis.'}
@@ -10291,42 +10426,30 @@ const TreeGame: React.FC = () => {
 
                     <div className="lg:col-span-8">
                       {claimError && (
-                        <div className="mb-4 p-4 rounded-[2rem] bg-red-500/10 border border-red-400/20 text-red-100 text-[12px] font-bold">
+                        <div className="mb-4 p-4 rounded-[2rem] bg-white border border-emerald-200 text-emerald-800 text-[12px] font-bold">
                           {claimError}
                         </div>
                       )}
 
-                      <div className={`rounded-[2.6rem] border p-6 ${
-                        claimMode === 'success'
-                          ? 'bg-gradient-to-br from-white/8 via-emerald-500/6 to-transparent border-emerald-300/12'
-                          : 'bg-gradient-to-br from-white/8 via-amber-500/6 to-transparent border-amber-300/12'
-                      }`}>
-                        <div className="text-[10px] font-black text-white/55 uppercase tracking-[0.25em]">Data Pribadi</div>
+                      <div className="rounded-[2.6rem] border p-6 bg-white border-emerald-200">
+                        <div className="text-[10px] font-black text-emerald-700/70 uppercase tracking-[0.25em]">Data Pribadi</div>
                         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                           <label className="block">
-                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Nama Lengkap *</div>
+                            <div className="text-[10px] font-black text-emerald-700/75 uppercase tracking-widest">Nama Lengkap *</div>
                             <input
                               value={claimForm.name}
                               onChange={(e) => setClaimForm(f => ({ ...f, name: e.target.value }))}
-                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
-                                claimMode === 'success'
-                                  ? 'bg-emerald-950/16 border-emerald-200/12 focus:border-emerald-300/45 focus:ring-2 focus:ring-emerald-300/15'
-                                  : 'bg-amber-950/16 border-amber-200/12 focus:border-amber-300/45 focus:ring-2 focus:ring-amber-300/15'
-                              }`}
+                              className="mt-2 w-full px-4 py-3 rounded-2xl border text-slate-800 font-bold outline-none bg-white border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 placeholder:text-slate-400"
                               placeholder="Nama sesuai KTP"
                             />
                           </label>
 
                           <label className="block">
-                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">NIK</div>
+                            <div className="text-[10px] font-black text-emerald-700/75 uppercase tracking-widest">NIK</div>
                             <input
                               value={claimForm.nik}
                               onChange={(e) => setClaimForm(f => ({ ...f, nik: e.target.value }))}
-                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
-                                claimMode === 'success'
-                                  ? 'bg-emerald-950/16 border-emerald-200/12 focus:border-emerald-300/45 focus:ring-2 focus:ring-emerald-300/15'
-                                  : 'bg-amber-950/16 border-amber-200/12 focus:border-amber-300/45 focus:ring-2 focus:ring-amber-300/15'
-                              }`}
+                              className="mt-2 w-full px-4 py-3 rounded-2xl border text-slate-800 font-bold outline-none bg-white border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 placeholder:text-slate-400"
                               placeholder="16 digit"
                               inputMode="numeric"
                             />
@@ -10334,38 +10457,26 @@ const TreeGame: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className={`mt-5 rounded-[2.6rem] border p-6 ${
-                        claimMode === 'success'
-                          ? 'bg-gradient-to-br from-white/8 via-sky-500/6 to-transparent border-sky-300/12'
-                          : 'bg-gradient-to-br from-white/8 via-rose-500/6 to-transparent border-rose-300/12'
-                      }`}>
-                        <div className="text-[10px] font-black text-white/55 uppercase tracking-[0.25em]">Kontak</div>
+                      <div className="mt-5 rounded-[2.6rem] border p-6 bg-white border-emerald-200">
+                        <div className="text-[10px] font-black text-emerald-700/70 uppercase tracking-[0.25em]">Kontak</div>
                         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                           <label className="block">
-                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Nomor HP *</div>
+                            <div className="text-[10px] font-black text-emerald-700/75 uppercase tracking-widest">Nomor HP *</div>
                             <input
                               value={claimForm.phone}
                               onChange={(e) => setClaimForm(f => ({ ...f, phone: e.target.value }))}
-                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
-                                claimMode === 'success'
-                                  ? 'bg-sky-950/16 border-sky-200/12 focus:border-sky-300/45 focus:ring-2 focus:ring-sky-300/15'
-                                  : 'bg-rose-950/16 border-rose-200/12 focus:border-rose-300/45 focus:ring-2 focus:ring-rose-300/15'
-                              }`}
+                              className="mt-2 w-full px-4 py-3 rounded-2xl border text-slate-800 font-bold outline-none bg-white border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 placeholder:text-slate-400"
                               placeholder="08xxxxxxxxxx"
                               inputMode="tel"
                             />
                           </label>
 
                           <label className="block">
-                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Email</div>
+                            <div className="text-[10px] font-black text-emerald-700/75 uppercase tracking-widest">Email</div>
                             <input
                               value={claimForm.email}
                               onChange={(e) => setClaimForm(f => ({ ...f, email: e.target.value }))}
-                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
-                                claimMode === 'success'
-                                  ? 'bg-sky-950/16 border-sky-200/12 focus:border-sky-300/45 focus:ring-2 focus:ring-sky-300/15'
-                                  : 'bg-rose-950/16 border-rose-200/12 focus:border-rose-300/45 focus:ring-2 focus:ring-rose-300/15'
-                              }`}
+                              className="mt-2 w-full px-4 py-3 rounded-2xl border text-slate-800 font-bold outline-none bg-white border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 placeholder:text-slate-400"
                               placeholder="nama@email.com"
                               inputMode="email"
                             />
@@ -10373,76 +10484,52 @@ const TreeGame: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className={`mt-5 rounded-[2.6rem] border p-6 ${
-                        claimMode === 'success'
-                          ? 'bg-gradient-to-br from-white/8 via-teal-500/6 to-transparent border-teal-300/12'
-                          : 'bg-gradient-to-br from-white/8 via-orange-500/6 to-transparent border-orange-300/12'
-                      }`}>
-                        <div className="text-[10px] font-black text-white/55 uppercase tracking-[0.25em]">Alamat</div>
+                      <div className="mt-5 rounded-[2.6rem] border p-6 bg-white border-emerald-200">
+                        <div className="text-[10px] font-black text-emerald-700/70 uppercase tracking-[0.25em]">Alamat</div>
                         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                           <label className="block md:col-span-2">
-                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Alamat Lengkap *</div>
+                            <div className="text-[10px] font-black text-emerald-700/75 uppercase tracking-widest">Alamat Lengkap *</div>
                             <input
                               value={claimForm.address}
                               onChange={(e) => setClaimForm(f => ({ ...f, address: e.target.value }))}
-                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
-                                claimMode === 'success'
-                                  ? 'bg-teal-950/16 border-teal-200/12 focus:border-teal-300/45 focus:ring-2 focus:ring-teal-300/15'
-                                  : 'bg-orange-950/16 border-orange-200/12 focus:border-orange-300/45 focus:ring-2 focus:ring-orange-300/15'
-                              }`}
+                              className="mt-2 w-full px-4 py-3 rounded-2xl border text-slate-800 font-bold outline-none bg-white border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 placeholder:text-slate-400"
                               placeholder="Jalan, RT/RW, No Rumah"
                             />
                           </label>
 
                           <label className="block">
-                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Kecamatan *</div>
+                            <div className="text-[10px] font-black text-emerald-700/75 uppercase tracking-widest">Kecamatan *</div>
                             <input
                               value={claimForm.kecamatan}
                               onChange={(e) => setClaimForm(f => ({ ...f, kecamatan: e.target.value }))}
-                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
-                                claimMode === 'success'
-                                  ? 'bg-teal-950/16 border-teal-200/12 focus:border-teal-300/45 focus:ring-2 focus:ring-teal-300/15'
-                                  : 'bg-orange-950/16 border-orange-200/12 focus:border-orange-300/45 focus:ring-2 focus:ring-orange-300/15'
-                              }`}
+                              className="mt-2 w-full px-4 py-3 rounded-2xl border text-slate-800 font-bold outline-none bg-white border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 placeholder:text-slate-400"
                               placeholder="Kecamatan"
                             />
                           </label>
 
                           <label className="block">
-                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Kelurahan/Desa *</div>
+                            <div className="text-[10px] font-black text-emerald-700/75 uppercase tracking-widest">Kelurahan/Desa *</div>
                             <input
                               value={claimForm.kelurahan}
                               onChange={(e) => setClaimForm(f => ({ ...f, kelurahan: e.target.value }))}
-                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
-                                claimMode === 'success'
-                                  ? 'bg-teal-950/16 border-teal-200/12 focus:border-teal-300/45 focus:ring-2 focus:ring-teal-300/15'
-                                  : 'bg-orange-950/16 border-orange-200/12 focus:border-orange-300/45 focus:ring-2 focus:ring-orange-300/15'
-                              }`}
+                              className="mt-2 w-full px-4 py-3 rounded-2xl border text-slate-800 font-bold outline-none bg-white border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 placeholder:text-slate-400"
                               placeholder="Kelurahan/Desa"
                             />
                           </label>
                         </div>
                       </div>
 
-                      <div className={`mt-5 rounded-[2.6rem] border p-6 ${
-                        claimMode === 'success'
-                          ? 'bg-gradient-to-br from-white/8 via-emerald-500/6 to-transparent border-emerald-300/12'
-                          : 'bg-gradient-to-br from-white/8 via-amber-500/6 to-transparent border-amber-300/12'
-                      }`}>
-                        <div className="text-[10px] font-black text-white/55 uppercase tracking-[0.25em]">
+                      <div className="mt-5 rounded-[2.6rem] border p-6 bg-white border-emerald-200">
+                        <div className="text-[10px] font-black text-emerald-700/70 uppercase tracking-[0.25em]">
                           {claimMode === 'success' ? 'Detail Klaim' : 'Detail Formulir'}
                         </div>
                         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                           <label className="block">
-                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Jumlah Bibit *</div>
+                            <div className="text-[10px] font-black text-emerald-700/75 uppercase tracking-widest">Jumlah Bibit *</div>
                             <select
                               value={claimForm.quantity}
                               onChange={(e) => setClaimForm(f => ({ ...f, quantity: Number(e.target.value) }))}
-                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
-                                claimMode === 'success'
-                                  ? 'bg-emerald-950/16 border-emerald-200/12 focus:border-emerald-300/45 focus:ring-2 focus:ring-emerald-300/15'
-                                  : 'bg-amber-950/16 border-amber-200/12 focus:border-amber-300/45 focus:ring-2 focus:ring-amber-300/15'
-                              }`}
+                              className="mt-2 w-full px-4 py-3 rounded-2xl border text-slate-800 font-bold outline-none bg-white border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                             >
                               {[1, 2, 3, 4, 5].map(n => (
                                 <option key={n} value={n}>{n} bibit</option>
@@ -10451,39 +10538,27 @@ const TreeGame: React.FC = () => {
                           </label>
 
                           <label className="block">
-                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Jenis Bibit</div>
+                            <div className="text-[10px] font-black text-emerald-700/75 uppercase tracking-widest">Jenis Bibit</div>
                             <input
                               value={selectedSeedling.name}
                               readOnly
-                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white/85 font-black ${
-                                claimMode === 'success'
-                                  ? 'bg-emerald-950/14 border-emerald-200/12'
-                                  : 'bg-amber-950/14 border-amber-200/12'
-                              }`}
+                              className="mt-2 w-full px-4 py-3 rounded-2xl border text-emerald-900 font-black bg-emerald-50 border-emerald-200"
                             />
                           </label>
 
                           <label className="block md:col-span-2">
-                            <div className="text-[10px] font-black text-white/60 uppercase tracking-widest">Lokasi Penanaman (opsional)</div>
+                            <div className="text-[10px] font-black text-emerald-700/75 uppercase tracking-widest">Lokasi Penanaman (opsional)</div>
                             <input
                               value={claimForm.plantingLocation}
                               onChange={(e) => setClaimForm(f => ({ ...f, plantingLocation: e.target.value }))}
-                              className={`mt-2 w-full px-4 py-3 rounded-2xl border text-white font-bold outline-none backdrop-blur-sm ${
-                                claimMode === 'success'
-                                  ? 'bg-emerald-950/16 border-emerald-200/12 focus:border-emerald-300/45 focus:ring-2 focus:ring-emerald-300/15'
-                                  : 'bg-amber-950/16 border-amber-200/12 focus:border-amber-300/45 focus:ring-2 focus:ring-amber-300/15'
-                              }`}
+                              className="mt-2 w-full px-4 py-3 rounded-2xl border text-slate-800 font-bold outline-none bg-white border-emerald-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 placeholder:text-slate-400"
                               placeholder="Contoh: halaman rumah / RW / sekolah"
                             />
                           </label>
                         </div>
 
                         <div className="mt-5">
-                          <label className={`flex items-start gap-3 p-4 rounded-[2rem] border ${
-                            claimMode === 'success'
-                              ? 'bg-emerald-950/18 border-emerald-200/12'
-                              : 'bg-amber-950/18 border-amber-200/12'
-                          }`}>
+                          <label className="flex items-start gap-3 p-4 rounded-[2rem] border bg-emerald-50 border-emerald-200">
                             <input
                               type="checkbox"
                               checked={claimForm.consent}
@@ -10491,8 +10566,8 @@ const TreeGame: React.FC = () => {
                               className="mt-1 accent-emerald-500"
                             />
                             <div className="min-w-0">
-                              <div className="text-white font-black text-[12px]">Saya bersedia dihubungi untuk verifikasi.</div>
-                              <div className="text-white/60 font-bold text-[11px] mt-1 leading-relaxed">
+                              <div className="text-emerald-950 font-black text-[12px]">Saya bersedia dihubungi untuk verifikasi.</div>
+                              <div className="text-emerald-900/65 font-bold text-[11px] mt-1 leading-relaxed">
                                 Pastikan data benar agar proses verifikasi berjalan lancar.
                               </div>
                             </div>
@@ -10503,26 +10578,18 @@ const TreeGame: React.FC = () => {
                   </div>
                 </div>
 
-                <div className={`relative p-6 border-t backdrop-blur-xl flex flex-col sm:flex-row gap-3 justify-end ${
-                  claimMode === 'success'
-                    ? 'border-emerald-200/10 bg-gradient-to-r from-slate-950/62 via-emerald-950/20 to-slate-950/62'
-                    : 'border-amber-200/10 bg-gradient-to-r from-slate-950/62 via-amber-950/20 to-slate-950/62'
-                }`}>
+                <div className="relative p-6 border-t border-emerald-200 bg-white/92 backdrop-blur-xl flex flex-col sm:flex-row gap-3 justify-end">
                   <button
                     type="button"
                     onClick={() => { setClaimOpen(false); setClaimError(null); }}
-                    className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/90 font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform"
+                    className="px-6 py-3 rounded-2xl bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-800 font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform"
                   >
                     Tutup
                   </button>
                   <button
                     type="button"
                     onClick={submitClaim}
-                    className={`px-6 py-3 rounded-2xl border text-white font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform inline-flex items-center justify-center gap-2 ${
-                      claimMode === 'success'
-                        ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500/25 shadow-lg shadow-emerald-900/20'
-                        : 'bg-amber-600 hover:bg-amber-500 border-amber-500/25 shadow-lg shadow-amber-900/15'
-                    }`}
+                    className="px-6 py-3 rounded-2xl border text-white font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 border-emerald-600 shadow-lg shadow-emerald-900/15"
                   >
                     <Sprout size={16} />
                     {claimMode === 'success' ? 'Kirim Klaim' : 'Kirim Formulir'}
