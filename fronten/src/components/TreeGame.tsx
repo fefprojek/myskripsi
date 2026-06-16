@@ -1196,6 +1196,95 @@ const EnvMascotCard = memo(({
     return () => window.clearInterval(t);
   }, [dialog.text, machine.dialogNonce, machine.lastActivityAt, showBubble]);
 
+  const motionProfile = useMemo(() => {
+    const lively = Boolean(machine.funUntil || machine.state === 'active' || machine.state === 'happy');
+
+    return {
+      card: {
+        rotate:
+          machine.funUntil
+            ? [0, 6, -5, 0]
+            : machine.state === 'thinking'
+              ? [1.2, 0.3, 1.2]
+              : machine.state === 'hoverMap'
+                ? [0.4, -0.4, 0.4]
+                : machine.state === 'aware'
+                  ? [-0.8, 0.8, -0.8]
+                  : mood === 'worried'
+                    ? [0, -0.9, 0.9, -0.9, 0]
+                    : [-0.45, 0.45, -0.45],
+        y: lively ? [0, -3.2, 0] : [0, -1.4, 0],
+        x:
+          machine.state === 'worried'
+            ? [0, -1.2, 1.2, -1.2, 0]
+            : machine.state === 'hoverMap'
+              ? [0, -1.6, 0]
+              : machine.state === 'aware'
+                ? [0, -1.1, 0]
+                : [0, 0, 0],
+        scale: selfHover ? 1.018 : machine.state === 'aware' ? 1.008 : 1,
+        duration: machine.state === 'worried' ? 1.55 : isFast ? 3.1 : 4.3,
+      },
+      body: {
+        y: lively ? [0, -2.5, 0] : [0, -1.2, 0],
+        x:
+          effectivePose === 'point'
+            ? [-0.8, -2.2, -0.8]
+            : effectivePose === 'plant'
+              ? [0.4, 1.1, 0.4]
+              : effectivePose === 'guard'
+                ? [0, 0.7, 0]
+                : [0, 0, 0],
+        duration: isFast ? 3.4 : 4.6,
+      },
+      head: {
+        rotate:
+          machine.state === 'thinking'
+            ? [4, -2, 4]
+            : machine.state === 'hoverMap'
+              ? (effectivePose === 'point' ? [-5, -2.5, -5] : [3, 5, 3])
+              : machine.state === 'aware'
+                ? [-2.4, 2.4, -2.4]
+                : effectivePose === 'guard'
+                  ? [-1.2, 1.2, -1.2]
+                  : mood === 'worried'
+                    ? [-1.8, 1.8, -1.8]
+                    : [0, 1, 0],
+        x:
+          machine.state === 'hoverMap'
+            ? (effectivePose === 'point' ? [-1.6, -2.8, -1.6] : [1.2, 2.4, 1.2])
+            : machine.state === 'aware'
+              ? [0, -1.1, 0]
+              : [0, 0, 0],
+        y: machine.state === 'happy' ? [0, -1.8, 0] : [0, -0.8, 0],
+        scale: machine.state === 'aware' ? [1, 1.025, 1] : [1, 1.012, 1],
+        duration: isFast ? 1.9 : 2.7,
+      },
+      tail: {
+        rotate: mood === 'worried' ? [-6, 10, -6] : [-5, 11, -5],
+        x: [0, 1.2, 0],
+        duration: 3.8,
+      },
+      tuft: {
+        rotate: [-5, 5, -5],
+        y: [0, -1.2, 0],
+        duration: 2.8,
+      },
+      leftArm:
+        effectivePose === 'point'
+          ? { rotate: -42, x: -3, y: -4, duration: 0.42 }
+          : effectivePose === 'plant'
+            ? { rotate: 22, x: 1, y: 1.5, duration: 0.42 }
+            : { rotate: [-9, 6, -9], x: [0, 1.2, 0], y: [0, -0.8, 0], duration: 2.6 },
+      rightArm:
+        effectivePose === 'wave'
+          ? { rotate: [20, -8, 20], x: [0, -1.2, 0], y: [0, -2.2, 0], duration: 2.1 }
+          : effectivePose === 'water'
+            ? { rotate: [12, 22, 12], x: [0, 0.8, 0], y: [0, 1.2, 0], duration: 2.2 }
+            : { rotate: [8, -5, 8], x: [0, -1.2, 0], y: [0, -0.8, 0], duration: 2.6 },
+    };
+  }, [effectivePose, isFast, machine.funUntil, machine.state, mood, selfHover]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -1244,7 +1333,7 @@ const EnvMascotCard = memo(({
                               : -18,
                   }}
                   exit={{ opacity: 0, y: 10, scale: 0.96 }}
-                  transition={{ duration: 0.18 }}
+                  transition={{ type: 'spring', stiffness: 240, damping: 22, mass: 0.9 }}
                   className="pointer-events-none absolute right-0 -top-1 z-40"
                 >
                   <div className={`relative ${mode === 'compact' ? 'max-w-[172px]' : 'max-w-[200px]'}`}>
@@ -1283,31 +1372,11 @@ const EnvMascotCard = memo(({
               style={{
                 backgroundImage: `radial-gradient(circle at 30% 18%, ${accent.glow} 0 70px, rgba(255,255,255,0.9) 120px)`,
               }}
-              animate={{
-                rotate:
-                  machine.funUntil
-                    ? [0, 12, -10, 0]
-                    : machine.state === 'thinking'
-                      ? [3, 1, 3]
-                      : machine.state === 'hoverMap'
-                        ? [0.8, -0.8, 0.8]
-                        : machine.state === 'aware'
-                          ? [-2, 2, -2]
-                          : [-1.2, 1.2, -1.2],
-                y: machine.state === 'happy' || machine.state === 'active' ? [0, -5, 0] : [0, -2, 0],
-                x:
-                  machine.state === 'worried'
-                    ? [0, -2, 2, -2, 0]
-                    : machine.state === 'hoverMap'
-                      ? [0, -3, 0]
-                      : machine.state === 'aware'
-                        ? [0, -2, 0]
-                        : 0,
-                scale: selfHover ? 1.02 : machine.state === 'aware' ? 1.01 : 1,
-              }}
-              transition={{ repeat: Infinity, duration: machine.state === 'worried' ? 0.9 : isFast ? 2.4 : 3.4, ease: 'easeInOut' }}
-              whileHover={{ y: -3 }}
+              animate={{ rotate: motionProfile.card.rotate, y: motionProfile.card.y, x: motionProfile.card.x, scale: motionProfile.card.scale }}
+              transition={{ repeat: Infinity, duration: motionProfile.card.duration, ease: 'easeInOut' }}
+              whileHover={{ y: -2.2 }}
               whileTap={{ scale: 0.98, y: 1 }}
+              style={{ willChange: 'transform' }}
             >
               <motion.div
                 aria-hidden
@@ -1330,50 +1399,21 @@ const EnvMascotCard = memo(({
 
               <motion.div
                 className="absolute left-1/2 -translate-x-1/2 bottom-6"
-                animate={{
-                  y: [0, -3, 0],
-                  x:
-                    effectivePose === 'point'
-                      ? [-2, -4, -2]
-                      : effectivePose === 'plant'
-                        ? [1, 2, 1]
-                        : effectivePose === 'guard'
-                          ? [0, 1, 0]
-                          : [0, 0, 0],
-                }}
-                transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut' }}
+                animate={{ y: motionProfile.body.y, x: motionProfile.body.x }}
+                transition={{ repeat: Infinity, duration: motionProfile.body.duration, ease: 'easeInOut' }}
+                style={{ willChange: 'transform' }}
               >
                 <div className="relative w-[86px] h-[128px]">
                   <div className="absolute inset-0 transition-opacity" style={{ opacity: avatarSrc ? 0 : 1 }}>
                   <motion.div
                     ref={headRef}
                     className="absolute left-1/2 -translate-x-1/2 top-0 w-[64px] h-[64px] rounded-full border-2 border-[#4a2c19] shadow-[0_12px_24px_rgba(0,0,0,0.2)]"
-                    animate={{
-                      rotate:
-                        machine.state === 'thinking'
-                          ? [8, -4, 8]
-                          : machine.state === 'hoverMap'
-                            ? (effectivePose === 'point' ? [-10, -5, -10] : [6, 10, 6])
-                            : machine.state === 'aware'
-                              ? [-5, 5, -5]
-                              : effectivePose === 'guard'
-                                ? [-3, 3, -3]
-                                : mood === 'worried'
-                                  ? [-4, 4, -4]
-                                  : [0, 2, 0],
-                      x:
-                        machine.state === 'hoverMap'
-                          ? (effectivePose === 'point' ? [-3, -5, -3] : [3, 5, 3])
-                          : machine.state === 'aware'
-                            ? [0, -2, 0]
-                            : 0,
-                      y: machine.state === 'happy' ? [0, -3, 0] : 0,
-                      scale: machine.state === 'aware' ? [1, 1.04, 1] : [1, 1.02, 1],
-                    }}
-                    transition={{ repeat: Infinity, duration: isFast ? 1.4 : 2.0, ease: 'easeInOut' }}
+                    animate={{ rotate: motionProfile.head.rotate, x: motionProfile.head.x, y: motionProfile.head.y, scale: motionProfile.head.scale }}
+                    transition={{ repeat: Infinity, duration: motionProfile.head.duration, ease: 'easeInOut' }}
                     style={{
                       backgroundColor: accent.core,
                       backgroundImage: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.15) 0%, transparent 70%)`,
+                      willChange: 'transform',
                     }}
                   >
                     {/* Monkey Ears - Enhanced with depth */}
@@ -1453,8 +1493,8 @@ const EnvMascotCard = memo(({
                     <motion.div
                       aria-hidden
                       className="absolute left-1/2 -translate-x-1/2 -top-2 w-8 h-5"
-                      animate={{ rotate: [-10, 10, -10], y: [0, -2, 0] }}
-                      transition={{ repeat: Infinity, duration: 2.0 }}
+                      animate={{ rotate: motionProfile.tuft.rotate, y: motionProfile.tuft.y }}
+                      transition={{ repeat: Infinity, duration: motionProfile.tuft.duration, ease: 'easeInOut' }}
                     >
                       <div className="w-full h-full bg-[#6b3e23] rounded-full" style={{ backgroundColor: accent.core, clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)' }} />
                     </motion.div>
@@ -1481,8 +1521,8 @@ const EnvMascotCard = memo(({
                   {/* Monkey Tail */}
                   <motion.div
                     className="absolute -left-1 top-[80px] w-12 h-12 pointer-events-none"
-                    animate={{ rotate: [-10, 20, -10], x: [0, 2, 0] }}
-                    transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                    animate={{ rotate: motionProfile.tail.rotate, x: motionProfile.tail.x }}
+                    transition={{ repeat: Infinity, duration: motionProfile.tail.duration, ease: 'easeInOut' }}
                   >
                     <svg viewBox="0 0 50 50" className="w-full h-full opacity-60">
                       <path
@@ -1498,27 +1538,15 @@ const EnvMascotCard = memo(({
                   <motion.div
                     aria-hidden
                     className="absolute -left-1 top-[70px] w-[24px] h-[12px] rounded-full border border-[#5d361b]/30 shadow-sm"
-                    animate={
-                      effectivePose === 'point'
-                        ? { rotate: -55, x: -4, y: -6 }
-                        : effectivePose === 'plant'
-                          ? { rotate: 30, x: 1, y: 2 }
-                          : { rotate: [-14, 10, -14], x: [0, 2, 0], y: [0, -1, 0] }
-                    }
-                    transition={{ repeat: Infinity, duration: 2.1, ease: 'easeInOut' }}
+                    animate={{ rotate: motionProfile.leftArm.rotate, x: motionProfile.leftArm.x, y: motionProfile.leftArm.y }}
+                    transition={{ repeat: Infinity, duration: motionProfile.leftArm.duration, ease: 'easeInOut' }}
                     style={{ backgroundColor: accent.core }}
                   />
                   <motion.div
                     aria-hidden
                     className="absolute -right-1 top-[70px] w-[24px] h-[12px] rounded-full border border-[#5d361b]/30 shadow-sm"
-                    animate={
-                      effectivePose === 'wave'
-                        ? { rotate: [32, -12, 32], x: [0, -2, 0], y: [0, -3, 0] }
-                        : effectivePose === 'water'
-                          ? { rotate: [18, 32, 18], x: [0, 1, 0], y: [0, 2, 0] }
-                          : { rotate: [14, -10, 14], x: [0, -2, 0], y: [0, -1, 0] }
-                    }
-                    transition={{ repeat: Infinity, duration: 1.9, ease: 'easeInOut', delay: 0.05 }}
+                    animate={{ rotate: motionProfile.rightArm.rotate, x: motionProfile.rightArm.x, y: motionProfile.rightArm.y }}
+                    transition={{ repeat: Infinity, duration: motionProfile.rightArm.duration, ease: 'easeInOut', delay: 0.05 }}
                     style={{ backgroundColor: accent.core }}
                   />
                   </div>
@@ -1749,9 +1777,10 @@ const EnvMascotCard = memo(({
 
 EnvMascotCard.displayName = 'EnvMascotCard';
 
-const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health, moisture, yPos }: { size: number, color: string, stage: number, actionProgress: number, icon?: React.ElementType, health: number, moisture: number, yPos: number }) => {
+const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health, moisture, yPos, species }: { size: number, color: string, stage: number, actionProgress: number, icon?: React.ElementType, health: number, moisture: number, yPos: number, species: string }) => {
   const health01 = Math.max(0, Math.min(1, health / 100));
   const moisture01 = Math.max(0, Math.min(1, moisture / 100));
+  const speciesKind = /pinus/i.test(species) ? 'pinus' : /jati/i.test(species) ? 'jati' : 'mahoni';
   const swayR = (() => {
     const x = Math.sin((yPos * 0.17 + size * 0.031) * 999.123) * 10000;
     return x - Math.floor(x);
@@ -1767,6 +1796,7 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
   const crownTop = moisture01 < 0.3 ? '#7fbf3b' : health01 < 0.45 ? '#5f8f34' : '#9ad758';
   const crownMid = moisture01 < 0.3 ? '#4f7f2f' : health01 < 0.45 ? '#43712c' : color;
   const crownDeep = health01 < 0.35 ? '#355724' : '#214b2e';
+  const accentLeaf = speciesKind === 'pinus' ? '#86efac' : speciesKind === 'jati' ? '#fde68a' : '#bbf7d0';
   return (
     <motion.div 
       className="relative flex flex-col items-center justify-end" 
@@ -1861,7 +1891,9 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
             style={{ color }}
           >
             <div className="relative">
-              {Icon ? <Icon size={size * 0.42} /> : <Trees size={size * 0.42} />}
+              <div className="scale-[0.9] origin-bottom">
+                <SeedlingIcon type={species} active={false} />
+              </div>
               <motion.div
                 animate={{ opacity: [0.15, 0.35, 0.15], scale: [1, 1.06, 1] }}
                 transition={{ repeat: Infinity, duration: 2.2 }}
@@ -1882,23 +1914,71 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
             exit={{ scale: 0 }}
             className="mb-2 relative z-10"
           >
-            <div
-              className="w-2.5 h-8 rounded-full shadow-sm"
-              style={{
-                backgroundColor: moisture01 < 0.25 ? '#7f1d1d' : '#8bc34a',
-                filter: `saturate(${0.7 + health01 * 0.6}) brightness(${0.85 + moisture01 * 0.25})`,
-              }}
-            />
-            <motion.div 
-              animate={{ rotate: [-5, 5, -5] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-              className="absolute -left-3 top-0 w-5 h-4 bg-[#8bc34a] rounded-full rotate-[-45deg] border-b-2 border-black/10" 
-            />
-            <motion.div 
-              animate={{ rotate: [5, -5, 5] }}
-              transition={{ repeat: Infinity, duration: 2, delay: 1 }}
-              className="absolute -right-3 top-1 w-4 h-3 bg-[#8bc34a] rounded-full rotate-[45deg] border-b-2 border-black/10" 
-            />
+            {speciesKind === 'pinus' ? (
+              <div className="relative flex flex-col items-center">
+                <div
+                  className="w-2 h-9 rounded-full shadow-sm"
+                  style={{
+                    backgroundColor: moisture01 < 0.25 ? '#7f1d1d' : '#7c9f42',
+                    filter: `saturate(${0.7 + health01 * 0.6}) brightness(${0.85 + moisture01 * 0.25})`,
+                  }}
+                />
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    animate={{ rotate: i % 2 === 0 ? [-6, 5, -6] : [6, -5, 6] }}
+                    transition={{ repeat: Infinity, duration: 1.9 + i * 0.2, delay: i * 0.2 }}
+                    className="absolute left-1/2 -translate-x-1/2 rounded-full"
+                    style={{
+                      top: 3 + i * 7,
+                      width: 12 + i * 4,
+                      height: 8 + i * 2,
+                      background: `linear-gradient(180deg, ${accentLeaf}, ${crownMid})`,
+                      clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
+                      filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.16))',
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <>
+                <div
+                  className="w-2.5 h-8 rounded-full shadow-sm"
+                  style={{
+                    backgroundColor: moisture01 < 0.25 ? '#7f1d1d' : '#8bc34a',
+                    filter: `saturate(${0.7 + health01 * 0.6}) brightness(${0.85 + moisture01 * 0.25})`,
+                  }}
+                />
+                <motion.div 
+                  animate={{ rotate: [-5, 5, -5] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                  className={`absolute ${speciesKind === 'jati' ? '-left-4 top-1 w-6 h-4' : '-left-3 top-0 w-5 h-4'} rounded-full rotate-[-45deg] border-b-2 border-black/10`}
+                  style={{
+                    background: speciesKind === 'jati'
+                      ? `radial-gradient(circle at 38% 32%, ${accentLeaf} 0 22%, #d97706 48%, ${crownMid} 100%)`
+                      : '#8bc34a',
+                  }}
+                />
+                <motion.div 
+                  animate={{ rotate: [5, -5, 5] }}
+                  transition={{ repeat: Infinity, duration: 2, delay: 1 }}
+                  className={`absolute ${speciesKind === 'jati' ? '-right-4 top-2 w-5 h-3.5' : '-right-3 top-1 w-4 h-3'} rounded-full rotate-[45deg] border-b-2 border-black/10`}
+                  style={{
+                    background: speciesKind === 'jati'
+                      ? `radial-gradient(circle at 38% 32%, #fef08a 0 22%, #ca8a04 48%, ${crownMid} 100%)`
+                      : '#8bc34a',
+                  }}
+                />
+                {speciesKind === 'mahoni' && (
+                  <motion.div
+                    animate={{ scale: [0.95, 1.05, 0.95], y: [0, -1, 0] }}
+                    transition={{ repeat: Infinity, duration: 2.2 }}
+                    className="absolute left-1/2 -translate-x-1/2 -top-1 w-5 h-5 rounded-full border border-black/10"
+                    style={{ background: `radial-gradient(circle at 35% 30%, ${accentLeaf} 0 26%, ${crownMid} 55%, ${crownDeep} 100%)` }}
+                  />
+                )}
+              </>
+            )}
           </motion.div>
         )}
 
@@ -1921,100 +2001,161 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
             }}
           >
             <div className="relative mx-auto" style={{ width: canopyWidth * 1.1, height: canopyHeight + trunkHeight + size * 0.08 }}>
-              {/* Crown shadow / mass */}
-              <motion.div
-                className="absolute left-1/2 -translate-x-1/2 rounded-[48%]"
-                animate={{ y: [0, -2, 0], rotate: [-1, 1, -1] }}
-                transition={{ repeat: Infinity, duration: 5.5, ease: 'easeInOut' }}
-                style={{
-                  top: size * 0.04,
-                  width: canopyWidth,
-                  height: canopyHeight,
-                  background:
-                    `radial-gradient(circle at 35% 28%, rgba(255,255,255,0.22) 0 14%, rgba(255,255,255,0.04) 30%, transparent 55%),
-                     radial-gradient(circle at 70% 78%, rgba(0,0,0,0.12) 0 22%, transparent 56%),
-                     linear-gradient(180deg, ${crownTop} 0%, ${crownMid} 52%, ${crownDeep} 100%)`,
-                  borderRadius: '42% 44% 38% 40% / 40% 42% 35% 37%',
-                  boxShadow: '0 24px 50px rgba(0,0,0,0.28), inset 0 -16px 22px rgba(12,28,16,0.22), inset 0 10px 18px rgba(255,255,255,0.05)',
-                }}
-              />
-
-              {/* Secondary leaf clusters */}
-              {[
-                { left: '12%', top: '18%', w: 0.34, h: 0.28, delay: 0 },
-                { left: '54%', top: '14%', w: 0.32, h: 0.26, delay: 0.35 },
-                { left: '2%', top: '34%', w: 0.3, h: 0.24, delay: 0.18 },
-                { left: '66%', top: '36%', w: 0.28, h: 0.24, delay: 0.52 },
-                { left: '32%', top: '0%', w: 0.36, h: 0.28, delay: 0.24 },
-              ].map((cluster, idx) => (
-                <motion.div
-                  key={idx}
-                  className="absolute rounded-[48%]"
-                  animate={{ y: [0, -2.5, 0], rotate: [-1.2, 1.2, -1.2] }}
-                  transition={{ repeat: Infinity, duration: 4.8 + idx * 0.35, delay: cluster.delay, ease: 'easeInOut' }}
-                  style={{
-                    left: cluster.left,
-                    top: cluster.top,
-                    width: canopyWidth * cluster.w,
-                    height: canopyHeight * cluster.h,
-                    background:
-                      `radial-gradient(circle at 32% 30%, rgba(255,255,255,0.18) 0 16%, rgba(255,255,255,0.03) 36%, transparent 54%),
-                       linear-gradient(180deg, ${crownTop} 0%, ${crownMid} 58%, ${crownDeep} 100%)`,
-                    boxShadow: 'inset 0 -10px 16px rgba(12,28,16,0.18), 0 10px 18px rgba(0,0,0,0.12)',
-                  }}
-                />
-              ))}
-
-              {/* Leaf texture */}
-              <div
-                className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
-                style={{
-                  top: size * 0.04,
-                  width: canopyWidth,
-                  height: canopyHeight,
-                  backgroundImage:
-                    'radial-gradient(circle at 18% 28%, rgba(255,255,255,0.09) 0 2px, transparent 3px), radial-gradient(circle at 64% 22%, rgba(255,255,255,0.08) 0 2px, transparent 3px), radial-gradient(circle at 72% 56%, rgba(0,0,0,0.08) 0 2px, transparent 3px), radial-gradient(circle at 38% 64%, rgba(0,0,0,0.07) 0 2px, transparent 3px)',
-                  backgroundSize: '24px 24px, 28px 28px, 20px 20px, 22px 22px',
-                  backgroundPosition: '0 0, 10px 8px, 4px 12px, 14px 16px',
-                  borderRadius: '42% 44% 38% 40% / 40% 42% 35% 37%',
-                  mixBlendMode: 'soft-light',
-                  opacity: 0.9,
-                }}
-              />
-
-              {/* Branches */}
-              <div
-                className="absolute rounded-full origin-bottom-left"
-                style={{
-                  left: `calc(50% - ${trunkWidth * 0.1}px)`,
-                  top: canopyHeight * 0.6,
-                  width: canopyWidth * 0.22,
-                  height: Math.max(5, trunkWidth * 0.24),
-                  transform: 'rotate(-24deg)',
-                  background: `linear-gradient(90deg, ${barkShadow}, ${trunkTone})`,
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.18)',
-                }}
-              />
-              <div
-                className="absolute rounded-full origin-bottom-right"
-                style={{
-                  right: `calc(50% - ${trunkWidth * 0.06}px)`,
-                  top: canopyHeight * 0.55,
-                  width: canopyWidth * 0.2,
-                  height: Math.max(5, trunkWidth * 0.22),
-                  transform: 'rotate(28deg)',
-                  background: `linear-gradient(90deg, ${trunkTone}, ${barkShadow})`,
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.18)',
-                }}
-              />
+              {speciesKind === 'pinus' ? (
+                <>
+                  {[0, 1, 2, 3].map((layer) => (
+                    <motion.div
+                      key={layer}
+                      className="absolute left-1/2 -translate-x-1/2"
+                      animate={{ y: [0, -2, 0], rotate: [-1.2 + layer * 0.12, 1.2 - layer * 0.12, -1.2 + layer * 0.12] }}
+                      transition={{ repeat: Infinity, duration: 4.4 + layer * 0.3, ease: 'easeInOut' }}
+                      style={{
+                        top: size * (0.02 + layer * 0.08),
+                        width: canopyWidth * (0.88 - layer * 0.12),
+                        height: canopyHeight * (0.44 - layer * 0.04),
+                        background: `linear-gradient(180deg, ${accentLeaf} 0%, ${crownTop} 12%, ${crownMid} 56%, ${crownDeep} 100%)`,
+                        clipPath: 'polygon(50% 0%, 96% 92%, 72% 92%, 84% 100%, 16% 100%, 28% 92%, 4% 92%)',
+                        boxShadow: '0 14px 26px rgba(0,0,0,0.18), inset 0 -12px 18px rgba(10,24,12,0.18)',
+                      }}
+                    />
+                  ))}
+                  <div
+                    className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+                    style={{
+                      top: size * 0.02,
+                      width: canopyWidth * 0.86,
+                      height: canopyHeight * 0.72,
+                      backgroundImage:
+                        'repeating-linear-gradient(180deg, rgba(255,255,255,0.09) 0 3px, transparent 3px 10px), repeating-linear-gradient(122deg, rgba(0,0,0,0.08) 0 1px, transparent 1px 9px)',
+                      clipPath: 'polygon(50% 0%, 95% 90%, 72% 90%, 84% 100%, 16% 100%, 28% 90%, 5% 90%)',
+                      opacity: 0.75,
+                      mixBlendMode: 'soft-light',
+                    }}
+                  />
+                  {stage >= 6 && [0, 1, 2].map((i) => (
+                    <div
+                      key={i}
+                      className="absolute rounded-full"
+                      style={{
+                        width: 9,
+                        height: 16,
+                        left: `${34 + i * 10}%`,
+                        top: `${34 + (i % 2) * 8}%`,
+                        background: 'linear-gradient(180deg, #f59e0b 0%, #92400e 100%)',
+                        borderRadius: '45% 45% 55% 55%',
+                        boxShadow: '0 6px 10px rgba(0,0,0,0.18)',
+                      }}
+                    />
+                  ))}
+                  {[0, 1, 2].map((i) => (
+                    <div
+                      key={`pinus-branch-${i}`}
+                      className="absolute left-1/2 -translate-x-1/2 rounded-full"
+                      style={{
+                        top: canopyHeight * (0.32 + i * 0.12),
+                        width: canopyWidth * (0.28 + i * 0.04),
+                        height: Math.max(4, trunkWidth * 0.18),
+                        transform: `rotate(${i % 2 === 0 ? -18 : 18}deg)`,
+                        background: `linear-gradient(90deg, ${barkShadow}, ${trunkTone})`,
+                        boxShadow: '0 4px 10px rgba(0,0,0,0.18)',
+                      }}
+                    />
+                  ))}
+                </>
+              ) : (
+                <>
+                  <motion.div
+                    className="absolute left-1/2 -translate-x-1/2 rounded-[48%]"
+                    animate={{ y: [0, -2, 0], rotate: [-1, 1, -1] }}
+                    transition={{ repeat: Infinity, duration: 5.5, ease: 'easeInOut' }}
+                    style={{
+                      top: size * 0.04,
+                      width: canopyWidth,
+                      height: canopyHeight,
+                      background:
+                        `radial-gradient(circle at 35% 28%, rgba(255,255,255,0.22) 0 14%, rgba(255,255,255,0.04) 30%, transparent 55%),
+                         radial-gradient(circle at 70% 78%, rgba(0,0,0,0.12) 0 22%, transparent 56%),
+                         linear-gradient(180deg, ${speciesKind === 'jati' ? '#fde68a' : crownTop} 0%, ${crownMid} 52%, ${crownDeep} 100%)`,
+                      borderRadius: speciesKind === 'jati' ? '34% 38% 42% 40% / 38% 36% 44% 42%' : '42% 44% 38% 40% / 40% 42% 35% 37%',
+                      boxShadow: '0 24px 50px rgba(0,0,0,0.28), inset 0 -16px 22px rgba(12,28,16,0.22), inset 0 10px 18px rgba(255,255,255,0.05)',
+                    }}
+                  />
+                  {[
+                    { left: '12%', top: '18%', w: 0.34, h: 0.28, delay: 0 },
+                    { left: '54%', top: '14%', w: 0.32, h: 0.26, delay: 0.35 },
+                    { left: '2%', top: '34%', w: 0.3, h: 0.24, delay: 0.18 },
+                    { left: '66%', top: '36%', w: 0.28, h: 0.24, delay: 0.52 },
+                    { left: '32%', top: '0%', w: 0.36, h: 0.28, delay: 0.24 },
+                  ].map((cluster, idx) => (
+                    <motion.div
+                      key={idx}
+                      className="absolute rounded-[48%]"
+                      animate={{ y: [0, -2.5, 0], rotate: [-1.2, 1.2, -1.2] }}
+                      transition={{ repeat: Infinity, duration: 4.8 + idx * 0.35, delay: cluster.delay, ease: 'easeInOut' }}
+                      style={{
+                        left: cluster.left,
+                        top: cluster.top,
+                        width: canopyWidth * cluster.w,
+                        height: canopyHeight * cluster.h,
+                        background:
+                          `radial-gradient(circle at 32% 30%, rgba(255,255,255,0.18) 0 16%, rgba(255,255,255,0.03) 36%, transparent 54%),
+                           linear-gradient(180deg, ${speciesKind === 'jati' ? '#fef08a' : crownTop} 0%, ${crownMid} 58%, ${crownDeep} 100%)`,
+                        borderRadius: speciesKind === 'jati' ? '38% 44% 36% 46% / 42% 38% 45% 40%' : undefined,
+                        boxShadow: 'inset 0 -10px 16px rgba(12,28,16,0.18), 0 10px 18px rgba(0,0,0,0.12)',
+                      }}
+                    />
+                  ))}
+                  <div
+                    className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+                    style={{
+                      top: size * 0.04,
+                      width: canopyWidth,
+                      height: canopyHeight,
+                      backgroundImage:
+                        speciesKind === 'jati'
+                          ? 'repeating-radial-gradient(circle at 30% 30%, rgba(255,255,255,0.10) 0 2px, transparent 2px 14px), repeating-linear-gradient(135deg, rgba(0,0,0,0.06) 0 1px, transparent 1px 10px)'
+                          : 'radial-gradient(circle at 18% 28%, rgba(255,255,255,0.09) 0 2px, transparent 3px), radial-gradient(circle at 64% 22%, rgba(255,255,255,0.08) 0 2px, transparent 3px), radial-gradient(circle at 72% 56%, rgba(0,0,0,0.08) 0 2px, transparent 3px), radial-gradient(circle at 38% 64%, rgba(0,0,0,0.07) 0 2px, transparent 3px)',
+                      backgroundSize: speciesKind === 'jati' ? '18px 18px, 18px 18px' : '24px 24px, 28px 28px, 20px 20px, 22px 22px',
+                      backgroundPosition: '0 0, 10px 8px, 4px 12px, 14px 16px',
+                      borderRadius: speciesKind === 'jati' ? '34% 38% 42% 40% / 38% 36% 44% 42%' : '42% 44% 38% 40% / 40% 42% 35% 37%',
+                      mixBlendMode: 'soft-light',
+                      opacity: 0.9,
+                    }}
+                  />
+                  <div
+                    className="absolute rounded-full origin-bottom-left"
+                    style={{
+                      left: `calc(50% - ${trunkWidth * 0.1}px)`,
+                      top: canopyHeight * 0.6,
+                      width: canopyWidth * 0.22,
+                      height: Math.max(5, trunkWidth * 0.24),
+                      transform: 'rotate(-24deg)',
+                      background: `linear-gradient(90deg, ${barkShadow}, ${trunkTone})`,
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.18)',
+                    }}
+                  />
+                  <div
+                    className="absolute rounded-full origin-bottom-right"
+                    style={{
+                      right: `calc(50% - ${trunkWidth * 0.06}px)`,
+                      top: canopyHeight * 0.55,
+                      width: canopyWidth * 0.2,
+                      height: Math.max(5, trunkWidth * 0.22),
+                      transform: 'rotate(28deg)',
+                      background: `linear-gradient(90deg, ${trunkTone}, ${barkShadow})`,
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.18)',
+                    }}
+                  />
+                </>
+              )}
 
               {/* Trunk with bark texture */}
               <div
                 className="absolute left-1/2 -translate-x-1/2 rounded-t-[45%] rounded-b-[30%] overflow-hidden"
                 style={{
                   bottom: size * 0.05,
-                  width: trunkWidth,
-                  height: trunkHeight,
+                  width: speciesKind === 'pinus' ? trunkWidth * 0.82 : speciesKind === 'jati' ? trunkWidth * 1.1 : trunkWidth,
+                  height: speciesKind === 'pinus' ? trunkHeight * 1.12 : speciesKind === 'jati' ? trunkHeight * 0.96 : trunkHeight,
                   background:
                     `linear-gradient(90deg, ${barkShadow} 0%, ${trunkTone} 18%, #9c6b44 32%, ${trunkTone} 48%, ${barkShadow} 100%)`,
                   boxShadow: '0 10px 24px rgba(0,0,0,0.24)',
@@ -2044,22 +2185,44 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
               {/* Fruit / flower accents for mature tree */}
               {stage >= 6 && (
                 <div className="absolute inset-0">
-                  {[...Array(9)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, scale: 0.4 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.04 * i }}
-                      className="absolute rounded-full shadow-md"
-                      style={{
-                        width: i % 3 === 0 ? 10 : 8,
-                        height: i % 3 === 0 ? 10 : 8,
-                        background: i % 2 === 0 ? 'radial-gradient(circle at 35% 35%, #fde68a 0 24%, #fb923c 42%, #c2410c 100%)' : 'radial-gradient(circle at 35% 35%, #fef08a 0 22%, #facc15 42%, #ca8a04 100%)',
-                        left: `${14 + (i * 9) % 68}%`,
-                        top: `${14 + (i * 13) % 44}%`,
-                      }}
-                    />
-                  ))}
+                  {speciesKind === 'pinus'
+                    ? [...Array(4)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, scale: 0.4 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.06 * i }}
+                          className="absolute shadow-md"
+                          style={{
+                            width: 10,
+                            height: 18,
+                            background: 'linear-gradient(180deg, #f59e0b 0%, #78350f 100%)',
+                            left: `${34 + (i * 10) % 32}%`,
+                            top: `${28 + (i * 11) % 26}%`,
+                            borderRadius: '45% 45% 55% 55%',
+                          }}
+                        />
+                      ))
+                    : [...Array(9)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, scale: 0.4 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.04 * i }}
+                          className="absolute rounded-full shadow-md"
+                          style={{
+                            width: i % 3 === 0 ? 10 : 8,
+                            height: i % 3 === 0 ? 10 : 8,
+                            background: speciesKind === 'jati'
+                              ? 'radial-gradient(circle at 35% 35%, #fde68a 0 24%, #f59e0b 42%, #b45309 100%)'
+                              : i % 2 === 0
+                                ? 'radial-gradient(circle at 35% 35%, #fde68a 0 24%, #fb923c 42%, #c2410c 100%)'
+                                : 'radial-gradient(circle at 35% 35%, #fef08a 0 22%, #facc15 42%, #ca8a04 100%)',
+                            left: `${14 + (i * 9) % 68}%`,
+                            top: `${14 + (i * 13) % 44}%`,
+                          }}
+                        />
+                      ))}
                 </div>
               )}
             </div>
@@ -4095,9 +4258,9 @@ const seedlings: Seedling[] = [
 
 const allRegions: Region[] = [
   // --- KOTA BANDUNG (Pusat) ---
-  { id: 'bdg-bojonagara', name: 'Bojonagara (Kota)', status: 'hijau', description: 'Kawasan barat laut dengan vegetasi rapat dan kampus.', path: "M 45,35 L 50,25 L 60,35 L 55,45 L 40,45 Z", x: 50, y: 37 },
+  { id: 'bdg-bojonagara', name: 'Bojonagara (Kota)', status: 'kritis', description: 'Kawasan barat laut dengan vegetasi rapat dan kampus.', path: "M 45,35 L 50,25 L 60,35 L 55,45 L 40,45 Z", x: 50, y: 37 },
   { id: 'bdg-cibeunying', name: 'Cibeunying (Kota)', status: 'kritis', description: 'Kawasan timur laut yang mulai padat pemukiman.', path: "M 50,25 L 65,30 L 80,30 L 75,45 L 60,35 Z", x: 66, y: 33 },
-  { id: 'bdg-ujungberung', name: 'Ujungberung (Kota)', status: 'hijau', description: 'Wilayah timur yang luas dengan area pegunungan.', path: "M 80,30 L 95,15 L 115,25 L 115,50 L 95,55 L 75,45 Z", x: 96, y: 36 },
+  { id: 'bdg-ujungberung', name: 'Ujungberung (Kota)', status: 'kritis', description: 'Wilayah timur yang luas dengan area pegunungan.', path: "M 80,30 L 95,15 L 115,25 L 115,50 L 95,55 L 75,45 Z", x: 96, y: 36 },
   { id: 'bdg-karees', name: 'Karees (Kota)', status: 'gersang', description: 'Pusat kota dengan kepadatan tinggi, butuh banyak RTH.', path: "M 55,45 L 60,35 L 75,45 L 65,55 L 50,55 Z", x: 61, y: 47 },
   { id: 'bdg-tegalega', name: 'Tegalega (Kota)', status: 'kritis', description: 'Kawasan selatan daya yang cukup padat penduduk.', path: "M 40,45 L 55,45 L 50,55 L 35,55 Z", x: 45, y: 50 },
   { id: 'bdg-gedebage', name: 'Gedebage (Kota)', status: 'gersang', description: 'Kawasan tenggara yang berkembang, rawan banjir.', path: "M 65,55 L 75,45 L 95,55 L 85,70 L 60,65 Z", x: 76, y: 58 },
@@ -4111,11 +4274,11 @@ const allRegions: Region[] = [
   { id: 'kab-majalaya', name: 'Majalaya & Ciparay', status: 'kritis', description: 'Kawasan industri tekstil yang padat.', path: "M 85,70 L 95,55 L 115,50 L 115,75 L 100,90 L 75,85 Z", x: 97, y: 70 },
 
   // --- KABUPATEN BANDUNG BARAT & CIMAHI (Barat/Utara) ---
-  { id: 'kbb-lembang', name: 'Lembang (KBB)', status: 'hijau', description: 'Kawasan utara pegunungan yang sejuk namun padat villa.', path: "M 35,15 L 65,5 L 95,15 L 80,30 L 65,30 L 50,25 L 35,35 Z", x: 60, y: 20 },
+  { id: 'kbb-lembang', name: 'Lembang (KBB)', status: 'kritis', description: 'Kawasan utara pegunungan yang sejuk namun padat villa.', path: "M 35,15 L 65,5 L 95,15 L 80,30 L 65,30 L 50,25 L 35,35 Z", x: 60, y: 20 },
   { id: 'cimahi', name: 'Kota Cimahi', status: 'kritis', description: 'Kota industri otonom yang sangat padat.', path: "M 35,35 L 45,35 L 40,45 L 30,45 Z", x: 37, y: 40 },
   { id: 'kbb-padalarang', name: 'Padalarang (KBB)', status: 'gersang', description: 'Pusat KBB, dikenal dengan kawasan tambang kapurnya.', path: "M 15,20 L 35,15 L 35,35 L 15,40 Z", x: 25, y: 27 },
   { id: 'kbb-cipatat', name: 'Cipatat & Rajamandala', status: 'gersang', description: 'Kawasan karst (kapur) yang kering di ujung barat.', path: "M 5,25 L 15,20 L 15,40 L 5,45 Z", x: 10, y: 32 },
-  { id: 'kbb-cililin', name: 'Cililin & Sindangkerta', status: 'hijau', description: 'Kawasan barat daya dengan waduk dan perbukitan.', path: "M 5,45 L 15,40 L 30,45 L 35,55 L 30,65 L 15,70 L 5,60 Z", x: 18, y: 55 },
+  { id: 'kbb-cililin', name: 'Cililin & Sindangkerta', status: 'kritis', description: 'Kawasan barat daya dengan waduk dan perbukitan.', path: "M 5,45 L 15,40 L 30,45 L 35,55 L 30,65 L 15,70 L 5,60 Z", x: 18, y: 55 },
 ];
 
 const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focusActive, onHover, onClick }: {
@@ -4139,6 +4302,14 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
         : 'rgba(239,68,68,0.62)';
   const isDimmed = (focusActive && !isFocused);
   const depth = isFocused ? 2.6 : isHovered ? 2.1 : 1.2;
+  const identity =
+    region.id === 'kbb-lembang' || region.id === 'kab-ciwidey' || region.id === 'kab-pangalengan'
+      ? 'cold'
+      : region.id === 'bdg-gedebage' || region.id === 'kab-majalaya' || region.id === 'kab-margahayu'
+        ? 'industry'
+        : region.id === 'kab-baleendah'
+          ? 'flood'
+          : 'neutral';
   const texFill = `url(#tex-${region.status})`;
   const texBaseOpacity =
     region.status === 'hijau'
@@ -4147,6 +4318,23 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
         ? 0.20
         : 0.22;
   const texOpacity = isDimmed ? 0.05 : (isHovered || isFocused ? texBaseOpacity * 1.65 : texBaseOpacity);
+  const microTexFill =
+    identity === 'cold'
+      ? 'url(#micro-cold)'
+      : identity === 'industry'
+        ? 'url(#micro-industry)'
+        : identity === 'flood'
+          ? 'url(#micro-flood)'
+          : 'url(#micro-neutral)';
+  const microTexBaseOpacity =
+    identity === 'cold'
+      ? 0.18
+      : identity === 'industry'
+        ? 0.16
+        : identity === 'flood'
+          ? 0.18
+          : 0.15;
+  const microTexOpacity = isDimmed ? 0.035 : (isHovered || isFocused ? microTexBaseOpacity * 1.55 : microTexBaseOpacity);
   const strokeColor = isHovered || isFocused ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.32)';
   const pulseAttention = !isHijau && !isHovered && !isFocused && !isDimmed;
   const targetScale = isFocused ? 1.065 : isHovered ? 1.045 : 1;
@@ -4221,15 +4409,6 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
   const statusP = statusAnim ? clamp01((Math.max(statusAnim.at, animNow || Date.now()) - statusAnim.at) / 1200) : 1;
   const isRestoring = Boolean(statusAnim && statusAnim.to === 'hijau' && statusP < 1);
   const restoreGlow = fxAt ? clamp01((Date.now() - fxAt) / 1800) : 1;
-  const identity =
-    region.id === 'kbb-lembang' || region.id === 'kab-ciwidey' || region.id === 'kab-pangalengan'
-      ? 'cold'
-      : region.id === 'bdg-gedebage' || region.id === 'kab-majalaya' || region.id === 'kab-margahayu'
-        ? 'industry'
-        : region.id === 'kab-baleendah'
-          ? 'flood'
-          : 'neutral';
-  
   return (
     <motion.g
       data-region-id={region.id}
@@ -4379,6 +4558,20 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
           opacity: (isHovered || isFocused) && !isDimmed ? [texOpacity * 0.92, texOpacity * 1.10, texOpacity * 0.92] : texOpacity,
         }}
         transition={{ repeat: (isHovered || isFocused) && !isDimmed ? Infinity : 0, duration: region.status === 'hijau' ? 3.6 : region.status === 'kritis' ? 2.4 : 2.1, ease: 'easeInOut' }}
+        className="pointer-events-none"
+      />
+      <motion.path
+        d={region.path}
+        fill={microTexFill}
+        initial={false}
+        animate={{
+          opacity: (isHovered || isFocused) && !isDimmed ? [microTexOpacity * 0.88, microTexOpacity * 1.18, microTexOpacity * 0.88] : microTexOpacity,
+        }}
+        transition={{
+          repeat: (isHovered || isFocused) && !isDimmed ? Infinity : 0,
+          duration: identity === 'flood' ? 2.6 : identity === 'cold' ? 4.4 : 3.2,
+          ease: 'easeInOut',
+        }}
         className="pointer-events-none"
       />
       {isRestoring && !isDimmed && (
@@ -5418,6 +5611,38 @@ const InteractiveMap = memo(({
             <path d="M 0 26 C 9 22 14 28 22 24 C 28 21 30 25 36 22" stroke="rgba(245,158,11,0.08)" strokeWidth="1.2" fill="none" strokeLinecap="round" />
             <rect width="36" height="36" filter="url(#texNoiseMed)" opacity="0.55" />
           </pattern>
+          <pattern id="micro-neutral" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+            <rect width="28" height="28" fill="rgba(0,0,0,0)" />
+            <path d="M -2 9 C 4 5 10 13 16 9 C 20 6 24 10 30 7" stroke="rgba(255,255,255,0.09)" strokeWidth="0.9" fill="none" strokeLinecap="round" />
+            <path d="M -1 17 C 5 14 11 20 16 17 C 20 14 24 18 29 15" stroke="rgba(16,185,129,0.12)" strokeWidth="1.0" fill="none" strokeLinecap="round" />
+            <path d="M 3 25 C 8 22 13 27 19 24 C 22 22 25 24 29 22" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" fill="none" strokeLinecap="round" />
+            <circle cx="7" cy="8" r="0.9" fill="rgba(255,255,255,0.10)" />
+            <circle cx="20" cy="20" r="0.8" fill="rgba(0,0,0,0.12)" />
+          </pattern>
+          <pattern id="micro-cold" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+            <rect width="30" height="30" fill="rgba(0,0,0,0)" />
+            <path d="M -2 8 C 4 4 10 12 16 8 C 21 5 26 10 32 6" stroke="rgba(191,219,254,0.16)" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+            <path d="M 1 16 C 7 12 12 18 18 15 C 23 13 27 16 31 13" stroke="rgba(255,255,255,0.11)" strokeWidth="0.9" fill="none" strokeLinecap="round" />
+            <path d="M 3 24 C 8 21 14 27 19 24 C 23 22 27 24 31 21" stroke="rgba(125,211,252,0.12)" strokeWidth="0.9" fill="none" strokeLinecap="round" />
+            <circle cx="8" cy="11" r="1.0" fill="rgba(255,255,255,0.12)" />
+            <circle cx="22" cy="6" r="0.9" fill="rgba(186,230,253,0.10)" />
+          </pattern>
+          <pattern id="micro-industry" x="0" y="0" width="26" height="26" patternUnits="userSpaceOnUse">
+            <rect width="26" height="26" fill="rgba(0,0,0,0)" />
+            <path d="M 0 7 H 26 M 0 16 H 26" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" />
+            <path d="M 8 0 V 26 M 18 0 V 26" stroke="rgba(148,163,184,0.12)" strokeWidth="0.9" />
+            <rect x="4" y="4" width="5" height="5" rx="1.2" fill="rgba(255,255,255,0.06)" />
+            <rect x="15" y="11" width="6" height="6" rx="1.3" fill="rgba(251,191,36,0.06)" />
+            <rect x="6" y="18" width="4" height="4" rx="1" fill="rgba(255,255,255,0.04)" />
+          </pattern>
+          <pattern id="micro-flood" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+            <rect width="30" height="30" fill="rgba(0,0,0,0)" />
+            <path d="M -2 9 C 4 5 10 12 16 9 C 22 6 26 12 32 9" stroke="rgba(125,211,252,0.16)" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+            <path d="M -1 17 C 5 13 10 20 16 17 C 22 14 27 20 31 17" stroke="rgba(255,255,255,0.10)" strokeWidth="1.0" fill="none" strokeLinecap="round" />
+            <path d="M 2 25 C 8 22 12 28 18 25 C 23 22 27 27 31 24" stroke="rgba(56,189,248,0.14)" strokeWidth="1.05" fill="none" strokeLinecap="round" />
+            <circle cx="9" cy="10" r="0.95" fill="rgba(191,219,254,0.14)" />
+            <circle cx="22" cy="19" r="0.85" fill="rgba(255,255,255,0.10)" />
+          </pattern>
 
           <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="0" dy="4" stdDeviation="2" floodColor="#000000" floodOpacity="0.4" />
@@ -6004,8 +6229,15 @@ const TreeGame: React.FC = () => {
   });
   const [claimError, setClaimError] = useState<string | null>(null);
   const lastClaimAutoOpenAtRef = useRef<number>(0);
+  const mapProgressStorageVersion = '2026-06-map-balance-1';
   const [restoredRegionIds, setRestoredRegionIds] = useState<string[]>(() => {
     try {
+      const version = window.localStorage.getItem('treegame:map-progress-version');
+      if (version !== mapProgressStorageVersion) {
+        window.localStorage.removeItem('treegame:restored-regions');
+        window.localStorage.removeItem('treegame:improved-regions');
+        return [];
+      }
       const raw = window.localStorage.getItem('treegame:restored-regions');
       if (!raw) return [];
       const parsed = JSON.parse(raw);
@@ -6017,6 +6249,8 @@ const TreeGame: React.FC = () => {
   });
   const [improvedRegionIds, setImprovedRegionIds] = useState<string[]>(() => {
     try {
+      const version = window.localStorage.getItem('treegame:map-progress-version');
+      if (version !== mapProgressStorageVersion) return [];
       const raw = window.localStorage.getItem('treegame:improved-regions');
       if (!raw) return [];
       const parsed = JSON.parse(raw);
@@ -6035,6 +6269,7 @@ const TreeGame: React.FC = () => {
   const [mapTransition, setMapTransition] = useState<{ id: number; region: Region } | null>(null);
   const [gameLoading, setGameLoading] = useState<{ id: number; title: string; subtitle: string; accent: 'eco' | 'warn' | 'danger'; tip: string; durationMs: number; stages?: string[] } | null>(null);
   const [mapAlert, setMapAlert] = useState<{ id: number; title: string; subtitle: string; tone: 'warn' | 'info' | 'good' } | null>(null);
+  const selectionWelcomeVoicePlayedRef = useRef(false);
   const regionSelectTimerRef = useRef<number | null>(null);
   const [plantingStep, setPlantingStep] = useState(0);
   const level1Target = 2;
@@ -6172,6 +6407,20 @@ const TreeGame: React.FC = () => {
     m['cimahi'] = 'storm';
     return m;
   }, []);
+
+  useEffect(() => {
+    try {
+      const versionKey = 'treegame:map-progress-version';
+      const currentVersion = window.localStorage.getItem(versionKey);
+      if (currentVersion !== mapProgressStorageVersion) {
+        window.localStorage.removeItem('treegame:restored-regions');
+        window.localStorage.removeItem('treegame:improved-regions');
+        setRestoredRegionIds([]);
+        setImprovedRegionIds([]);
+      }
+      window.localStorage.setItem(versionKey, mapProgressStorageVersion);
+    } catch {}
+  }, [mapProgressStorageVersion]);
 
   useEffect(() => {
     try {
@@ -6330,52 +6579,60 @@ const TreeGame: React.FC = () => {
     }, 900);
   }, [claimForm, claimMode, selectedRegion, selectedSeedling, setToast]);
 
+  const returnToRegionMap = useCallback(() => {
+    setClaimOpen(false);
+    setClaimEducationOpen(false);
+    setClaimError(null);
+
+    const resetToMap = () => {
+      setPhase('selection');
+      setPlantingStep(0);
+      setSelectedRegion(null);
+      setSelectedSeedling(null);
+      setHoveredRegion(null);
+      setMapFocusRegionId(null);
+      setMapTransition(null);
+      setLevel(1);
+      setLevelIntroOpen(false);
+      setActionId(null);
+      setActionPlotId(null);
+      setActionProgress(0);
+      setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 });
+      setActivePlotId('p1');
+      setLevel2Combo(0);
+      setLevel2ComboExpiresAt(null);
+      setLevel2LastCompletedAt(null);
+      setPauseOpen(false);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.requestAnimationFrame(resetToMap);
+      return;
+    }
+
+    resetToMap();
+  }, []);
+
   useEffect(() => {
     if (phase !== 'finished') return;
     if (!selectedRegion) return;
     const mainId = selectedRegion.id;
-    const main = allRegions.find(r => r.id === mainId) ?? null;
-    if (!main) return;
-
-    const neighborIds = allRegions
-      .filter(r => r.id !== mainId)
-      .map(r => ({ id: r.id, d: Math.hypot(r.x - main.x, r.y - main.y) }))
-      .filter(x => x.d <= 26)
-      .sort((a, b) => a.d - b.d)
-      .slice(0, 3)
-      .map(x => x.id);
 
     setRestoredRegionIds(prev => (prev.includes(mainId) ? prev : [...prev, mainId]));
-    setImprovedRegionIds(prev => {
-      const set = new Set(prev);
-      for (const id of neighborIds) {
-        set.add(id);
-      }
-      return Array.from(set);
-    });
-
-    const waveIds = [mainId, ...neighborIds];
-    waveIds.forEach((rid, idx) => {
-      window.setTimeout(() => setMapRestorationWave({ id: Date.now() + idx, regionId: rid }), 120 + idx * 160);
-    });
+    setMapRestorationWave({ id: Date.now(), regionId: mainId });
     setMapStatusAnimByRegionId(prev => {
       const now = Date.now();
       const statusNow: Record<string, Region['status']> = {};
       for (const r of regions) statusNow[r.id] = r.status;
-      const bump = (s: Region['status']): Region['status'] => (s === 'gersang' ? 'kritis' : 'hijau');
       const next = { ...prev };
-      for (const rid of waveIds) {
-        const from = statusNow[rid] ?? (allRegions.find(r => r.id === rid)?.status ?? 'kritis');
-        const to = rid === mainId ? 'hijau' : bump(from);
-        if (from === to) continue;
-        next[rid] = { from, to, at: now };
-      }
+      const from = statusNow[mainId] ?? (allRegions.find(r => r.id === mainId)?.status ?? 'kritis');
+      if (from !== 'hijau') next[mainId] = { from, to: 'hijau', at: now };
       return next;
     });
     setMapRegionFxAt(prev => {
       const next = { ...prev };
       const now = Date.now();
-      for (const rid of waveIds) next[rid] = now;
+      next[mainId] = now;
       return next;
     });
   }, [phase, regions, selectedRegion]);
@@ -6407,12 +6664,36 @@ const TreeGame: React.FC = () => {
     return () => window.clearTimeout(t);
   }, [mapAlert]);
 
+  useEffect(() => {
+    if (phase !== 'selection') {
+      selectionWelcomeVoicePlayedRef.current = false;
+      return;
+    }
+
+    const autoPlayTimer = window.setTimeout(() => {
+      triggerSelectionWelcomeGreeting();
+    }, 420);
+
+    const handleFirstInteraction = () => {
+      triggerSelectionWelcomeGreeting();
+    };
+
+    window.addEventListener('pointerdown', handleFirstInteraction, { once: true, capture: true });
+    window.addEventListener('keydown', handleFirstInteraction, { once: true, capture: true });
+
+    return () => {
+      window.clearTimeout(autoPlayTimer);
+      window.removeEventListener('pointerdown', handleFirstInteraction, true);
+      window.removeEventListener('keydown', handleFirstInteraction, true);
+    };
+  }, [phase]);
+
   // #region debug-point A:init
   const dbgRunIdRef = useRef<'pre' | 'post'>('pre');
   const dbgLastSigRef = useRef<string>('');
   const dbg = useCallback((hypothesisId: string, location: string, msg: string, data?: Record<string, unknown>) => {
     try {
-      fetch('http://127.0.0.1:7778/event', {
+      fetch('http://127.0.0.1:7777/event', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -7040,10 +7321,9 @@ const TreeGame: React.FC = () => {
     const interval = setInterval(() => {
       const now = Date.now();
 
-      const plantedAfterTutorial = Math.max(0, activeTrees.length - 1);
       const level2Done = (['p1', 'p2', 'p3', 'p4'] as const).reduce((acc, pid) => acc + ((level2Stages[pid] ?? 0) >= 1 ? 1 : 0), 0);
       const needsProgress =
-        level === 1 ? plantedAfterTutorial < level1Target : level === 2 ? level2Done < 4 : false;
+        level === 1 ? plantingStep < level1Steps.length : level === 2 ? level2Done < 4 : false;
 
       if (!tutorialActive && !levelIntroOpen) {
 
@@ -7068,6 +7348,7 @@ const TreeGame: React.FC = () => {
       }
 
       setTimer(prev => {
+        if (level === 1) return prev;
         if (prev <= 0) {
           setPhase('gameover');
           return 0;
@@ -7089,7 +7370,7 @@ const TreeGame: React.FC = () => {
         return prev - 1;
       });
 
-      if (!tutorialActive && !levelIntroOpen) {
+      if (!tutorialActive && !levelIntroOpen && level === 2) {
         if (activeEvent && now >= activeEvent.endsAt) {
           setActiveEvent(null);
           setPestTreeId(null);
@@ -7158,95 +7439,96 @@ const TreeGame: React.FC = () => {
         }
       }
 
-      // Update trees and CO2
-      let newlyRestored: Array<{ x: number; y: number }> = [];
-      const isHeatwave = activeEvent?.type === 'HEATWAVE';
-      const isRainstorm = activeEvent?.type === 'RAINSTORM';
-      const isPests = activeEvent?.type === 'PESTS';
-      const isPollutionSpike = activeEvent?.type === 'POLLUTION_SPIKE';
+      if (level === 2) {
+        // Level 2 adalah fase survival utama, jadi event, degradasi pohon, dan win/lose berjalan di sini.
+        let newlyRestored: Array<{ x: number; y: number }> = [];
+        const isHeatwave = activeEvent?.type === 'HEATWAVE';
+        const isRainstorm = activeEvent?.type === 'RAINSTORM';
+        const isPests = activeEvent?.type === 'PESTS';
+        const isPollutionSpike = activeEvent?.type === 'POLLUTION_SPIKE';
 
-      if (isHeatwave) setWater(prev => Math.max(0, prev - 0.9));
-      if (isRainstorm) setWater(prev => Math.min(100, prev + 2.2));
+        if (isHeatwave) setWater(prev => Math.max(0, prev - 0.9));
+        if (isRainstorm) setWater(prev => Math.min(100, prev + 2.2));
 
-      if (isPests && pestTreeId && now - pestPulseAtRef.current > 650) {
-        pestPulseAtRef.current = now;
-        const t = activeTrees.find(tt => tt.id === pestTreeId) ?? null;
-        if (t) spawnActionParticles(t.x, t.y - 18, '#ef4444', 8);
-      }
+        if (isPests && pestTreeId && now - pestPulseAtRef.current > 650) {
+          pestPulseAtRef.current = now;
+          const t = activeTrees.find(tt => tt.id === pestTreeId) ?? null;
+          if (t) spawnActionParticles(t.x, t.y - 18, '#ef4444', 8);
+        }
 
-      if (isPollutionSpike && pollutionSources.length > 0 && now - pollutionPulseAtRef.current > 700) {
-        pollutionPulseAtRef.current = now;
-        for (const s of pollutionSources) spawnActionParticles(s.x, s.y - 20, '#94a3b8', 6);
-      }
+        if (isPollutionSpike && pollutionSources.length > 0 && now - pollutionPulseAtRef.current > 700) {
+          pollutionPulseAtRef.current = now;
+          for (const s of pollutionSources) spawnActionParticles(s.x, s.y - 20, '#94a3b8', 6);
+        }
 
-      setActiveTrees(prevTrees => {
-        let co2Reduction = 0;
-        const pollutionAdd =
-          isPollutionSpike
-            ? 2.6 + pollutionSources.reduce((acc, s) => acc + s.strength * 0.22, 0) + (effectiveWeather === 'polluted' ? 0.6 : 0)
-            : 0;
+        setActiveTrees(prevTrees => {
+          let co2Reduction = 0;
+          const pollutionAdd =
+            isPollutionSpike
+              ? 2.6 + pollutionSources.reduce((acc, s) => acc + s.strength * 0.22, 0) + (effectiveWeather === 'polluted' ? 0.6 : 0)
+              : 0;
 
-        const nextTrees = prevTrees.map(tree => {
-          let healthLoss = 0;
-          if (effectiveWeather === 'polluted') healthLoss += 1.1;
-          if (tree.moisture < 10) healthLoss += 2.4;
-          if (isHeatwave) healthLoss += 2.1;
-          if (isRainstorm && tree.moisture > 95) healthLoss += 2.0;
-          if (isPests && pestTreeId && tree.id === pestTreeId) healthLoss += 6.0;
+          const nextTrees = prevTrees.map(tree => {
+            let healthLoss = 0;
+            if (effectiveWeather === 'polluted') healthLoss += 1.1;
+            if (tree.moisture < 10) healthLoss += 2.4;
+            if (isHeatwave) healthLoss += 2.1;
+            if (isRainstorm && tree.moisture > 95) healthLoss += 2.0;
+            if (isPests && pestTreeId && tree.id === pestTreeId) healthLoss += 6.0;
 
-          const nextHealth = Math.max(0, tree.health - healthLoss);
+            const nextHealth = Math.max(0, tree.health - healthLoss);
 
-          let waterLoss = 0.5;
-          if (effectiveWeather === 'drought') waterLoss = 2.5;
-          if (effectiveWeather === 'sunny') waterLoss = 1.2;
-          if (effectiveWeather === 'rainy') waterLoss = -3.0;
-          if (isHeatwave) waterLoss += 1.8;
-          if (isRainstorm) waterLoss -= 2.0;
+            let waterLoss = 0.5;
+            if (effectiveWeather === 'drought') waterLoss = 2.5;
+            if (effectiveWeather === 'sunny') waterLoss = 1.2;
+            if (effectiveWeather === 'rainy') waterLoss = -3.0;
+            if (isHeatwave) waterLoss += 1.8;
+            if (isRainstorm) waterLoss -= 2.0;
 
-          const nextMoisture = Math.max(0, Math.min(100, tree.moisture - waterLoss));
+            const nextMoisture = Math.max(0, Math.min(100, tree.moisture - waterLoss));
 
-          let growthAdd = 0;
-          if (nextMoisture > 20 && nextHealth > 30) {
-            growthAdd = 0.85;
-            if (effectiveWeather === 'rainy') growthAdd *= 1.8;
-            if (effectiveWeather === 'drought') growthAdd *= 0.62;
-            if (effectiveWeather === 'polluted') growthAdd *= 0.36;
-            if (isHeatwave) growthAdd *= 0.55;
-            if (isPests && pestTreeId && tree.id === pestTreeId) growthAdd *= 0.35;
-          }
+            let growthAdd = 0;
+            if (nextMoisture > 20 && nextHealth > 30) {
+              growthAdd = 0.85;
+              if (effectiveWeather === 'rainy') growthAdd *= 1.8;
+              if (effectiveWeather === 'drought') growthAdd *= 0.62;
+              if (effectiveWeather === 'polluted') growthAdd *= 0.36;
+              if (isHeatwave) growthAdd *= 0.55;
+              if (isPests && pestTreeId && tree.id === pestTreeId) growthAdd *= 0.35;
+            }
 
-          const nextGrowth = Math.min(100, tree.growth + growthAdd);
-          const nextStage = Math.floor(nextGrowth / 16);
+            const nextGrowth = Math.min(100, tree.growth + growthAdd);
+            const nextStage = Math.floor(nextGrowth / 16);
 
-          if (tree.stage < 3 && nextStage >= 3 && !restoredTreeIdsRef.current.has(tree.id)) {
-            restoredTreeIdsRef.current.add(tree.id);
-            newlyRestored.push({ x: tree.x, y: tree.y });
-          }
+            if (tree.stage < 3 && nextStage >= 3 && !restoredTreeIdsRef.current.has(tree.id)) {
+              restoredTreeIdsRef.current.add(tree.id);
+              newlyRestored.push({ x: tree.x, y: tree.y });
+            }
 
-          if (nextHealth > 20) co2Reduction += (nextStage * 0.18);
+            if (nextHealth > 20) co2Reduction += (nextStage * 0.18);
 
-          return { ...tree, health: nextHealth, moisture: nextMoisture, growth: nextGrowth, stage: nextStage };
+            return { ...tree, health: nextHealth, moisture: nextMoisture, growth: nextGrowth, stage: nextStage };
+          });
+
+          if (nextTrees.length > 0 && nextTrees.every(t => t.health <= 0)) setPhase('gameover');
+
+          setCo2Level(prevCO2 => {
+            const next = Math.max(0, Math.min(180, prevCO2 - co2Reduction + pollutionAdd));
+            if (next >= 170) setPhase('gameover');
+            return next;
+          });
+
+          return nextTrees;
         });
 
-        if (nextTrees.length > 0 && nextTrees.every(t => t.health <= 0)) setPhase('gameover');
+        if (newlyRestored.length > 0) {
+          for (const p of newlyRestored) spawnRestoration(p.x, p.y, 1.18);
+        }
 
-        setCo2Level(prevCO2 => {
-          const next = Math.max(0, Math.min(180, prevCO2 - co2Reduction + pollutionAdd));
-          if (next >= 170) setPhase('gameover');
-          return next;
-        });
-
-        return nextTrees;
-      });
-
-      if (newlyRestored.length > 0) {
-        for (const p of newlyRestored) spawnRestoration(p.x, p.y, 1.18);
-      }
-
-      // Check win condition
-      if (co2Level <= (currentMission?.targetCO2 ?? 40)) {
-        setToast({ id: Date.now(), title: 'Berhasil!', subtitle: 'Target CO2 tercapai', tone: 'good' });
-        setPhase('finished');
+        if (co2Level <= (currentMission?.targetCO2 ?? 40)) {
+          setToast({ id: Date.now(), title: 'Berhasil!', subtitle: 'Target CO2 tercapai', tone: 'good' });
+          setPhase('finished');
+        }
       }
 
       // Dynamic Weather Engine
@@ -7274,7 +7556,7 @@ const TreeGame: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [activeEvent, activeTrees, clampWorld, co2Level, currentMission, effectiveWeather, level, level1Target, level2Stages, levelIntroOpen, pauseOpen, pestTreeId, phase, pollutionSources, spawnRestoration, tutorialActive, weather]);
+  }, [activeEvent, activeTrees, clampWorld, co2Level, currentMission, effectiveWeather, level, level2Stages, levelIntroOpen, pauseOpen, pestTreeId, phase, plantingStep, pollutionSources, spawnRestoration, tutorialActive, weather]);
 
 
   const level1Steps = [
@@ -7439,29 +7721,6 @@ const TreeGame: React.FC = () => {
     return done;
   }, [level, plotOrder, plotTreeById]);
 
-  const level1PlantedAfterTutorial = useMemo(() => Math.max(0, activeTrees.length - 1), [activeTrees.length]);
-
-  useEffect(() => {
-    if (phase !== 'planting') return;
-    if (tutorialActive) return;
-    if (level !== 1) return;
-    if (level1PlantedAfterTutorial < level1Target) return;
-    if (levelIntroOpen) return;
-
-    setLevel(2);
-    setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 });
-    setLevel2Combo(0);
-    setLevel2ComboExpiresAt(null);
-    setLevel2LastCompletedAt(null);
-    setActivePlotId('p1');
-    setLevelIntroOpen(true);
-    setToast({ id: Date.now(), title: 'Level 1 selesai!', subtitle: 'Level 2 terbuka', tone: 'good' });
-
-    const startX = Math.round(gameAreaSize.width * 0.32);
-    const startY = Math.round(gameAreaSize.height * 0.36);
-    teleportPlayer(startX, startY);
-  }, [gameAreaSize.height, gameAreaSize.width, level, level1PlantedAfterTutorial, level1Target, levelIntroOpen, phase, tutorialActive]);
-
   useEffect(() => {
     if (phase !== 'planting') return;
     if (tutorialActive) return;
@@ -7552,6 +7811,33 @@ const TreeGame: React.FC = () => {
     playTone(660, 90, 'sine', 0.08);
     window.setTimeout(() => playTone(990, 120, 'sine', 0.08), 70);
   };
+  const playWelcomeGreeting = useCallback(() => {
+    if (!audioOn) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    playTone(520, 90, 'sine', 0.06);
+    window.setTimeout(() => playTone(780, 120, 'sine', 0.05), 85);
+    const synth = window.speechSynthesis;
+    const utter = new SpeechSynthesisUtterance(
+      'Mari bergerak bersama masyarakat untuk menanam pohon. Selamat datang di halaman pemilihan wilayah restorasi. Dari langkah kecil memilih daerah yang ingin dipulihkan, kita bisa mengajak masyarakat menghadirkan udara yang lebih bersih, lingkungan yang lebih teduh, dan masa depan yang lebih hijau untuk bersama.'
+    );
+    utter.lang = 'id-ID';
+    utter.rate = 0.92;
+    utter.pitch = 1.02;
+    utter.volume = Math.max(0.35, Math.min(1, audioVolume));
+    const voices = synth.getVoices();
+    const preferredVoice =
+      voices.find((voice) => /^id\b/i.test(voice.lang)) ??
+      voices.find((voice) => /^ms\b/i.test(voice.lang)) ??
+      voices[0];
+    if (preferredVoice) utter.voice = preferredVoice;
+    synth.cancel();
+    synth.speak(utter);
+  }, [audioOn, audioVolume]);
+  function triggerSelectionWelcomeGreeting() {
+    if (selectionWelcomeVoicePlayedRef.current) return;
+    selectionWelcomeVoicePlayedRef.current = true;
+    playWelcomeGreeting();
+  }
 
   const lastMapHoverIdRef = useRef<string | null>(null);
   const lastMapHoverAtRef = useRef<number>(0);
@@ -7938,6 +8224,9 @@ const TreeGame: React.FC = () => {
         try { ambienceRef.current.src.stop(); } catch { }
       }
       ambienceRef.current = null;
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
       if (audioCtxRef.current) {
         audioCtxRef.current.close().catch(() => {});
       }
@@ -8436,7 +8725,20 @@ const TreeGame: React.FC = () => {
                     transition={{ duration: 0.18, ease: 'easeOut' }}
                   >
                     <div
-                      className={`rounded-[2rem] border backdrop-blur-2xl p-5 shadow-[0_30px_90px_rgba(0,0,0,0.55)] ${
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        playUiClick();
+                        playWelcomeGreeting();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          playUiClick();
+                          playWelcomeGreeting();
+                        }
+                      }}
+                      className={`rounded-[2rem] border backdrop-blur-2xl p-5 shadow-[0_30px_90px_rgba(0,0,0,0.55)] cursor-pointer active:scale-[0.99] transition-transform ${
                         mapAlert.tone === 'warn' ? 'bg-red-500/10 border-red-400/20' : mapAlert.tone === 'good' ? 'bg-emerald-500/10 border-emerald-400/20' : 'bg-blue-500/10 border-blue-400/20'
                       }`}
                     >
@@ -8452,12 +8754,17 @@ const TreeGame: React.FC = () => {
                           <div className="text-[10px] font-black text-white/50 uppercase tracking-[0.25em]">Alert</div>
                           <div className="text-white font-black tracking-tight leading-tight">{mapAlert.title}</div>
                           <div className="mt-1 text-[12px] text-white/75 font-bold leading-relaxed">{mapAlert.subtitle}</div>
+                          <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/70">
+                            <Volume2 size={12} />
+                            Klik untuk dengar sambutan
+                          </div>
                         </div>
                       </div>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
+
             </motion.div>
           )}
 
@@ -8715,32 +9022,135 @@ const TreeGame: React.FC = () => {
                               }}
                             />
                             <div className="relative">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
+                            <div className="flex flex-col items-start gap-4">
+                              <div className="w-full">
                                 <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                                   {isActive ? 'Dipilih' : isRecommended ? 'Rekomendasi' : 'Opsi'}
                                 </div>
                                 <div className="text-xl font-black text-gray-900 tracking-tight">{s.name}</div>
                                 <div className="text-[11px] font-bold text-gray-500 mt-1 leading-relaxed">{prof.label}</div>
                               </div>
+                              <div className="w-full flex justify-center">
                               <div
-                                className={`w-14 h-14 rounded-[1.4rem] border flex items-center justify-center shrink-0 relative overflow-hidden ${
-                                  isActive ? 'bg-white/90 border-white/70' : 'bg-white/85 border-white/70'
+                                className={`w-[8.25rem] h-[8.75rem] rounded-[2rem] border flex items-center justify-center shrink-0 relative overflow-visible ${
+                                  isActive ? 'bg-white/95 border-white/80' : 'bg-white/90 border-white/70'
                                 }`}
-                                style={{ boxShadow: isHovered || isActive ? `0 18px 34px ${hexToRgba(accent, 0.22)}` : '0 10px 20px rgba(0,0,0,0.06)' }}
+                                style={{
+                                  boxShadow: isHovered || isActive
+                                    ? `0 22px 44px ${hexToRgba(accent, 0.24)}`
+                                    : '0 12px 24px rgba(0,0,0,0.07)',
+                                  transform: 'translateZ(18px)',
+                                }}
                               >
-                                <div className="absolute inset-0 opacity-85" style={{ backgroundImage: `radial-gradient(circle at 30% 30%, ${hexToRgba(accent, 0.38)} 0 26px, transparent 54px)` }} />
+                                <div className="absolute inset-0 rounded-[2rem] overflow-hidden">
                                 <motion.div
-                                  className="relative"
+                                  className="absolute inset-0 rounded-[2rem]"
                                   animate={{
-                                    y: isHovered ? [0, -2, 0] : [0, -1, 0],
-                                    rotate: isHovered ? [-2, 2, -2] : 0,
+                                    opacity: isHovered || isActive ? [0.6, 0.9, 0.6] : [0.38, 0.5, 0.38],
+                                    scale: isHovered || isActive ? [0.96, 1.05, 0.96] : [0.98, 1.02, 0.98],
                                   }}
-                                  transition={{ repeat: Infinity, duration: isHovered ? 0.9 : 2.2, ease: 'easeInOut' }}
-                                  style={{ color: accent, transform: 'translateZ(14px)' }}
+                                  transition={{ repeat: Infinity, duration: isHovered || isActive ? 1.9 : 3.4, ease: 'easeInOut' }}
+                                  style={{
+                                    backgroundImage: `radial-gradient(circle at 50% 30%, ${hexToRgba(accent, 0.34)} 0 26px, ${hexToRgba(accent, 0.12)} 26px 52px, transparent 72px)`,
+                                  }}
+                                />
+                                <motion.div
+                                  className="absolute inset-[10px] rounded-[1.6rem] border pointer-events-none"
+                                  animate={{
+                                    rotate: isHovered || isActive ? [0, 4, 0, -4, 0] : 0,
+                                    opacity: isHovered || isActive ? [0.34, 0.7, 0.34] : 0.26,
+                                  }}
+                                  transition={{ repeat: Infinity, duration: 4.8, ease: 'easeInOut' }}
+                                  style={{ borderColor: hexToRgba(accent, isHovered || isActive ? 0.34 : 0.18) }}
+                                />
+                                <motion.div
+                                  className="absolute left-1/2 top-[14px] w-[72px] h-[72px] -translate-x-1/2 rounded-full blur-xl"
+                                  animate={{
+                                    opacity: isHovered || isActive ? [0.18, 0.34, 0.18] : [0.12, 0.18, 0.12],
+                                    scale: isHovered || isActive ? [0.95, 1.08, 0.95] : [1, 1.04, 1],
+                                  }}
+                                  transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
+                                  style={{ background: `radial-gradient(circle, ${hexToRgba(accent, 0.42)} 0%, transparent 70%)` }}
+                                />
+                                {[0, 1, 2].map((i) => (
+                                  <motion.div
+                                    key={`orbit-${s.id}-${i}`}
+                                    className="absolute left-1/2 top-1/2 w-2.5 h-2.5 -ml-[5px] -mt-[5px] rounded-full border border-white/60 shadow-sm"
+                                    animate={{
+                                      rotate: [i * 120, i * 120 + 360],
+                                      x: [0, 0],
+                                      y: [0, 0],
+                                      opacity: isHovered || isActive ? [0.2, 0.9, 0.2] : [0, 0.55, 0],
+                                      scale: isHovered || isActive ? [0.75, 1.15, 0.75] : [0.55, 0.8, 0.55],
+                                    }}
+                                    transition={{
+                                      repeat: Infinity,
+                                      duration: 3.4 + i * 0.55,
+                                      ease: 'linear',
+                                      delay: i * 0.24,
+                                    }}
+                                    style={{
+                                      backgroundColor: i === 1 ? '#ffffff' : hexToRgba(accent, 0.75),
+                                      transformOrigin: `0 ${18 + i * 8}px`,
+                                    }}
+                                  />
+                                ))}
+                                <div
+                                  className="absolute left-1/2 bottom-[14px] -translate-x-1/2 w-[66px] h-[16px] rounded-full"
+                                  style={{
+                                    background: `radial-gradient(circle at 50% 50%, ${hexToRgba(accent, 0.18)} 0%, rgba(120,53,15,0.18) 52%, rgba(0,0,0,0.08) 100%)`,
+                                  }}
+                                />
+                                <div className="absolute left-1/2 bottom-[12px] -translate-x-1/2 w-[54px] h-[8px] rounded-full bg-black/10 blur-[1px]" />
+                                {[0, 1, 2, 3].map((i) => (
+                                  <motion.div
+                                    key={`leaf-${s.id}-${i}`}
+                                    className="absolute rounded-full pointer-events-none"
+                                    animate={{
+                                      y: isHovered || isActive ? [0, -10 - i * 2, -18 - i * 2] : [0, -4, -8],
+                                      x: isHovered || isActive ? [0, i % 2 === 0 ? -6 : 6, 0] : [0, i % 2 === 0 ? -2 : 2, 0],
+                                      opacity: isHovered || isActive ? [0, 0.8, 0] : [0, 0.28, 0],
+                                      rotate: [0, i % 2 === 0 ? -28 : 28, 0],
+                                    }}
+                                    transition={{
+                                      repeat: Infinity,
+                                      duration: isHovered || isActive ? 1.4 + i * 0.18 : 2.8 + i * 0.2,
+                                      delay: i * 0.22,
+                                      ease: 'easeOut',
+                                    }}
+                                    style={{
+                                      left: `${26 + i * 13}%`,
+                                      bottom: `${28 + (i % 2) * 6}%`,
+                                      width: 8 + (i % 2) * 2,
+                                      height: 12 + (i % 2) * 2,
+                                      background: `linear-gradient(180deg, #dcfce7 0%, ${accent} 100%)`,
+                                      clipPath: 'ellipse(45% 50% at 50% 50%)',
+                                      filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.12))',
+                                    }}
+                                  />
+                                ))}
+                                <motion.div
+                                  className="absolute inset-x-[12px] top-[10px] h-6 rounded-full pointer-events-none"
+                                  animate={{ opacity: isHovered || isActive ? [0.26, 0.5, 0.26] : [0.16, 0.28, 0.16] }}
+                                  transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}
+                                  style={{
+                                    background: 'linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0))',
+                                  }}
+                                />
+                                </div>
+                                <motion.div
+                                  className="relative scale-[0.96] sm:scale-100"
+                                  animate={{
+                                    y: isHovered || isActive ? [0, -3, 0] : [0, -1.2, 0],
+                                    rotate: isHovered ? [-2.2, 2.2, -2.2] : isActive ? [-1.2, 1.2, -1.2] : [0, 0.6, 0],
+                                    scale: isHovered || isActive ? [1, 1.06, 1] : [1, 1.02, 1],
+                                  }}
+                                  transition={{ repeat: Infinity, duration: isHovered || isActive ? 1.25 : 2.8, ease: 'easeInOut' }}
+                                  style={{ color: accent, transform: 'translateZ(26px)' }}
                                 >
                                   <SeedlingIcon type={s.name} active={isHovered || isActive} />
                                 </motion.div>
+                              </div>
                               </div>
                             </div>
 
@@ -9355,6 +9765,7 @@ const TreeGame: React.FC = () => {
                                 moisture={tree.moisture}
                                 icon={s.icon}
                                 yPos={tree.y}
+                                species={tree.type}
                               />
                             );
                           })()}
@@ -10234,17 +10645,17 @@ const TreeGame: React.FC = () => {
                         {claimMode === 'success' ? 'Sosialisasi Klaim Bibit' : 'Edukasi Penanaman'}
                       </div>
                       <div className="mt-4 text-3xl sm:text-4xl font-black text-emerald-950 tracking-tighter leading-tight max-w-2xl">
-                        {claimMode === 'success' ? 'Sebelum Isi Form, Pahami Alur Pengambilan Bibit' : 'Sebelum Isi Form, Kenali Manfaat Menanam Pohon'}
+                        {claimMode === 'success' ? 'Mari Ambil Bagian dalam Gerakan Menanam untuk Masa Depan yang Lebih Hijau' : 'Satu Langkah Kecil Hari Ini Bisa Membawa Perubahan Besar bagi Lingkungan'}
                       </div>
                       <div className="mt-3 text-emerald-900/75 font-bold leading-relaxed max-w-2xl">
                         {claimMode === 'success'
-                          ? `Bibit ${selectedSeedling.name} untuk wilayah ${selectedRegion.name} bisa diambil setelah proses verifikasi. Data diri membantu petugas menyiapkan distribusi bibit yang tepat sasaran.`
-                          : `Walau misi belum selesai, data yang kamu isi tetap berguna untuk pendataan minat penghijauan di ${selectedRegion.name}. Setelah paham edukasinya, kamu bisa lanjut isi formulir.`}
+                          ? `Bibit ${selectedSeedling.name} untuk wilayah ${selectedRegion.name} bukan sekadar bantuan tanam, tetapi awal dari kontribusi nyata untuk udara yang lebih bersih, tanah yang lebih sehat, dan lingkungan yang lebih teduh. Dengan mengisi data diri, kamu ikut membantu penyaluran bibit agar tepat sasaran dan benar-benar sampai ke tangan masyarakat yang siap menanam.`
+                          : `Walau misi belum selesai, kepedulianmu tetap berarti. Data yang kamu isi membantu pendataan minat penghijauan di ${selectedRegion.name}, sekaligus menjadi tanda bahwa semakin banyak masyarakat yang peduli pada masa depan lingkungannya. Setelah memahami edukasi ini, kamu bisa lanjut mengisi formulir.`}
                       </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => { setClaimEducationOpen(false); setClaimError(null); }}
+                      onClick={returnToRegionMap}
                       className="w-12 h-12 rounded-2xl bg-white hover:bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 active:scale-95 transition-transform shadow-sm"
                       aria-label="Tutup"
                     >
@@ -10257,12 +10668,12 @@ const TreeGame: React.FC = () => {
                       <div>
                         <div className="text-[10px] font-black text-emerald-700/70 uppercase tracking-widest">Highlight Program</div>
                         <div className="mt-1 text-emerald-950 font-black text-xl tracking-tight">
-                          {claimMode === 'success' ? 'Klaim bibit diproses setelah verifikasi data' : 'Pendataan minat tanam tetap bernilai meski misi belum selesai'}
+                          {claimMode === 'success' ? 'Bibit yang dibagikan hari ini bisa menjadi warisan hijau untuk lingkungan sekitar' : 'Niat baik untuk menanam tetap bernilai, bahkan sebelum misi selesai'}
                         </div>
                         <div className="mt-2 text-emerald-900/75 font-bold text-sm leading-relaxed max-w-xl">
                           {claimMode === 'success'
-                            ? 'Isi form dengan data yang valid agar distribusi bibit lebih cepat, tepat lokasi, dan mudah diverifikasi oleh petugas.'
-                            : 'Data minat penghijauan membantu pemetaan kebutuhan bibit di wilayahmu. Kamu tetap bisa lanjut, lalu coba lagi untuk mendapatkan klaim gratis.'}
+                            ? 'Isi form dengan data yang valid agar bibit dapat disalurkan lebih cepat, tepat lokasi, dan benar-benar sampai kepada warga yang siap merawatnya hingga tumbuh besar.'
+                            : 'Data minat penghijauan membantu pemetaan kebutuhan bibit di wilayahmu. Dukungan kecil seperti ini penting untuk menunjukkan bahwa masyarakat siap bergerak bersama menjaga bumi.'}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -10279,14 +10690,14 @@ const TreeGame: React.FC = () => {
                   <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
                     {(claimMode === 'success'
                       ? [
-                          { title: '1. Verifikasi Data', desc: 'Nama, nomor HP, dan alamat dipakai untuk verifikasi klaim serta memastikan bibit diterima orang yang tepat.', tone: 'emerald' },
-                          { title: '2. Ambil di Dinas', desc: 'Setelah form dikirim, kamu akan mendapatkan kode klaim. Bawa KTP dan kode itu saat pengambilan di Dinas Kehutanan.', tone: 'soft' },
-                          { title: '3. Tanam & Rawat', desc: 'Bibit yang diambil sebaiknya ditanam di lokasi yang sudah kamu rencanakan, lalu dirawat rutin agar tumbuh optimal.', tone: 'deep' },
+                          { title: '1. Verifikasi Data', desc: 'Data yang benar membantu petugas menyalurkan bibit kepada warga yang benar-benar siap menanam dan merawat pohon di lingkungannya.', tone: 'emerald' },
+                          { title: '2. Ambil di Dinas', desc: 'Setelah form dikirim, kamu akan memperoleh kode klaim. Bawa KTP dan kode itu saat pengambilan di Dinas Kehutanan sebagai langkah awal aksi nyata untuk lingkungan.', tone: 'soft' },
+                          { title: '3. Tanam & Rawat', desc: 'Bibit yang kamu ambil akan lebih bermakna jika ditanam dan dirawat dengan sungguh-sungguh, karena satu pohon yang tumbuh bisa memberi manfaat bertahun-tahun bagi banyak orang.', tone: 'deep' },
                         ]
                       : [
-                          { title: '1. Pohon Menyerap CO2', desc: 'Satu pohon yang tumbuh baik membantu menyerap karbon dan memperbaiki kualitas udara di sekitar lingkungan.', tone: 'emerald' },
-                          { title: '2. Akar Menahan Air', desc: 'Pohon membantu tanah menyimpan air lebih lama, mengurangi risiko kekeringan dan limpasan saat hujan deras.', tone: 'soft' },
-                          { title: '3. Lanjutkan Sampai Berhasil', desc: 'Selesaikan misi sampai berhasil agar kamu mendapat kode klaim bibit gratis, bukan hanya data minat penanaman.', tone: 'deep' },
+                          { title: '1. Pohon Menjaga Udara', desc: 'Setiap pohon yang tumbuh dengan baik membantu menyerap karbon, menurunkan panas, dan menghadirkan udara yang lebih segar untuk keluarga serta warga sekitar.', tone: 'emerald' },
+                          { title: '2. Akar Menjaga Kehidupan', desc: 'Akar pohon membantu tanah menyimpan air, mengurangi risiko kekeringan, dan menjaga lingkungan tetap kuat saat musim berubah.', tone: 'soft' },
+                          { title: '3. Ayo Lanjutkan Sampai Berhasil', desc: 'Jangan berhenti di sini. Selesaikan misi sampai tuntas agar kepedulianmu berubah menjadi aksi nyata dan kamu bisa membawa pulang bibit gratis untuk ditanam.', tone: 'deep' },
                         ]
                     ).map((item, idx) => (
                       <div
@@ -10310,8 +10721,8 @@ const TreeGame: React.FC = () => {
                     <div className="text-[10px] font-black text-emerald-700/70 uppercase tracking-widest">Pesan Singkat</div>
                     <div className="mt-2 text-emerald-900/85 font-bold text-sm leading-relaxed">
                       {claimMode === 'success'
-                        ? 'Program pembagian bibit bertujuan mendorong penanaman pohon yang benar, tepat lokasi, dan berkelanjutan. Isi data dengan benar agar proses distribusi lebih cepat.'
-                        : 'Penghijauan dimulai dari kesadaran. Walau belum selesai bermain, kamu tetap bisa berkontribusi dengan memahami manfaat pohon dan melanjutkan game sampai tuntas.'}
+                        ? 'Menanam pohon bukan hanya soal hari ini, tetapi tentang menjaga kehidupan esok. Mari manfaatkan kesempatan ini untuk ikut menghadirkan lingkungan yang lebih sehat, lebih teduh, dan lebih nyaman bagi masyarakat.'
+                        : 'Perubahan besar selalu dimulai dari kepedulian sederhana. Walau belum selesai bermain, semangatmu tetap berarti. Mari lanjutkan, pahami manfaatnya, lalu buktikan kepedulianmu dengan aksi menanam pohon.'}
                     </div>
                   </div>
                 </div>
@@ -10319,7 +10730,7 @@ const TreeGame: React.FC = () => {
                 <div className="relative p-6 border-t border-emerald-200 bg-white/90 backdrop-blur-xl flex flex-col sm:flex-row gap-3 justify-end">
                   <button
                     type="button"
-                    onClick={() => { setClaimEducationOpen(false); setClaimError(null); }}
+                    onClick={returnToRegionMap}
                     className="px-6 py-3 rounded-2xl bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-800 font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform"
                   >
                     Nanti Saja
@@ -10382,7 +10793,7 @@ const TreeGame: React.FC = () => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => { setClaimOpen(false); setClaimError(null); }}
+                    onClick={returnToRegionMap}
                     className="w-12 h-12 rounded-2xl bg-white hover:bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 active:scale-95 transition-transform shadow-sm"
                     aria-label="Tutup"
                   >
@@ -10581,7 +10992,7 @@ const TreeGame: React.FC = () => {
                 <div className="relative p-6 border-t border-emerald-200 bg-white/92 backdrop-blur-xl flex flex-col sm:flex-row gap-3 justify-end">
                   <button
                     type="button"
-                    onClick={() => { setClaimOpen(false); setClaimError(null); }}
+                    onClick={returnToRegionMap}
                     className="px-6 py-3 rounded-2xl bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-800 font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform"
                   >
                     Tutup
