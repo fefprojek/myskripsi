@@ -1007,10 +1007,10 @@ const EnvMascotCard = memo(({
     const monkeyFace = '#f3d5b5';  // Softer tan for face
     const monkeyDark = '#4a2c19';  // Darker for depth
     
-    if (regionStatus === 'hijau') return { chipBg: 'bg-emerald-100', chipText: 'text-emerald-800', glow: 'rgba(16,185,129,0.25)', core: monkeyBrown, face: monkeyFace, dark: monkeyDark, highlight: '#10b981' };
-    if (regionStatus === 'kritis') return { chipBg: 'bg-orange-100', chipText: 'text-orange-800', glow: 'rgba(251,146,60,0.25)', core: monkeyBrown, face: monkeyFace, dark: monkeyDark, highlight: '#fb923c' };
-    if (regionStatus === 'gersang') return { chipBg: 'bg-red-100', chipText: 'text-red-800', glow: 'rgba(248,113,113,0.25)', core: monkeyBrown, face: monkeyFace, dark: monkeyDark, highlight: '#f87171' };
-    return { chipBg: 'bg-emerald-100', chipText: 'text-emerald-800', glow: 'rgba(16,185,129,0.25)', core: monkeyBrown, face: monkeyFace, dark: monkeyDark, highlight: '#10b981' };
+    if (regionStatus === 'hijau') return { chipBg: 'bg-slate-100', chipText: 'text-slate-900', glow: 'rgba(255,255,255,0.22)', core: monkeyBrown, face: monkeyFace, dark: monkeyDark, highlight: '#e2e8f0' };
+    if (regionStatus === 'kritis') return { chipBg: 'bg-slate-100', chipText: 'text-slate-900', glow: 'rgba(226,232,240,0.22)', core: monkeyBrown, face: monkeyFace, dark: monkeyDark, highlight: '#cbd5e1' };
+    if (regionStatus === 'gersang') return { chipBg: 'bg-slate-100', chipText: 'text-slate-900', glow: 'rgba(148,163,184,0.22)', core: monkeyBrown, face: monkeyFace, dark: monkeyDark, highlight: '#94a3b8' };
+    return { chipBg: 'bg-slate-100', chipText: 'text-slate-900', glow: 'rgba(255,255,255,0.22)', core: monkeyBrown, face: monkeyFace, dark: monkeyDark, highlight: '#e2e8f0' };
   }, [regionStatus]);
 
   const pupilX = useMotionValue(0);
@@ -1781,22 +1781,57 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
   const health01 = Math.max(0, Math.min(1, health / 100));
   const moisture01 = Math.max(0, Math.min(1, moisture / 100));
   const speciesKind = /pinus/i.test(species) ? 'pinus' : /jati/i.test(species) ? 'jati' : 'mahoni';
+  const isPinus = speciesKind === 'pinus';
+  const isJati = speciesKind === 'jati';
+  const isMahoni = speciesKind === 'mahoni';
   const swayR = (() => {
     const x = Math.sin((yPos * 0.17 + size * 0.031) * 999.123) * 10000;
     return x - Math.floor(x);
   })();
   const swayDuration = 4 + swayR * 2;
-  const matureScale = stage === 4 ? 0.9 : stage === 5 ? 1.15 : 1.3;
-  const canopyWidth = stage === 4 ? size * 0.9 : stage === 5 ? size * 1.02 : size * 1.14;
-  const canopyHeight = stage === 4 ? size * 0.72 : stage === 5 ? size * 0.82 : size * 0.92;
-  const trunkWidth = stage === 4 ? size * 0.16 : stage === 5 ? size * 0.19 : size * 0.22;
-  const trunkHeight = stage === 4 ? size * 0.36 : stage === 5 ? size * 0.43 : size * 0.5;
+  const matureScale =
+    stage === 4
+      ? isPinus ? 0.92 : isJati ? 0.94 : 0.98
+      : stage === 5
+        ? isPinus ? 1.08 : isJati ? 1.1 : 1.15
+        : isPinus ? 1.18 : isJati ? 1.22 : 1.28;
+  const canopyWidth =
+    stage === 4
+      ? isPinus ? size * 0.72 : isJati ? size * 1.02 : size * 0.96
+      : stage === 5
+        ? isPinus ? size * 0.82 : isJati ? size * 1.18 : size * 1.06
+        : isPinus ? size * 0.9 : isJati ? size * 1.28 : size * 1.16;
+  const canopyHeight =
+    stage === 4
+      ? isPinus ? size * 0.88 : isJati ? size * 0.62 : size * 0.76
+      : stage === 5
+        ? isPinus ? size * 1.02 : isJati ? size * 0.72 : size * 0.88
+        : isPinus ? size * 1.12 : isJati ? size * 0.82 : size * 0.98;
+  const trunkWidth =
+    stage === 4
+      ? isPinus ? size * 0.11 : isJati ? size * 0.18 : size * 0.15
+      : stage === 5
+        ? isPinus ? size * 0.13 : isJati ? size * 0.21 : size * 0.17
+        : isPinus ? size * 0.15 : isJati ? size * 0.24 : size * 0.2;
+  const trunkHeight =
+    stage === 4
+      ? isPinus ? size * 0.44 : isJati ? size * 0.34 : size * 0.4
+      : stage === 5
+        ? isPinus ? size * 0.52 : isJati ? size * 0.4 : size * 0.47
+        : isPinus ? size * 0.6 : isJati ? size * 0.46 : size * 0.54;
   const trunkTone = moisture01 < 0.3 ? '#6b3f24' : health01 < 0.45 ? '#775035' : '#7a4b2f';
   const barkShadow = health01 < 0.4 ? '#3f2617' : '#4a2b1b';
   const crownTop = moisture01 < 0.3 ? '#7fbf3b' : health01 < 0.45 ? '#5f8f34' : '#9ad758';
   const crownMid = moisture01 < 0.3 ? '#4f7f2f' : health01 < 0.45 ? '#43712c' : color;
   const crownDeep = health01 < 0.35 ? '#355724' : '#214b2e';
-  const accentLeaf = speciesKind === 'pinus' ? '#86efac' : speciesKind === 'jati' ? '#fde68a' : '#bbf7d0';
+  const accentLeaf = isPinus ? '#86efac' : isJati ? '#fde68a' : '#bbf7d0';
+  const canopyBaseRadius = isPinus
+    ? '30% 30% 22% 22% / 32% 32% 18% 18%'
+    : isJati
+      ? '42% 42% 36% 36% / 34% 34% 46% 46%'
+      : '44% 46% 40% 42% / 40% 42% 44% 46%';
+  const trunkDisplayWidth = isPinus ? trunkWidth * 0.8 : isJati ? trunkWidth * 1.12 : trunkWidth;
+  const trunkDisplayHeight = isPinus ? trunkHeight * 1.08 : isJati ? trunkHeight * 0.98 : trunkHeight;
   return (
     <motion.div 
       className="relative flex flex-col items-center justify-end" 
@@ -1847,6 +1882,19 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
             mixBlendMode: 'overlay',
           }}
         />
+        {stage >= 3 && (
+          <motion.div
+            initial={false}
+            animate={{ opacity: [0.6, 0.82, 0.6] }}
+            transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
+            className="absolute inset-[10%] rounded-[100%] pointer-events-none"
+            style={{
+              background:
+                'radial-gradient(circle at 45% 35%, rgba(255,255,255,0.20) 0 18px, rgba(96,165,250,0.12) 30px, rgba(15,23,42,0.24) 58px, rgba(15,23,42,0.42) 100%)',
+              boxShadow: 'inset 0 10px 18px rgba(255,255,255,0.08), inset 0 -10px 18px rgba(2,6,23,0.28)',
+            }}
+          />
+        )}
         
         <motion.div
           initial={false}
@@ -1880,6 +1928,24 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
 
       {/* Tree Growth Stages */}
       <AnimatePresence mode="wait">
+        {/* Stage 1: Hole only */}
+        {stage === 1 && (
+          <motion.div
+            key="hole-only"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="mb-1 relative z-10"
+          >
+            <motion.div
+              animate={{ opacity: [0.12, 0.26, 0.12], scale: [0.98, 1.04, 0.98] }}
+              transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
+              className="w-20 h-8 rounded-[100%] blur-md"
+              style={{ background: 'radial-gradient(circle, rgba(120,83,45,0.45) 0 24px, rgba(62,39,35,0.18) 56px, transparent 80px)' }}
+            />
+          </motion.div>
+        )}
+
         {/* Stage 2: Placed in hole (uncovered) */}
         {stage === 2 && (
           <motion.div
@@ -1905,80 +1971,36 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
           </motion.div>
         )}
 
-        {/* Stage 3: Covered (Sprout) */}
+        {/* Stage 3: Seedling with wet soil */}
         {stage === 3 && (
           <motion.div
-            key="sprout"
+            key="wet-seedling"
             initial={{ scale: 0, y: 10 }}
-            animate={{ scale: 1, y: 0, rotate: health01 < 0.4 ? [-7, 7, -5] : [-3, 3, -3] }}
+            animate={{ scale: 1.15, y: -6, rotate: health01 < 0.4 ? [-7, 7, -5] : [-3, 3, -3] }}
             exit={{ scale: 0 }}
-            className="mb-2 relative z-10"
+            className="mb-3 relative z-10"
           >
-            {speciesKind === 'pinus' ? (
-              <div className="relative flex flex-col items-center">
-                <div
-                  className="w-2 h-9 rounded-full shadow-sm"
-                  style={{
-                    backgroundColor: moisture01 < 0.25 ? '#7f1d1d' : '#7c9f42',
-                    filter: `saturate(${0.7 + health01 * 0.6}) brightness(${0.85 + moisture01 * 0.25})`,
-                  }}
-                />
-                {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    animate={{ rotate: i % 2 === 0 ? [-6, 5, -6] : [6, -5, 6] }}
-                    transition={{ repeat: Infinity, duration: 1.9 + i * 0.2, delay: i * 0.2 }}
-                    className="absolute left-1/2 -translate-x-1/2 rounded-full"
-                    style={{
-                      top: 3 + i * 7,
-                      width: 12 + i * 4,
-                      height: 8 + i * 2,
-                      background: `linear-gradient(180deg, ${accentLeaf}, ${crownMid})`,
-                      clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)',
-                      filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.16))',
-                    }}
-                  />
-                ))}
+            <div className="relative">
+              <div className="scale-[1.16] origin-bottom">
+                <SeedlingIcon type={species} active />
               </div>
-            ) : (
-              <>
-                <div
-                  className="w-2.5 h-8 rounded-full shadow-sm"
-                  style={{
-                    backgroundColor: moisture01 < 0.25 ? '#7f1d1d' : '#8bc34a',
-                    filter: `saturate(${0.7 + health01 * 0.6}) brightness(${0.85 + moisture01 * 0.25})`,
-                  }}
+              <motion.div
+                animate={{ opacity: [0.22, 0.4, 0.22], scale: [1.02, 1.14, 1.02] }}
+                transition={{ repeat: Infinity, duration: 1.7, ease: 'easeInOut' }}
+                className="absolute inset-0 rounded-full blur-lg"
+                style={{ background: 'radial-gradient(circle, rgba(96,165,250,0.24) 0 28px, rgba(16,185,129,0.16) 58px, transparent 96px)' }}
+              />
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="absolute rounded-full bg-blue-200/90"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 0.9, 0], x: [0, -4 + i * 4, -3 + i], y: [0, -8 - i * 3, -14 - i * 4], scale: [0.6, 1, 0.7] }}
+                  transition={{ repeat: Infinity, duration: 0.9, delay: i * 0.18, ease: 'easeOut' }}
+                  style={{ left: `${42 + i * 8}%`, top: `${68 - i * 7}%`, width: 4 + i, height: 5 + i }}
                 />
-                <motion.div 
-                  animate={{ rotate: [-5, 5, -5] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className={`absolute ${speciesKind === 'jati' ? '-left-4 top-1 w-6 h-4' : '-left-3 top-0 w-5 h-4'} rounded-full rotate-[-45deg] border-b-2 border-black/10`}
-                  style={{
-                    background: speciesKind === 'jati'
-                      ? `radial-gradient(circle at 38% 32%, ${accentLeaf} 0 22%, #d97706 48%, ${crownMid} 100%)`
-                      : '#8bc34a',
-                  }}
-                />
-                <motion.div 
-                  animate={{ rotate: [5, -5, 5] }}
-                  transition={{ repeat: Infinity, duration: 2, delay: 1 }}
-                  className={`absolute ${speciesKind === 'jati' ? '-right-4 top-2 w-5 h-3.5' : '-right-3 top-1 w-4 h-3'} rounded-full rotate-[45deg] border-b-2 border-black/10`}
-                  style={{
-                    background: speciesKind === 'jati'
-                      ? `radial-gradient(circle at 38% 32%, #fef08a 0 22%, #ca8a04 48%, ${crownMid} 100%)`
-                      : '#8bc34a',
-                  }}
-                />
-                {speciesKind === 'mahoni' && (
-                  <motion.div
-                    animate={{ scale: [0.95, 1.05, 0.95], y: [0, -1, 0] }}
-                    transition={{ repeat: Infinity, duration: 2.2 }}
-                    className="absolute left-1/2 -translate-x-1/2 -top-1 w-5 h-5 rounded-full border border-black/10"
-                    style={{ background: `radial-gradient(circle at 35% 30%, ${accentLeaf} 0 26%, ${crownMid} 55%, ${crownDeep} 100%)` }}
-                  />
-                )}
-              </>
-            )}
+              ))}
+            </div>
           </motion.div>
         )}
 
@@ -2003,18 +2025,28 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
             <div className="relative mx-auto" style={{ width: canopyWidth * 1.1, height: canopyHeight + trunkHeight + size * 0.08 }}>
               {speciesKind === 'pinus' ? (
                 <>
-                  {[0, 1, 2, 3].map((layer) => (
+                  <div
+                    className="absolute left-1/2 -translate-x-1/2 rounded-full"
+                    style={{
+                      top: canopyHeight * 0.88,
+                      width: canopyWidth * 0.78,
+                      height: Math.max(5, trunkWidth * 0.24),
+                      background: `linear-gradient(90deg, ${barkShadow}, ${trunkTone}, ${barkShadow})`,
+                      boxShadow: '0 8px 18px rgba(0,0,0,0.22)',
+                    }}
+                  />
+                  {[0, 1, 2, 3, 4].map((layer) => (
                     <motion.div
                       key={layer}
                       className="absolute left-1/2 -translate-x-1/2"
-                      animate={{ y: [0, -2, 0], rotate: [-1.2 + layer * 0.12, 1.2 - layer * 0.12, -1.2 + layer * 0.12] }}
-                      transition={{ repeat: Infinity, duration: 4.4 + layer * 0.3, ease: 'easeInOut' }}
+                      animate={{ y: [0, -1.4, 0], rotate: [-0.8 + layer * 0.08, 0.8 - layer * 0.08, -0.8 + layer * 0.08] }}
+                      transition={{ repeat: Infinity, duration: 4.8 + layer * 0.28, ease: 'easeInOut' }}
                       style={{
-                        top: size * (0.02 + layer * 0.08),
-                        width: canopyWidth * (0.88 - layer * 0.12),
-                        height: canopyHeight * (0.44 - layer * 0.04),
+                        top: size * (0.04 + layer * 0.12),
+                        width: canopyWidth * (0.48 + (4 - layer) * 0.12),
+                        height: canopyHeight * (0.18 + (4 - layer) * 0.065),
                         background: `linear-gradient(180deg, ${accentLeaf} 0%, ${crownTop} 12%, ${crownMid} 56%, ${crownDeep} 100%)`,
-                        clipPath: 'polygon(50% 0%, 96% 92%, 72% 92%, 84% 100%, 16% 100%, 28% 92%, 4% 92%)',
+                        clipPath: 'polygon(50% 0%, 94% 82%, 78% 84%, 90% 100%, 10% 100%, 22% 84%, 6% 82%)',
                         boxShadow: '0 14px 26px rgba(0,0,0,0.18), inset 0 -12px 18px rgba(10,24,12,0.18)',
                       }}
                     />
@@ -2022,13 +2054,13 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
                   <div
                     className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
                     style={{
-                      top: size * 0.02,
-                      width: canopyWidth * 0.86,
-                      height: canopyHeight * 0.72,
+                      top: size * 0.04,
+                      width: canopyWidth * 0.82,
+                      height: canopyHeight * 0.88,
                       backgroundImage:
-                        'repeating-linear-gradient(180deg, rgba(255,255,255,0.09) 0 3px, transparent 3px 10px), repeating-linear-gradient(122deg, rgba(0,0,0,0.08) 0 1px, transparent 1px 9px)',
-                      clipPath: 'polygon(50% 0%, 95% 90%, 72% 90%, 84% 100%, 16% 100%, 28% 90%, 5% 90%)',
-                      opacity: 0.75,
+                        'repeating-linear-gradient(180deg, rgba(255,255,255,0.08) 0 3px, transparent 3px 12px), repeating-linear-gradient(124deg, rgba(0,0,0,0.08) 0 1px, transparent 1px 10px)',
+                      clipPath: 'polygon(50% 0%, 94% 82%, 78% 84%, 90% 100%, 10% 100%, 22% 84%, 6% 82%)',
+                      opacity: 0.68,
                       mixBlendMode: 'soft-light',
                     }}
                   />
@@ -2052,8 +2084,8 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
                       key={`pinus-branch-${i}`}
                       className="absolute left-1/2 -translate-x-1/2 rounded-full"
                       style={{
-                        top: canopyHeight * (0.32 + i * 0.12),
-                        width: canopyWidth * (0.28 + i * 0.04),
+                        top: canopyHeight * (0.42 + i * 0.15),
+                        width: canopyWidth * (0.34 + i * 0.06),
                         height: Math.max(4, trunkWidth * 0.18),
                         transform: `rotate(${i % 2 === 0 ? -18 : 18}deg)`,
                         background: `linear-gradient(90deg, ${barkShadow}, ${trunkTone})`,
@@ -2064,33 +2096,51 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
                 </>
               ) : (
                 <>
-                  <motion.div
-                    className="absolute left-1/2 -translate-x-1/2 rounded-[48%]"
-                    animate={{ y: [0, -2, 0], rotate: [-1, 1, -1] }}
-                    transition={{ repeat: Infinity, duration: 5.5, ease: 'easeInOut' }}
+                  <div
+                    className="absolute left-1/2 -translate-x-1/2 rounded-full"
                     style={{
-                      top: size * 0.04,
-                      width: canopyWidth,
-                      height: canopyHeight,
-                      background:
-                        `radial-gradient(circle at 35% 28%, rgba(255,255,255,0.22) 0 14%, rgba(255,255,255,0.04) 30%, transparent 55%),
-                         radial-gradient(circle at 70% 78%, rgba(0,0,0,0.12) 0 22%, transparent 56%),
-                         linear-gradient(180deg, ${speciesKind === 'jati' ? '#fde68a' : crownTop} 0%, ${crownMid} 52%, ${crownDeep} 100%)`,
-                      borderRadius: speciesKind === 'jati' ? '34% 38% 42% 40% / 38% 36% 44% 42%' : '42% 44% 38% 40% / 40% 42% 35% 37%',
-                      boxShadow: '0 24px 50px rgba(0,0,0,0.28), inset 0 -16px 22px rgba(12,28,16,0.22), inset 0 10px 18px rgba(255,255,255,0.05)',
+                      top: canopyHeight * 0.82,
+                      width: canopyWidth * (isJati ? 0.82 : 0.7),
+                      height: Math.max(6, trunkWidth * 0.3),
+                      background: `linear-gradient(90deg, ${barkShadow}, ${trunkTone}, ${barkShadow})`,
+                      boxShadow: '0 8px 18px rgba(0,0,0,0.2)',
                     }}
                   />
-                  {[
-                    { left: '12%', top: '18%', w: 0.34, h: 0.28, delay: 0 },
-                    { left: '54%', top: '14%', w: 0.32, h: 0.26, delay: 0.35 },
-                    { left: '2%', top: '34%', w: 0.3, h: 0.24, delay: 0.18 },
-                    { left: '66%', top: '36%', w: 0.28, h: 0.24, delay: 0.52 },
-                    { left: '32%', top: '0%', w: 0.36, h: 0.28, delay: 0.24 },
-                  ].map((cluster, idx) => (
+                  <motion.div
+                    className="absolute left-1/2 -translate-x-1/2"
+                    animate={{ y: [0, -2, 0], rotate: [-0.8, 0.8, -0.8] }}
+                    transition={{ repeat: Infinity, duration: 5.8, ease: 'easeInOut' }}
+                    style={{
+                      top: size * (isJati ? 0.12 : 0.08),
+                      width: canopyWidth * (isJati ? 1.02 : 0.94),
+                      height: canopyHeight * (isJati ? 0.74 : 0.86),
+                      background:
+                        `radial-gradient(circle at 35% 28%, rgba(255,255,255,0.2) 0 14%, rgba(255,255,255,0.04) 30%, transparent 55%),
+                         radial-gradient(circle at 72% 78%, rgba(0,0,0,0.12) 0 22%, transparent 56%),
+                         linear-gradient(180deg, ${isJati ? '#fde68a' : crownTop} 0%, ${crownMid} 52%, ${crownDeep} 100%)`,
+                      borderRadius: canopyBaseRadius,
+                      boxShadow: '0 26px 54px rgba(0,0,0,0.28), inset 0 -16px 22px rgba(12,28,16,0.22), inset 0 10px 18px rgba(255,255,255,0.05)',
+                    }}
+                  />
+                  {(isJati
+                    ? [
+                        { left: '4%', top: '22%', w: 0.42, h: 0.24, delay: 0.08 },
+                        { left: '30%', top: '8%', w: 0.46, h: 0.26, delay: 0.24 },
+                        { left: '56%', top: '18%', w: 0.4, h: 0.22, delay: 0.4 },
+                        { left: '18%', top: '38%', w: 0.34, h: 0.18, delay: 0.16 },
+                        { left: '52%', top: '40%', w: 0.32, h: 0.18, delay: 0.32 },
+                      ]
+                    : [
+                        { left: '10%', top: '18%', w: 0.34, h: 0.28, delay: 0 },
+                        { left: '54%', top: '14%', w: 0.32, h: 0.26, delay: 0.35 },
+                        { left: '2%', top: '34%', w: 0.3, h: 0.24, delay: 0.18 },
+                        { left: '66%', top: '36%', w: 0.28, h: 0.24, delay: 0.52 },
+                        { left: '32%', top: '0%', w: 0.36, h: 0.28, delay: 0.24 },
+                      ]).map((cluster, idx) => (
                     <motion.div
                       key={idx}
                       className="absolute rounded-[48%]"
-                      animate={{ y: [0, -2.5, 0], rotate: [-1.2, 1.2, -1.2] }}
+                      animate={{ y: [0, -2.5, 0], rotate: [-1.1, 1.1, -1.1] }}
                       transition={{ repeat: Infinity, duration: 4.8 + idx * 0.35, delay: cluster.delay, ease: 'easeInOut' }}
                       style={{
                         left: cluster.left,
@@ -2099,8 +2149,8 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
                         height: canopyHeight * cluster.h,
                         background:
                           `radial-gradient(circle at 32% 30%, rgba(255,255,255,0.18) 0 16%, rgba(255,255,255,0.03) 36%, transparent 54%),
-                           linear-gradient(180deg, ${speciesKind === 'jati' ? '#fef08a' : crownTop} 0%, ${crownMid} 58%, ${crownDeep} 100%)`,
-                        borderRadius: speciesKind === 'jati' ? '38% 44% 36% 46% / 42% 38% 45% 40%' : undefined,
+                           linear-gradient(180deg, ${isJati ? '#fef08a' : crownTop} 0%, ${crownMid} 58%, ${crownDeep} 100%)`,
+                        borderRadius: isJati ? '42% 38% 44% 40% / 46% 42% 40% 38%' : '48% 44% 46% 42% / 40% 44% 42% 46%',
                         boxShadow: 'inset 0 -10px 16px rgba(12,28,16,0.18), 0 10px 18px rgba(0,0,0,0.12)',
                       }}
                     />
@@ -2108,28 +2158,28 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
                   <div
                     className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
                     style={{
-                      top: size * 0.04,
-                      width: canopyWidth,
-                      height: canopyHeight,
+                      top: size * (isJati ? 0.12 : 0.08),
+                      width: canopyWidth * (isJati ? 1.02 : 0.94),
+                      height: canopyHeight * (isJati ? 0.74 : 0.86),
                       backgroundImage:
-                        speciesKind === 'jati'
+                        isJati
                           ? 'repeating-radial-gradient(circle at 30% 30%, rgba(255,255,255,0.10) 0 2px, transparent 2px 14px), repeating-linear-gradient(135deg, rgba(0,0,0,0.06) 0 1px, transparent 1px 10px)'
                           : 'radial-gradient(circle at 18% 28%, rgba(255,255,255,0.09) 0 2px, transparent 3px), radial-gradient(circle at 64% 22%, rgba(255,255,255,0.08) 0 2px, transparent 3px), radial-gradient(circle at 72% 56%, rgba(0,0,0,0.08) 0 2px, transparent 3px), radial-gradient(circle at 38% 64%, rgba(0,0,0,0.07) 0 2px, transparent 3px)',
-                      backgroundSize: speciesKind === 'jati' ? '18px 18px, 18px 18px' : '24px 24px, 28px 28px, 20px 20px, 22px 22px',
+                      backgroundSize: isJati ? '18px 18px, 18px 18px' : '24px 24px, 28px 28px, 20px 20px, 22px 22px',
                       backgroundPosition: '0 0, 10px 8px, 4px 12px, 14px 16px',
-                      borderRadius: speciesKind === 'jati' ? '34% 38% 42% 40% / 38% 36% 44% 42%' : '42% 44% 38% 40% / 40% 42% 35% 37%',
+                      borderRadius: canopyBaseRadius,
                       mixBlendMode: 'soft-light',
-                      opacity: 0.9,
+                      opacity: isJati ? 0.82 : 0.9,
                     }}
                   />
                   <div
                     className="absolute rounded-full origin-bottom-left"
                     style={{
                       left: `calc(50% - ${trunkWidth * 0.1}px)`,
-                      top: canopyHeight * 0.6,
-                      width: canopyWidth * 0.22,
+                      top: canopyHeight * (isJati ? 0.68 : 0.6),
+                      width: canopyWidth * (isJati ? 0.28 : 0.22),
                       height: Math.max(5, trunkWidth * 0.24),
-                      transform: 'rotate(-24deg)',
+                      transform: `rotate(${isJati ? -12 : -24}deg)`,
                       background: `linear-gradient(90deg, ${barkShadow}, ${trunkTone})`,
                       boxShadow: '0 4px 10px rgba(0,0,0,0.18)',
                     }}
@@ -2138,10 +2188,10 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
                     className="absolute rounded-full origin-bottom-right"
                     style={{
                       right: `calc(50% - ${trunkWidth * 0.06}px)`,
-                      top: canopyHeight * 0.55,
-                      width: canopyWidth * 0.2,
+                      top: canopyHeight * (isJati ? 0.66 : 0.55),
+                      width: canopyWidth * (isJati ? 0.26 : 0.2),
                       height: Math.max(5, trunkWidth * 0.22),
-                      transform: 'rotate(28deg)',
+                      transform: `rotate(${isJati ? 14 : 28}deg)`,
                       background: `linear-gradient(90deg, ${trunkTone}, ${barkShadow})`,
                       boxShadow: '0 4px 10px rgba(0,0,0,0.18)',
                     }}
@@ -2154,8 +2204,8 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
                 className="absolute left-1/2 -translate-x-1/2 rounded-t-[45%] rounded-b-[30%] overflow-hidden"
                 style={{
                   bottom: size * 0.05,
-                  width: speciesKind === 'pinus' ? trunkWidth * 0.82 : speciesKind === 'jati' ? trunkWidth * 1.1 : trunkWidth,
-                  height: speciesKind === 'pinus' ? trunkHeight * 1.12 : speciesKind === 'jati' ? trunkHeight * 0.96 : trunkHeight,
+                  width: trunkDisplayWidth,
+                  height: trunkDisplayHeight,
                   background:
                     `linear-gradient(90deg, ${barkShadow} 0%, ${trunkTone} 18%, #9c6b44 32%, ${trunkTone} 48%, ${barkShadow} 100%)`,
                   boxShadow: '0 10px 24px rgba(0,0,0,0.24)',
@@ -2286,6 +2336,225 @@ const RealisticTree = ({ size, color, stage, actionProgress, icon: Icon, health,
         )}
       </AnimatePresence>
     </motion.div>
+  );
+};
+
+const LakeSprite = ({ x, y, highlight, lowWater }: { x: number; y: number; highlight?: boolean; lowWater?: boolean }) => {
+  return (
+    <div
+      className="absolute pointer-events-none -translate-x-1/2 -translate-y-1/2"
+      style={{ left: x, top: y }}
+    >
+      <div className="relative w-72 h-56">
+        <div className="absolute left-1/2 bottom-[6px] -translate-x-1/2 w-52 h-12 rounded-[100%] bg-black/30 blur-md" />
+        {highlight && (
+          <motion.div
+            className="absolute left-1/2 bottom-4 -translate-x-1/2 w-48 h-48 rounded-full"
+            animate={{ opacity: [0.18, 0.36, 0.18], scale: [0.96, 1.05, 0.96] }}
+            transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
+            style={{ background: 'radial-gradient(circle, rgba(96,165,250,0.26) 0 28%, rgba(96,165,250,0.06) 48%, rgba(96,165,250,0) 74%)' }}
+          />
+        )}
+
+        <div
+          className="absolute left-1/2 bottom-[18px] -translate-x-1/2 w-[232px] h-[122px]"
+          style={{
+            borderRadius: '55% 45% 52% 48% / 60% 52% 48% 40%',
+            background: 'linear-gradient(180deg, rgba(101,67,33,0.78) 0%, rgba(120,83,45,0.88) 38%, rgba(74,52,28,0.92) 100%)',
+            boxShadow: '0 16px 30px rgba(0,0,0,0.24), inset 0 2px 0 rgba(255,255,255,0.08)',
+          }}
+        >
+          <div
+            className="absolute inset-[8px]"
+            style={{
+              borderRadius: '58% 42% 48% 52% / 55% 50% 50% 45%',
+              background: 'linear-gradient(180deg, rgba(194,178,128,0.85) 0%, rgba(154,126,78,0.62) 44%, rgba(88,63,34,0.22) 100%)',
+              opacity: lowWater ? 0.9 : 0.72,
+            }}
+          />
+        </div>
+
+        <div
+          className="absolute left-1/2 bottom-[25px] -translate-x-1/2 w-[206px] h-[98px] overflow-hidden border border-white/10"
+          style={{
+            borderRadius: '56% 44% 50% 50% / 58% 54% 46% 42%',
+            background: lowWater
+              ? 'linear-gradient(180deg, rgba(186,230,253,0.82) 0%, rgba(59,130,246,0.78) 38%, rgba(30,64,175,0.88) 100%)'
+              : 'linear-gradient(180deg, rgba(224,242,254,0.94) 0%, rgba(103,232,249,0.84) 20%, rgba(56,189,248,0.84) 46%, rgba(37,99,235,0.92) 100%)',
+            boxShadow: 'inset 0 16px 24px rgba(255,255,255,0.16), inset 0 -18px 28px rgba(15,23,42,0.24), 0 18px 30px rgba(14,116,144,0.20)',
+          }}
+        >
+          <motion.div
+            className="absolute inset-0"
+            animate={{ backgroundPositionX: ['0px', '72px'], backgroundPositionY: ['0px', '24px'] }}
+            transition={{ repeat: Infinity, duration: 8.8, ease: 'linear' }}
+            style={{
+              opacity: lowWater ? 0.18 : 0.3,
+              backgroundImage: [
+                'repeating-linear-gradient(104deg, rgba(255,255,255,0.08) 0 2px, rgba(255,255,255,0) 2px 16px)',
+                'repeating-linear-gradient(12deg, rgba(125,211,252,0.10) 0 1px, rgba(14,165,233,0) 1px 14px)',
+              ].join(','),
+              backgroundSize: '120px 48px, 90px 36px',
+              mixBlendMode: 'screen',
+            }}
+          />
+          <motion.div
+            className="absolute inset-x-[-12px] top-[18px] h-[32px]"
+            animate={{ x: [-10, 12, -10] }}
+            transition={{ repeat: Infinity, duration: 6.4, ease: 'easeInOut' }}
+            style={{
+              opacity: 0.24,
+              backgroundImage:
+                'repeating-radial-gradient(ellipse at center, rgba(255,255,255,0.16) 0 2px, rgba(255,255,255,0.0) 2px 16px)',
+              backgroundSize: '44px 16px',
+              filter: 'blur(0.4px)',
+            }}
+          />
+          <motion.div
+            className="absolute inset-x-[-20px] top-[34px] h-[26px]"
+            animate={{ x: [12, -14, 12], opacity: [0.1, 0.22, 0.1] }}
+            transition={{ repeat: Infinity, duration: 5.4, ease: 'easeInOut', delay: 0.35 }}
+            style={{
+              background:
+                'repeating-linear-gradient(180deg, rgba(255,255,255,0.14) 0 1px, rgba(255,255,255,0) 1px 8px)',
+              filter: 'blur(0.5px)',
+            }}
+          />
+          <motion.div
+            className="absolute inset-0"
+            animate={{ backgroundPositionX: ['0px', '-64px'] }}
+            transition={{ repeat: Infinity, duration: 10.5, ease: 'linear' }}
+            style={{
+              opacity: lowWater ? 0.08 : 0.15,
+              backgroundImage:
+                'radial-gradient(circle at 18% 24%, rgba(255,255,255,0.18) 0 10px, transparent 26px), radial-gradient(circle at 72% 30%, rgba(255,255,255,0.12) 0 8px, transparent 22px), radial-gradient(circle at 56% 70%, rgba(186,230,253,0.12) 0 12px, transparent 24px)',
+              filter: 'blur(0.8px)',
+            }}
+          />
+          <div
+            className="absolute inset-x-[10px] top-[8px] h-[24px]"
+            style={{
+              borderRadius: '55% 45% 62% 38% / 72% 40% 60% 28%',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0.02))',
+              filter: 'blur(0.6px)',
+            }}
+          />
+          <div
+            className="absolute left-[8px] right-[8px] bottom-[6px] h-[26px]"
+            style={{
+              borderRadius: '50%',
+              background: lowWater
+                ? 'linear-gradient(180deg, rgba(59,130,246,0) 0%, rgba(30,64,175,0.18) 38%, rgba(15,23,42,0.32) 100%)'
+                : 'linear-gradient(180deg, rgba(14,165,233,0) 0%, rgba(2,132,199,0.18) 36%, rgba(15,23,42,0.34) 100%)',
+            }}
+          />
+          <motion.div
+            className="absolute left-[14px] right-[18px] top-[10px] h-[18px] rounded-full"
+            animate={highlight || lowWater ? { opacity: [0.72, 1, 0.72] } : { opacity: [0.65, 0.86, 0.65] }}
+            transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
+            style={{
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.64) 0%, rgba(255,255,255,0.16) 100%)',
+              filter: 'blur(0.6px)',
+            }}
+          />
+          <motion.div
+            className="absolute left-[20px] right-[30px] top-[28px] h-[22px]"
+            animate={{ x: [0, 8, 0], opacity: [0.18, 0.32, 0.18] }}
+            transition={{ repeat: Infinity, duration: 3.4, ease: 'easeInOut' }}
+            style={{
+              borderRadius: '55% 45% 58% 42% / 62% 44% 56% 38%',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04))',
+            }}
+          />
+          <motion.div
+            className="absolute left-[42px] top-[42px] w-[82px] h-[28px]"
+            animate={{ x: [0, 6, 0], opacity: [0.12, 0.22, 0.12] }}
+            transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut', delay: 0.25 }}
+            style={{
+              borderRadius: '50% 50% 46% 54% / 58% 42% 58% 42%',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.02))',
+            }}
+          />
+          <motion.div
+            className="absolute left-[18px] right-[18px] top-[50px] h-[14px]"
+            animate={{ x: [-4, 5, -4], opacity: [0.16, 0.28, 0.16] }}
+            transition={{ repeat: Infinity, duration: 4.6, ease: 'easeInOut', delay: 0.2 }}
+            style={{
+              background:
+                'repeating-linear-gradient(90deg, rgba(255,255,255,0.10) 0 18px, rgba(255,255,255,0.0) 18px 34px)',
+              borderRadius: '999px',
+              filter: 'blur(0.7px)',
+            }}
+          />
+          <motion.div
+            className="absolute left-1/2 top-1/2 w-[140px] h-[56px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/14"
+            animate={{ scale: [0.96, 1.02, 0.96], opacity: [0.08, 0.18, 0.08] }}
+            transition={{ repeat: Infinity, duration: 3.2, ease: 'easeInOut' }}
+          />
+          <motion.div
+            className="absolute left-1/2 top-1/2 w-[104px] h-[38px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/12"
+            animate={{ scale: [0.98, 1.05, 0.98], opacity: [0.10, 0.22, 0.10] }}
+            transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut', delay: 0.18 }}
+          />
+          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#0f172a]/34 to-transparent" />
+        </div>
+
+        <div className="absolute left-[22px] bottom-[38px] w-[66px] h-[24px] rounded-full bg-[#475569]/68 rotate-[8deg] blur-[1px]" />
+        <div className="absolute right-[18px] bottom-[32px] w-[76px] h-[26px] rounded-full bg-[#475569]/72 -rotate-[12deg] blur-[1px]" />
+        {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+          <div
+            key={i}
+            className="absolute rounded-full bg-slate-300/75 shadow-sm"
+            style={{
+              left: [18, 40, 58, 194, 216, 126, 146][i],
+              bottom: [28, 18, 22, 24, 34, 16, 18][i],
+              width: [16, 12, 14, 16, 18, 10, 12][i],
+              height: [10, 8, 10, 10, 12, 7, 8][i],
+              transform: `rotate(${[-12, 8, -18, 10, -8, 16, -14][i]}deg)`,
+            }}
+          />
+        ))}
+
+        {[0, 1, 2, 3].map((i) => (
+          <motion.div
+            key={`reed-left-${i}`}
+            className="absolute bottom-[64px] left-[34px] origin-bottom rounded-full"
+            animate={{ rotate: [-6 - i, 2 + i, -6 - i] }}
+            transition={{ repeat: Infinity, duration: 3.4 + i * 0.35, ease: 'easeInOut', delay: i * 0.15 }}
+            style={{
+              width: 2,
+              height: 28 + i * 4,
+              background: 'linear-gradient(180deg, #65a30d 0%, #365314 100%)',
+            }}
+          />
+        ))}
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={`reed-right-${i}`}
+            className="absolute bottom-[62px] right-[40px] origin-bottom rounded-full"
+            animate={{ rotate: [8 + i, -2 - i, 8 + i] }}
+            transition={{ repeat: Infinity, duration: 3 + i * 0.4, ease: 'easeInOut', delay: 0.1 + i * 0.18 }}
+            style={{
+              width: 2,
+              height: 24 + i * 5,
+              background: 'linear-gradient(180deg, #84cc16 0%, #3f6212 100%)',
+            }}
+          />
+        ))}
+        <div className="absolute left-[20px] top-[82px] w-10 h-14 rounded-[40%_60%_45%_55%] bg-gradient-to-b from-[#65a30d]/90 to-[#365314] rotate-[-20deg] shadow-md" />
+        <div className="absolute left-[34px] top-[92px] w-8 h-10 rounded-[52%_48%_60%_40%] bg-gradient-to-b from-[#84cc16]/85 to-[#4d7c0f] rotate-[10deg] shadow-md" />
+        <div className="absolute right-[26px] top-[78px] w-9 h-12 rounded-[48%_52%_42%_58%] bg-gradient-to-b from-[#65a30d]/85 to-[#365314] rotate-[22deg] shadow-md" />
+        <div className="absolute right-[48px] top-[92px] w-7 h-9 rounded-[58%_42%_55%_45%] bg-gradient-to-b from-[#84cc16]/80 to-[#3f6212] rotate-[-8deg] shadow-md" />
+        <div className="absolute left-[54px] top-[84px] w-20 h-5 rounded-full bg-gradient-to-r from-[#7c5c2a] to-[#4a3420] rotate-[-6deg] shadow-md opacity-85" />
+        <div className="absolute right-[50px] top-[70px] w-12 h-3 rounded-full bg-white/20 rotate-[18deg]" />
+
+        {highlight && (
+          <div className="absolute left-1/2 top-0 -translate-x-1/2 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-300/25 text-[10px] font-black uppercase tracking-widest text-blue-100 backdrop-blur">
+            Danau Air
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -2496,6 +2765,7 @@ const CharacterActionFX = ({ actionId, accent, toolIcon: ToolIcon }: { actionId:
   const isFertilizer = actionId === 'fertilizer';
   const isPlant = actionId === 'plant';
   const isWater = actionId === 'water';
+  const isCollectWater = actionId === 'collect-water';
   const isSun = actionId === 'sun';
   const isClean = actionId === 'clean';
   const isPest = actionId === 'pest';
@@ -2564,6 +2834,38 @@ const CharacterActionFX = ({ actionId, accent, toolIcon: ToolIcon }: { actionId:
             >
               <Droplets size={14} fill="currentColor" />
             </motion.div>
+          ))}
+        </div>
+      )}
+
+      {isCollectWater && (
+        <div className="absolute inset-0">
+          <motion.div
+            className="absolute -left-8 top-10 w-24 h-12 rounded-full"
+            animate={{ opacity: [0.08, 0.22, 0.08], scale: [0.9, 1.06, 0.9] }}
+            transition={{ repeat: Infinity, duration: 0.8, ease: 'easeInOut' }}
+            style={{ background: 'radial-gradient(circle, rgba(96,165,250,0.20) 0 18px, rgba(59,130,246,0.08) 34px, transparent 56px)' }}
+          />
+          {[...Array(10)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.5, x: 0, y: 0 }}
+              animate={{
+                opacity: [0, 0.95, 0],
+                scale: [0.5, 1, 0.7],
+                x: [-4 + (i % 5) * 5, -18 + (i % 5) * 8],
+                y: [0, 10 + (i % 3) * 6, 18 + (i % 2) * 6],
+              }}
+              transition={{ duration: 0.65 + (i % 3) * 0.06, delay: 0.03 * i, repeat: Infinity, repeatDelay: 0.08 }}
+              className="absolute left-3 top-8 rounded-full"
+              style={{
+                width: 4 + (i % 2),
+                height: 6 + (i % 3),
+                background: i % 2 === 0 ? '#93c5fd' : '#38bdf8',
+                borderRadius: '999px 999px 999px 999px / 70% 70% 100% 100%',
+                filter: 'blur(0.2px)',
+              }}
+            />
           ))}
         </div>
       )}
@@ -2817,6 +3119,36 @@ const HeldTool = ({ actionId, accent, icon: Icon, actionProgress }: { actionId: 
     );
   }
 
+  if (actionId === 'collect-water') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, rotate: [-18, 16, -10], y: [0, 3, 0], x: [0, 1, 0] }}
+        transition={{ repeat: Infinity, duration: 0.62, ease: 'easeInOut' }}
+        className="relative w-8 h-8"
+      >
+        <div className="absolute left-1 top-3 w-6 h-4 bg-[#60a5fa] rounded-b-[14px] rounded-t-[8px] shadow-md border border-black/10 overflow-hidden" />
+        <div className="absolute left-2 top-1 w-3.5 h-3.5 border-2 border-[#93c5fd] rounded-full" />
+        <motion.div
+          className="absolute left-1.5 right-1.5 top-4 h-2 rounded-full"
+          animate={{ opacity: [0.55, 0.95, 0.55] }}
+          transition={{ repeat: Infinity, duration: 0.5, ease: 'easeInOut' }}
+          style={{ background: 'linear-gradient(180deg, rgba(224,242,254,0.92), rgba(59,130,246,0.9))' }}
+        />
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full bg-blue-200/90"
+            initial={{ opacity: 0, x: 18, y: 18 }}
+            animate={{ opacity: [0, 0.9, 0], x: [18, 20 + i * 2, 16 + i], y: [18, 24 + i * 4, 28 + i * 5] }}
+            transition={{ duration: 0.56, delay: 0.08 * i, repeat: Infinity }}
+            style={{ width: 3 + i, height: 4 + i }}
+          />
+        ))}
+      </motion.div>
+    );
+  }
+
   if (actionId === 'sun') {
     return (
       <motion.div
@@ -2920,11 +3252,12 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
   const isFertilizing = actionId === 'fertilizer';
   const isPlanting = actionId === 'plant';
   const isWatering = actionId === 'water';
+  const isCollectingWater = actionId === 'collect-water';
   const p01 = Math.max(0, Math.min(1, (actionProgress ?? 0) / 100));
-  const crouch = isPlanting ? (2 + p01 * 3.8) : isFertilizing ? (1.4 + p01 * 2.1) : 0;
+  const crouch = isCollectingWater ? (2.8 + p01 * 1.4) : isPlanting ? (2 + p01 * 3.8) : isFertilizing ? (1.4 + p01 * 2.1) : 0;
   const [blinkTick, setBlinkTick] = useState(0);
   const blinkTimerRef = useRef<number | null>(null);
-  const actionDur = isDigging ? 0.52 : isWatering ? 0.62 : isFertilizing ? 0.82 : isPlanting ? 1.02 : isActing ? 0.75 : isWalking ? 0.55 : 3.8;
+  const actionDur = isDigging ? 0.52 : isCollectingWater ? 0.74 : isWatering ? 0.62 : isFertilizing ? 0.82 : isPlanting ? 1.02 : isActing ? 0.75 : isWalking ? 0.55 : 3.8;
   const actionEase = 'easeInOut';
 
   useEffect(() => {
@@ -2949,6 +3282,7 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
         animate={{
           rotate:
             isDigging ? [-5.5, 2.5, -4.5] :
+            isCollectingWater ? [5, -10, 4] :
             isWatering ? [-4.2, 1.8, -3.5] :
             isFertilizing ? [-3.2, 4.2, -2.4] :
             isPlanting ? [-2.6, 2.2, -1.8] :
@@ -2957,13 +3291,14 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
             [-0.6, 0.6, -0.6],
           y:
             isDigging ? [0, 2.4, 0] :
+            isCollectingWater ? [crouch + 1.2, crouch + 3.1, crouch + 1.4] :
             isWatering ? [0, 1.6, 0] :
             isFertilizing ? [crouch + 0.2, crouch + 1, crouch + 0.4] :
             isPlanting ? [crouch + 0.8, crouch + 1.8, crouch + 0.9] :
             isActing ? [0, 1.0, 0] :
             isWalking ? [0, -1.6, 0] :
             [0, 0.8, 0],
-          x: isWatering ? [0, 1.2, 0] : isFertilizing ? [0, 0.8, 0] : isPlanting ? [0, -0.8, 0] : 0,
+          x: isCollectingWater ? [0, -2.4, 0] : isWatering ? [0, 1.2, 0] : isFertilizing ? [0, 0.8, 0] : isPlanting ? [0, -0.8, 0] : 0,
         }}
         transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
         className={`relative flex flex-col items-center origin-bottom transition-transform duration-300 ${direction === 'left' ? '-scale-x-100' : 'scale-x-100'}`}
@@ -2973,6 +3308,7 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
           animate={{
             y:
               isDigging ? [0, -2.2, 0] :
+              isCollectingWater ? [-1.6, -4.8, -2.2] :
               isWatering ? [0, -1.6, 0] :
               isFertilizing ? [-0.4, -1.8, -0.6] :
               isPlanting ? [-0.8, -2.1, -0.7] :
@@ -2981,6 +3317,7 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
               [0, -1, 0],
             rotate:
               isDigging ? [-2.6, 1.2, -2.0] :
+              isCollectingWater ? [8, -10, 7] :
               isWatering ? [-1.6, 1.2, -1.2] :
               isFertilizing ? [-3.4, 2.8, -2.2] :
               isPlanting ? [-2.4, 2.2, -1.6] :
@@ -3013,12 +3350,13 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
               animate={{
                 rotate:
                   isDigging ? [-38, 12, -28] :
+                  isCollectingWater ? [26, -18, 20] :
                   isWatering ? [-14, 18, -10] :
                   isFertilizing ? [24, -18, 12, -8] :
                   isPlanting ? [-18, 12, -8, 2] :
                   [-10, 10, -8],
-                x: isDigging ? [-6, 4, -3] : isWatering ? [2, 6, 3] : isFertilizing ? [5, -1, 4, 0] : isPlanting ? [-2, 3, 1, 0] : 0,
-                y: isDigging ? [6, 12, 8] : isWatering ? [6, 8, 6] : isFertilizing ? [7, 4, 10, 6] : isPlanting ? [7 + p01 * 5, 11 + p01 * 6, 13 + p01 * 3, 9 + p01 * 2] : [6, 8, 6],
+                x: isDigging ? [-6, 4, -3] : isCollectingWater ? [-6, -12, -8] : isWatering ? [2, 6, 3] : isFertilizing ? [5, -1, 4, 0] : isPlanting ? [-2, 3, 1, 0] : 0,
+                y: isDigging ? [6, 12, 8] : isCollectingWater ? [10, 20, 14] : isWatering ? [6, 8, 6] : isFertilizing ? [7, 4, 10, 6] : isPlanting ? [7 + p01 * 5, 11 + p01 * 6, 13 + p01 * 3, 9 + p01 * 2] : [6, 8, 6],
               }}
               transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
               className="relative"
@@ -3058,6 +3396,7 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
       animate={{
         rotate:
           isDigging ? [-5.5, 2.5, -4.5] :
+            isCollectingWater ? [5, -10, 4] :
           isWatering ? [-4.2, 1.8, -3.5] :
           isFertilizing ? [-3.4, 4.4, -2.6] :
           isPlanting ? [-2.8, 2.2, -1.8] :
@@ -3066,13 +3405,14 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
           [-0.6, 0.6, -0.6],
         y:
           isDigging ? [0, 2.4, 0] :
+          isCollectingWater ? [crouch + 1.2, crouch + 3.1, crouch + 1.4] :
           isWatering ? [0, 1.6, 0] :
           isFertilizing ? [crouch + 0.4, crouch + 1.2, crouch + 0.5] :
           isPlanting ? [crouch + 0.8, crouch + 1.9, crouch + 0.9] :
           isActing ? [0, 1.0, 0] :
           isWalking ? [0, -1.6, 0] :
           [0, 0.8, 0],
-        x: isWatering ? [0, 1.2, 0] : isFertilizing ? [0, 0.8, 0] : isPlanting ? [0, -0.8, 0] : 0,
+        x: isCollectingWater ? [0, -2.4, 0] : isWatering ? [0, 1.2, 0] : isFertilizing ? [0, 0.8, 0] : isPlanting ? [0, -0.8, 0] : 0,
       }}
       transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
       className={`relative flex flex-col items-center origin-bottom transition-transform duration-300 ${direction === 'left' ? '-scale-x-100' : 'scale-x-100'}`}
@@ -3082,6 +3422,7 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
         animate={{ 
           y:
             isDigging ? [0, -2.2, 0] :
+            isCollectingWater ? [-1.6, -4.8, -2.2] :
             isWatering ? [0, -1.6, 0] :
             isFertilizing ? [-0.4, -1.9, -0.7] :
             isPlanting ? [-0.8, -2.2, -0.8] :
@@ -3090,6 +3431,7 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
             [0, -1, 0],
           rotate:
             isDigging ? [-2.6, 1.2, -2.0] :
+            isCollectingWater ? [8, -10, 7] :
             isWatering ? [-1.6, 1.2, -1.2] :
             isFertilizing ? [-3.2, 2.6, -2.1] :
             isPlanting ? [-2.6, 2.2, -1.7] :
@@ -3177,6 +3519,7 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
           animate={{
             rotate:
               isDigging ? [54, -22, 46] :
+              isCollectingWater ? [78, 16, 70] :
               isWatering ? [34, 8, 30] :
               isFertilizing ? [48, -10, 34, 12] :
               isPlanting ? [30, -4, 22, 8] :
@@ -3185,6 +3528,7 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
               [4, -4, 4],
             y:
               isDigging ? [0, 5, 1] :
+              isCollectingWater ? [4, 8, 5] :
               isWatering ? [2, 3, 2] :
               isFertilizing ? [3, 1, 6, 2] :
               isPlanting ? [4 + p01 * 4, 8 + p01 * 5, 10 + p01 * 2, 5 + p01 * 2] :
@@ -3198,6 +3542,7 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
           animate={{
             rotate:
               isDigging ? [-16, 18, -10] :
+              isCollectingWater ? [-70, -24, -62] :
               isWatering ? [-44, -12, -36] :
               isFertilizing ? [-54, -8, -36, -18] :
               isPlanting ? [-28, -16, -24, -10] :
@@ -3206,6 +3551,7 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
               [-4, 4, -4],
             y:
               isDigging ? [2, 3, 2] :
+              isCollectingWater ? [10, 13, 10] :
               isWatering ? [5, 6, 5] :
               isFertilizing ? [5, 7, 3, 6] :
               isPlanting ? [4 + p01 * 4, 7 + p01 * 5, 11 + p01 * 3, 5 + p01 * 2] :
@@ -3227,12 +3573,13 @@ const CharacterSprite = ({ isWalking, actionId, toolIcon: ToolIcon, accent, acti
               animate={{
                 rotate:
                   isDigging ? [-40, 10, -30] :
+                  isCollectingWater ? [26, -20, 18] :
                   isWatering ? [-18, 22, -12] :
                   isFertilizing ? [26, -18, 14, -8] :
                   isPlanting ? [-18, 12, -8, 2] :
                   [-10, 10, -8],
-                x: isDigging ? [-7, 5, -4] : isWatering ? [3, 7, 4] : isFertilizing ? [5, -1, 4, 0] : isPlanting ? [-2, 3, 1, 0] : 0,
-                y: isDigging ? [10, 16, 12] : isWatering ? [8, 10, 8] : isFertilizing ? [8, 4, 11, 7] : isPlanting ? [11 + p01 * 5, 15 + p01 * 6, 17 + p01 * 3, 12 + p01 * 2] : [8, 10, 8],
+                x: isDigging ? [-7, 5, -4] : isCollectingWater ? [-7, -14, -9] : isWatering ? [3, 7, 4] : isFertilizing ? [5, -1, 4, 0] : isPlanting ? [-2, 3, 1, 0] : 0,
+                y: isDigging ? [10, 16, 12] : isCollectingWater ? [14, 24, 16] : isWatering ? [8, 10, 8] : isFertilizing ? [8, 4, 11, 7] : isPlanting ? [11 + p01 * 5, 15 + p01 * 6, 17 + p01 * 3, 12 + p01 * 2] : [8, 10, 8],
               }}
               transition={{ repeat: Infinity, duration: actionDur, ease: actionEase }}
               className="relative"
@@ -3554,7 +3901,7 @@ const MapAmbientCanvas = memo(({ intensity01, seed, tint }: { intensity01: numbe
     };
 
     const resize = () => {
-      const dpr = Math.max(1, Math.min(2.25, window.devicePixelRatio || 1));
+      const dpr = Math.max(1, Math.min(1.5, window.devicePixelRatio || 1));
       const parent = canvas.parentElement;
       if (!parent) return;
       const w = Math.max(1, Math.floor(parent.clientWidth));
@@ -3584,10 +3931,8 @@ const MapAmbientCanvas = memo(({ intensity01, seed, tint }: { intensity01: numbe
 
       ctx.clearRect(0, 0, w, h);
 
-      const dustColor =
-        tint === 'heat' ? 'rgba(251,191,36,' : tint === 'smog' ? 'rgba(148,163,184,' : 'rgba(56,189,248,';
-      const leafColor =
-        tint === 'heat' ? 'rgba(34,197,94,' : tint === 'smog' ? 'rgba(100,116,139,' : 'rgba(16,185,129,';
+      const dustColor = 'rgba(226,232,240,';
+      const leafColor = 'rgba(148,163,184,';
 
       const p = particlesRef.current;
       for (let i = 0; i < p.length; i += 1) {
@@ -3808,6 +4153,15 @@ const TerrainMapCanvas = memo(({
   const baseRef = useRef<HTMLCanvasElement | null>(null);
   const heightRef = useRef<{ w: number; h: number; data: Float32Array } | null>(null);
   const regionPathsRef = useRef<Record<string, Path2D>>({});
+  const dynamicRef = useRef<{
+    view: { s: number; tx: number; ty: number };
+    focusParams: { s: number; tx: number; ty: number };
+    regionFxAt: Record<string, number>;
+  }>({
+    view,
+    focusParams,
+    regionFxAt,
+  });
 
   const biomeById = useMemo<Record<string, Biome>>(() => {
     const m: Record<string, Biome> = {};
@@ -3841,6 +4195,10 @@ const TerrainMapCanvas = memo(({
     }
     regionPathsRef.current = next;
   }, [regions]);
+
+  useEffect(() => {
+    dynamicRef.current = { view, focusParams, regionFxAt };
+  }, [focusParams, regionFxAt, view]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -3919,8 +4277,8 @@ const TerrainMapCanvas = memo(({
       const bctx = base.getContext('2d');
       if (!bctx) return null;
 
-      const hw = 420;
-      const hh = 350;
+      const hw = 280;
+      const hh = 220;
       const hdata = new Float32Array(hw * hh);
       for (let y = 0; y < hh; y += 1) {
         for (let x = 0; x < hw; x += 1) {
@@ -4087,8 +4445,8 @@ const TerrainMapCanvas = memo(({
       return base;
     };
 
-    const resize = () => {
-      const dpr = Math.max(1, Math.min(2.0, window.devicePixelRatio || 1));
+      const resize = () => {
+      const dpr = Math.max(1, Math.min(1.5, window.devicePixelRatio || 1));
       const parent = canvas.parentElement;
       if (!parent) return;
       const w = Math.max(1, Math.floor(parent.clientWidth));
@@ -4098,7 +4456,7 @@ const TerrainMapCanvas = memo(({
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      baseRef.current = buildBase(960, 800);
+      baseRef.current = buildBase(640, 520);
     };
 
     resize();
@@ -4121,9 +4479,10 @@ const TerrainMapCanvas = memo(({
         const sy = h / 100;
         ctx.scale(sx, sy);
 
-        const combinedS = view.s * focusParams.s;
-        const combinedTx = view.s * focusParams.tx + view.tx;
-        const combinedTy = view.s * focusParams.ty + view.ty;
+        const { view: liveView, focusParams: liveFocusParams, regionFxAt: liveRegionFxAt } = dynamicRef.current;
+        const combinedS = liveView.s * liveFocusParams.s;
+        const combinedTx = liveView.s * liveFocusParams.tx + liveView.tx;
+        const combinedTy = liveView.s * liveFocusParams.ty + liveView.ty;
 
         ctx.translate(combinedTx, combinedTy);
         ctx.scale(combinedS, combinedS);
@@ -4179,7 +4538,7 @@ const TerrainMapCanvas = memo(({
         ctx.restore();
 
         for (const r of regions) {
-          const at = regionFxAt[r.id] ?? 0;
+          const at = liveRegionFxAt[r.id] ?? 0;
           if (!at) continue;
           const k = clamp01((now - at) / 3200);
           if (k <= 0) continue;
@@ -4213,7 +4572,7 @@ const TerrainMapCanvas = memo(({
       if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     };
-  }, [biomeById, focusParams.s, focusParams.tx, focusParams.ty, regionFxAt, regions, seed, view.s, view.tx, view.ty, weatherByRegionId]);
+  }, [biomeById, regions, seed, weatherByRegionId]);
 
   return (
     <canvas
@@ -4296,10 +4655,10 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
   const fromFillUrl = statusAnim ? `url(#grad-${statusAnim.from})` : fillUrl;
   const glowColor =
     region.status === 'hijau'
-      ? 'rgba(16,185,129,0.55)'
+      ? 'rgba(16,185,129,0.34)'
       : region.status === 'kritis'
-        ? 'rgba(245,158,11,0.60)'
-        : 'rgba(239,68,68,0.62)';
+        ? 'rgba(251,191,36,0.36)'
+        : 'rgba(248,113,113,0.38)';
   const isDimmed = (focusActive && !isFocused);
   const depth = isFocused ? 2.6 : isHovered ? 2.1 : 1.2;
   const identity =
@@ -4339,6 +4698,10 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
   const pulseAttention = !isHijau && !isHovered && !isFocused && !isDimmed;
   const targetScale = isFocused ? 1.065 : isHovered ? 1.045 : 1;
   const innerGlowFilter = `url(#innerGlow-${region.status})`;
+  const extrudeX = depth * 0.55;
+  const extrudeY = depth * 1.35;
+  const extrudeOpacity = isDimmed ? 0.04 : (isHovered || isFocused ? 0.20 : 0.15);
+  const rimOpacity = isDimmed ? 0.05 : (isHovered || isFocused ? 0.65 : 0.52);
   const labelLinesFull = useMemo(() => {
     const cleaned = region.name.replace(/\s*\(.*?\)\s*/g, '').replace(/^Kota\s+/i, '').trim();
     const parts = cleaned.split('&').map(s => s.trim()).filter(Boolean);
@@ -4438,9 +4801,16 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
     >
       <path
         d={region.path}
-        fill="rgba(0,0,0,0.65)"
-        opacity={isDimmed ? 0.06 : 0.18}
-        transform={`translate(0 ${depth})`}
+        fill="rgba(0,0,0,0.72)"
+        opacity={extrudeOpacity}
+        transform={`translate(${extrudeX} ${extrudeY})`}
+        className="pointer-events-none"
+      />
+      <path
+        d={region.path}
+        fill="rgba(0,0,0,0.62)"
+        opacity={isDimmed ? 0.03 : (isHovered || isFocused ? 0.12 : 0.09)}
+        transform={`translate(${extrudeX * 0.65} ${extrudeY * 0.68})`}
         className="pointer-events-none"
       />
       <path
@@ -4448,8 +4818,8 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
         fill="transparent"
         stroke="rgba(255,255,255,0.14)"
         strokeWidth={isHovered || isFocused ? 0.9 : 0.55}
-        opacity={isDimmed ? 0.06 : 0.55}
-        transform={`translate(0 ${-0.65})`}
+        opacity={rimOpacity}
+        transform={`translate(${-0.55} ${-0.9})`}
         strokeLinejoin="round"
         className="pointer-events-none"
       />
@@ -4505,7 +4875,7 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
       {region.status === 'kritis' && !isDimmed && (
         <path
           d={region.path}
-          fill="rgba(255,255,255,0.10)"
+          fill="rgba(251,191,36,0.10)"
           opacity={isHovered || isFocused ? 0.22 : 0.10}
           className="pointer-events-none"
         />
@@ -4513,7 +4883,7 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
       {identity === 'cold' && !isDimmed && (
         <motion.path
           d={region.path}
-          fill="rgba(248,250,252,0.10)"
+          fill="rgba(125,211,252,0.10)"
           filter="url(#softFog)"
           initial={false}
           animate={{ opacity: isHovered || isFocused ? [0.10, 0.22, 0.10] : [0.06, 0.12, 0.06] }}
@@ -4524,7 +4894,7 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
       {identity === 'industry' && !isDimmed && (
         <motion.path
           d={region.path}
-          fill="rgba(148,163,184,0.10)"
+          fill="rgba(192,132,252,0.08)"
           initial={false}
           animate={{ opacity: isHovered || isFocused ? [0.06, 0.16, 0.06] : [0.04, 0.10, 0.04] }}
           transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}
@@ -4534,7 +4904,7 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
       {identity === 'flood' && !isDimmed && (
         <motion.path
           d={region.path}
-          fill="rgba(59,130,246,0.10)"
+          fill="rgba(56,189,248,0.10)"
           initial={false}
           animate={{ opacity: isHovered || isFocused ? [0.08, 0.18, 0.08] : [0.05, 0.10, 0.05] }}
           transition={{ repeat: Infinity, duration: 3.2, ease: 'easeInOut' }}
@@ -4577,7 +4947,7 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
       {isRestoring && !isDimmed && (
         <motion.path
           d={region.path}
-          fill="rgba(16,185,129,0.10)"
+          fill="rgba(248,250,252,0.08)"
           initial={false}
           animate={{ opacity: [0.05, 0.22, 0.05] }}
           transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
@@ -4603,22 +4973,22 @@ const RegionItem = memo(({ region, statusAnim, fxAt, isHovered, isFocused, focus
       {/* Interactive Markers */}
       {!isHijau ? (
         <g transform={`translate(${region.x}, ${region.y})`}>
-          {(isHovered || isFocused) && <circle r="3.5" fill="white" opacity="0.22" className="animate-ping" />}
+          {(isHovered || isFocused) && <circle r="3.5" fill={region.status === 'kritis' ? '#fbbf24' : '#fb7185'} opacity="0.26" className="animate-ping" />}
           {!isHovered && !isFocused && (
             <motion.circle
               r="3.8"
-              fill="white"
+              fill={region.status === 'kritis' ? '#fbbf24' : '#fb7185'}
               opacity="0.10"
               animate={{ r: [3.2, 4.6, 3.2], opacity: [0.08, 0.16, 0.08] }}
               transition={{ repeat: Infinity, duration: region.status === 'gersang' ? 1.6 : 2.2, ease: 'easeInOut' }}
             />
           )}
-          <circle r="1.5" fill="white" className="drop-shadow-md" />
-          <circle r="0.6" fill={region.status === 'kritis' ? '#f59e0b' : '#ef4444'} />
+          <circle r="1.6" fill={region.status === 'kritis' ? '#fde68a' : '#fecdd3'} className="drop-shadow-md" />
+          <circle r="0.75" fill={region.status === 'kritis' ? '#f59e0b' : '#ef4444'} opacity={0.95} />
         </g>
       ) : (
         <g transform={`translate(${region.x}, ${region.y})`}>
-          <circle r="1" fill="#a7f3d0" opacity="0.6" />
+          <circle r="1.2" fill="#4ade80" opacity="0.72" />
         </g>
       )}
 
@@ -4709,6 +5079,7 @@ const InteractiveMap = memo(({
   const focusActive = Boolean(focusedRegionId);
   const [ripple, setRipple] = useState<{ id: string; key: number } | null>(null);
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+  const containerSizeRef = useRef({ w: 0, h: 0 });
   const [tooltipSize, setTooltipSize] = useState({ w: 220, h: 120 });
   const [liveTick, setLiveTick] = useState(0);
   const [cursorInside, setCursorInside] = useState(false);
@@ -4734,6 +5105,7 @@ const InteractiveMap = memo(({
     const updateRect = () => {
       const r = el.getBoundingClientRect();
       rectRef.current = r;
+      containerSizeRef.current = { w: r.width, h: r.height };
       setContainerSize({ w: r.width, h: r.height });
     };
     updateRect();
@@ -4840,6 +5212,27 @@ const InteractiveMap = memo(({
   const bgShiftY = useTransform(smoothY, (y) => {
     const h = Math.max(1, containerSize.h);
     return ((y / h) - 0.5) * 14;
+  });
+
+  const tiltIntensity = useMotionValue(0.18);
+  useEffect(() => {
+    tiltIntensity.set(focusActive ? 0.26 : cursorInside ? 1 : 0.18);
+  }, [cursorInside, focusActive, tiltIntensity]);
+
+  const tiltRotX = useTransform(smoothY, (y) => {
+    const h = Math.max(1, containerSizeRef.current.h);
+    const k = tiltIntensity.get();
+    return (0.5 - (y / h)) * 10.5 * k;
+  });
+  const tiltRotY = useTransform(smoothX, (x) => {
+    const w = Math.max(1, containerSizeRef.current.w);
+    const k = tiltIntensity.get();
+    return ((x / w) - 0.5) * 12.0 * k;
+  });
+  const tiltRotZ = useTransform(smoothX, (x) => {
+    const w = Math.max(1, containerSizeRef.current.w);
+    const k = tiltIntensity.get();
+    return (((x / w) - 0.5) * 1.8 - 1.25) * Math.min(1, 0.65 + k * 0.35);
   });
 
   const tint: 'eco' | 'heat' | 'smog' = useMemo(() => {
@@ -5053,6 +5446,87 @@ const InteractiveMap = memo(({
     return 'Gersang: butuh penanganan cepat & banyak penanaman.';
   }, [hoveredRegion]);
 
+  const hoveredScreenPoint = useMemo(() => {
+    if (!hoveredRegion || containerSize.w <= 0 || containerSize.h <= 0) return null;
+    const combinedS = view.s * focusParams.s;
+    const combinedTx = view.s * focusParams.tx + view.tx;
+    const combinedTy = view.s * focusParams.ty + view.ty;
+    const rx = combinedS * hoveredRegion.x + combinedTx;
+    const ry = combinedS * hoveredRegion.y + combinedTy;
+    return {
+      x: (rx / 120) * containerSize.w,
+      y: (ry / 100) * containerSize.h,
+    };
+  }, [containerSize.h, containerSize.w, focusParams.s, focusParams.tx, focusParams.ty, hoveredRegion, view.s, view.tx, view.ty]);
+
+  const visibleSummary = useMemo(() => {
+    return visibleRegions.reduce(
+      (acc, region) => {
+        acc.total += 1;
+        acc[region.status] += 1;
+        return acc;
+      },
+      { total: 0, hijau: 0, kritis: 0, gersang: 0 }
+    );
+  }, [visibleRegions]);
+
+  const hoveredStatusMeta = useMemo(() => {
+    const status = hoveredRegion?.status ?? 'hijau';
+    if (status === 'hijau') {
+      return {
+        label: 'Zona Stabil',
+        accent: '#4ade80',
+        glow: 'rgba(74,222,128,0.28)',
+        chip: 'rgba(34,197,94,0.18)',
+      };
+    }
+    if (status === 'kritis') {
+      return {
+        label: 'Zona Pemulihan',
+        accent: '#fbbf24',
+        glow: 'rgba(251,191,36,0.28)',
+        chip: 'rgba(245,158,11,0.18)',
+      };
+    }
+    return {
+      label: 'Zona Prioritas',
+      accent: '#fb7185',
+      glow: 'rgba(251,113,133,0.30)',
+      chip: 'rgba(239,68,68,0.18)',
+    };
+  }, [hoveredRegion?.status]);
+
+  const hoveredWeatherLabel = useMemo(() => {
+    if (!hoveredWeather) return 'Cerah';
+    if (hoveredWeather === 'rain') return 'Hujan Lokal';
+    if (hoveredWeather === 'fog') return 'Kabut';
+    if (hoveredWeather === 'heat') return 'Panas Tinggi';
+    if (hoveredWeather === 'storm') return 'Badai Jauh';
+    return 'Cerah';
+  }, [hoveredWeather]);
+
+  const mapRoutes = useMemo(
+    () => [
+      { id: 'artery-north', d: 'M 12 26 C 26 22, 40 20, 58 22 C 78 24, 96 31, 112 42', type: 'artery' as const },
+      { id: 'artery-south', d: 'M 10 66 C 24 63, 38 61, 56 63 C 74 65, 94 71, 110 82', type: 'artery' as const },
+      { id: 'connector-mid', d: 'M 33 16 C 42 31, 48 42, 55 58 C 60 69, 64 81, 70 92', type: 'connector' as const },
+      { id: 'connector-east', d: 'M 84 18 C 86 31, 89 44, 92 58 C 95 69, 98 78, 101 87', type: 'connector' as const },
+      { id: 'ridge-west', d: 'M 7 46 C 18 44, 24 47, 31 54 C 38 62, 43 70, 48 79', type: 'minor' as const },
+    ],
+    []
+  );
+
+  const mapLabels = useMemo(
+    () => [
+      { id: 'lbl-bandung', x: 55, y: 46, text: 'Bandung Raya', size: 3.6 },
+      { id: 'lbl-lembang', x: 56, y: 15, text: 'Lembang', size: 2.4 },
+      { id: 'lbl-ciwidey', x: 9, y: 86, text: 'Ciwidey', size: 2.2 },
+      { id: 'lbl-pangalengan', x: 63, y: 98, text: 'Pangalengan', size: 2.2 },
+      { id: 'lbl-soreang', x: 31, y: 80, text: 'Soreang', size: 2.1 },
+    ],
+    []
+  );
+
   return (
     <div 
       ref={mapRef}
@@ -5071,11 +5545,11 @@ const InteractiveMap = memo(({
         onHover(null);
       }}
       className="relative bg-[#0b1220] rounded-[2rem] border border-white/10 aspect-[4/3] overflow-hidden shadow-2xl"
-      style={{ touchAction: 'none' }}
+      style={{ touchAction: 'none', perspective: '1100px' }}
     >
       <div className="absolute inset-0 pointer-events-none">
         <motion.div className="absolute inset-0 opacity-45" style={{ x: bgShiftX, y: bgShiftY, backgroundImage: 'radial-gradient(circle at 50% 50%, #1e293b 0%, #0b1220 70%, #020617 100%)' }} />
-        <motion.div className="absolute inset-0 opacity-18" style={{ x: useTransform(bgShiftX, v => -v * 0.8), y: useTransform(bgShiftY, v => -v * 0.8), backgroundImage: 'linear-gradient(rgba(56,189,248,0.26) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.18) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+        <motion.div className="absolute inset-0 opacity-18" style={{ x: useTransform(bgShiftX, v => -v * 0.8), y: useTransform(bgShiftY, v => -v * 0.8), backgroundImage: 'linear-gradient(rgba(255,255,255,0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.10) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
         <motion.div className="absolute inset-0 opacity-10" style={{ x: useTransform(bgShiftX, v => v * 0.55), y: useTransform(bgShiftY, v => v * 0.55), backgroundImage: 'linear-gradient(rgba(148,163,184,0.26) 2px, transparent 2px), linear-gradient(90deg, rgba(148,163,184,0.18) 2px, transparent 2px)', backgroundSize: '110px 110px' }} />
         <motion.div
           className="absolute -inset-10 opacity-30 blur-2xl"
@@ -5083,8 +5557,20 @@ const InteractiveMap = memo(({
           transition={{ repeat: Infinity, duration: 14, ease: 'easeInOut' }}
           style={{
             backgroundImage:
-              'radial-gradient(circle at 18% 22%, rgba(16,185,129,0.18) 0 240px, transparent 620px), radial-gradient(circle at 82% 24%, rgba(56,189,248,0.14) 0 220px, transparent 600px), radial-gradient(circle at 52% 84%, rgba(245,158,11,0.10) 0 260px, transparent 640px)',
+              'radial-gradient(circle at 18% 22%, rgba(248,250,252,0.14) 0 240px, transparent 620px), radial-gradient(circle at 82% 24%, rgba(148,163,184,0.10) 0 220px, transparent 600px), radial-gradient(circle at 52% 84%, rgba(56,189,248,0.08) 0 260px, transparent 640px)',
             backgroundSize: '180% 180%',
+          }}
+        />
+        <motion.div
+          className="absolute inset-0 opacity-[0.18] pointer-events-none"
+          animate={{ backgroundPosition: ['-40% -20%', '140% 120%'] }}
+          transition={{ repeat: Infinity, duration: 6.8, ease: 'linear' }}
+          style={{
+            backgroundImage:
+              'linear-gradient(115deg, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.10) 38%, rgba(56,189,248,0.08) 50%, rgba(255,255,255,0.10) 62%, rgba(255,255,255,0.0) 100%)',
+            backgroundSize: '260% 260%',
+            mixBlendMode: 'overlay',
+            filter: 'blur(0.2px)',
           }}
         />
         <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 140px rgba(0,0,0,0.85), inset 0 0 220px rgba(2,6,23,0.85)' }} />
@@ -5100,6 +5586,105 @@ const InteractiveMap = memo(({
           mixBlendMode: 'multiply',
         }}
       />
+
+      <TerrainMapCanvas
+        regions={visibleRegions}
+        weatherByRegionId={weatherByRegionId}
+        regionFxAt={regionFxAt}
+        view={view}
+        focusParams={focusParams}
+        seed={1337}
+      />
+      <div
+        className="absolute inset-0 pointer-events-none z-[6]"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 28%, rgba(2,6,23,0.10) 100%)',
+          mixBlendMode: 'soft-light',
+        }}
+      />
+      <motion.svg
+        className="absolute inset-0 pointer-events-none z-[7]"
+        viewBox="0 0 120 100"
+        preserveAspectRatio="none"
+        initial={false}
+        animate={{ opacity: cursorInside || focusActive ? 0.92 : 0.76 }}
+        transition={{ duration: 0.25 }}
+      >
+        <defs>
+          <filter id="map-road-glow" x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur stdDeviation="0.9" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <path
+          d="M 18 18 C 40 28, 62 58, 104 82"
+          fill="none"
+          stroke="rgba(56,189,248,0.52)"
+          strokeWidth="1.15"
+          strokeLinecap="round"
+          filter="url(#map-road-glow)"
+        />
+        <path
+          d="M 18 18 C 40 28, 62 58, 104 82"
+          fill="none"
+          stroke="rgba(186,230,253,0.28)"
+          strokeWidth="2.8"
+          strokeLinecap="round"
+          opacity="0.55"
+        />
+        {mapRoutes.map((route) => (
+          <g key={route.id}>
+            <path
+              d={route.d}
+              fill="none"
+              stroke={route.type === 'artery' ? 'rgba(248,250,252,0.68)' : route.type === 'connector' ? 'rgba(255,255,255,0.52)' : 'rgba(226,232,240,0.36)'}
+              strokeWidth={route.type === 'artery' ? 1.45 : route.type === 'connector' ? 1.0 : 0.7}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              filter="url(#map-road-glow)"
+            />
+            <path
+              d={route.d}
+              fill="none"
+              stroke={route.type === 'artery' ? 'rgba(2,6,23,0.34)' : 'rgba(15,23,42,0.26)'}
+              strokeWidth={route.type === 'artery' ? 2.15 : 1.55}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity="0.5"
+            />
+          </g>
+        ))}
+        {mapLabels.map((label) => (
+          <g key={label.id} transform={`translate(${label.x} ${label.y})`}>
+            <text
+              y="0"
+              textAnchor="middle"
+              fontSize={label.size}
+              fontWeight="800"
+              fill="rgba(255,255,255,0.82)"
+              style={{ letterSpacing: '0.08em' }}
+            >
+              {label.text}
+            </text>
+            <text
+              y="0.2"
+              textAnchor="middle"
+              fontSize={label.size}
+              fontWeight="800"
+              fill="rgba(2,6,23,0.34)"
+              stroke="rgba(2,6,23,0.34)"
+              strokeWidth="0.32"
+              paintOrder="stroke"
+            >
+              {label.text}
+            </text>
+          </g>
+        ))}
+      </motion.svg>
 
       <MapAmbientCanvas intensity01={0.9} seed={1337} tint={tint} />
       <AnimatePresence>
@@ -5123,7 +5708,7 @@ const InteractiveMap = memo(({
               transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
               style={{
                 background:
-                  'radial-gradient(circle, rgba(56,189,248,0.18) 0 10px, rgba(16,185,129,0.10) 22px, rgba(255,255,255,0.0) 34px)',
+                  'radial-gradient(circle, rgba(255,255,255,0.16) 0 10px, rgba(148,163,184,0.10) 22px, rgba(255,255,255,0.0) 34px)',
                 filter: 'blur(0.2px)',
                 mixBlendMode: 'screen',
               }}
@@ -5149,7 +5734,7 @@ const InteractiveMap = memo(({
         style={{
           mixBlendMode: 'screen',
           backgroundImage:
-            'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08) 0 220px, transparent 560px), radial-gradient(circle at 70% 60%, rgba(255,255,255,0.06) 0 240px, transparent 600px), radial-gradient(circle at 40% 80%, rgba(56,189,248,0.06) 0 260px, transparent 640px)',
+            'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08) 0 220px, transparent 560px), radial-gradient(circle at 70% 60%, rgba(255,255,255,0.06) 0 240px, transparent 600px), radial-gradient(circle at 40% 80%, rgba(148,163,184,0.06) 0 260px, transparent 640px)',
         }}
       />
       <motion.div
@@ -5159,7 +5744,7 @@ const InteractiveMap = memo(({
         style={{
           mixBlendMode: 'screen',
           backgroundImage:
-            'radial-gradient(circle at 60% 20%, rgba(148,163,184,0.06) 0 260px, transparent 640px), radial-gradient(circle at 20% 70%, rgba(16,185,129,0.05) 0 240px, transparent 620px)',
+            'radial-gradient(circle at 60% 20%, rgba(148,163,184,0.06) 0 260px, transparent 640px), radial-gradient(circle at 20% 70%, rgba(255,255,255,0.04) 0 240px, transparent 620px)',
         }}
       />
 
@@ -5181,6 +5766,160 @@ const InteractiveMap = memo(({
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {hoveredScreenPoint && hoveredRegion && (
+          <motion.div
+            key={`scan-beacon-${hoveredRegion.id}`}
+            className="absolute z-[26] pointer-events-none"
+            style={{
+              left: hoveredScreenPoint.x,
+              top: hoveredScreenPoint.y,
+              transform: 'translate(-50%, -50%)',
+            }}
+            initial={{ opacity: 0, scale: 0.94 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.94 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            <div className="relative w-24 h-24">
+              <motion.div
+                className="absolute inset-0 rounded-full border"
+                animate={{ scale: [0.92, 1.08, 0.92], opacity: [0.18, 0.42, 0.18] }}
+                transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+                style={{ borderColor: hoveredStatusMeta.accent, boxShadow: `0 0 24px ${hoveredStatusMeta.glow}` }}
+              />
+              <motion.div
+                className="absolute inset-[14px] rounded-full border border-dashed"
+                animate={{ rotate: [0, 360] }}
+                transition={{ repeat: Infinity, duration: 8, ease: 'linear' }}
+                style={{ borderColor: hoveredStatusMeta.accent, opacity: 0.5 }}
+              />
+              <motion.div
+                className="absolute left-1/2 top-1/2 w-4 h-4 rounded-full -translate-x-1/2 -translate-y-1/2"
+                animate={{ scale: [0.9, 1.15, 0.9], opacity: [0.65, 1, 0.65] }}
+                transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+                style={{ background: hoveredStatusMeta.accent, boxShadow: `0 0 18px ${hoveredStatusMeta.glow}` }}
+              />
+              {[0, 1, 2].map((idx) => (
+                <motion.div
+                  key={idx}
+                  className="absolute inset-0"
+                  animate={{ rotate: [idx * 120, idx * 120 + 360] }}
+                  transition={{ repeat: Infinity, duration: 6 + idx, ease: 'linear' }}
+                >
+                  <div
+                    className="absolute left-1/2 top-0 w-2.5 h-2.5 rounded-full -translate-x-1/2"
+                    style={{ background: hoveredStatusMeta.accent, boxShadow: `0 0 12px ${hoveredStatusMeta.glow}` }}
+                  />
+                </motion.div>
+              ))}
+              <div className="absolute left-1/2 -top-12 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 rounded-full border border-white/15 text-[10px] font-black uppercase tracking-[0.2em] text-white/90 backdrop-blur-xl"
+                style={{ background: `linear-gradient(180deg, ${hoveredStatusMeta.chip}, rgba(15,23,42,0.78))` }}
+              >
+                {hoveredStatusMeta.label}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {(hoveredRegion || focusActive) && (
+          <motion.div
+            key={`map-hud-${hoveredRegion?.id ?? focusedRegionId ?? 'idle'}`}
+            initial={{ opacity: 0, x: 16, y: 8, scale: 0.98 }}
+            animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 16, y: 8, scale: 0.98 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="absolute right-4 bottom-4 z-[24] w-[300px] pointer-events-none rounded-[1.8rem] border border-white/12 overflow-hidden shadow-[0_26px_80px_rgba(0,0,0,0.58)]"
+            style={{
+              background:
+                'linear-gradient(180deg, rgba(15,23,42,0.92) 0%, rgba(2,6,23,0.88) 100%)',
+              backdropFilter: 'blur(18px)',
+            }}
+          >
+            <div
+              className="absolute inset-0 opacity-80"
+              style={{
+                backgroundImage: `radial-gradient(circle at 18% 18%, ${hoveredStatusMeta.glow} 0 90px, transparent 180px), radial-gradient(circle at 85% 20%, rgba(56,189,248,0.14) 0 80px, transparent 170px), linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.0) 55%)`,
+              }}
+            />
+            <div className="relative p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-[9px] font-black uppercase tracking-[0.26em] text-white/45">Command Center</div>
+                  <div className="mt-1 text-white font-black text-base tracking-tight">
+                    {hoveredRegion?.name ?? 'Mode Fokus Aktif'}
+                  </div>
+                </div>
+                <div
+                  className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-white/90 border border-white/12"
+                  style={{ background: hoveredStatusMeta.chip }}
+                >
+                  {hoveredRegion ? hoveredRegion.status : 'focus'}
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {[
+                  { label: 'Zona Hijau', value: visibleSummary.hijau, tone: 'rgba(34,197,94,0.24)' },
+                  { label: 'Kritis', value: visibleSummary.kritis, tone: 'rgba(245,158,11,0.24)' },
+                  { label: 'Gersang', value: visibleSummary.gersang, tone: 'rgba(239,68,68,0.24)' },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
+                    <div className="text-[8px] font-black uppercase tracking-[0.2em] text-white/45">{item.label}</div>
+                    <div className="mt-1 text-white text-lg font-black" style={{ textShadow: `0 0 18px ${item.tone}` }}>{item.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {hoveredRegion && hoveredVitals && (
+                <>
+                  <div className="mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-[0.18em] text-white/55">
+                    <span>Live Telemetry</span>
+                    <span>{hoveredWeatherLabel}</span>
+                  </div>
+                  <div className="mt-2 space-y-2">
+                    {[
+                      { label: 'Kelembaban', value: hoveredVitals.humidity, color: 'rgba(56,189,248,0.85)' },
+                      { label: 'Cadangan Air', value: hoveredVitals.waterIndex, color: 'rgba(74,222,128,0.85)' },
+                      { label: 'Kepadatan Pohon', value: Math.min(100, Math.round(hoveredVitals.trees / 55)), color: 'rgba(251,191,36,0.85)' },
+                    ].map((item) => (
+                      <div key={item.label}>
+                        <div className="flex items-center justify-between text-[10px] font-black text-white/75">
+                          <span>{item.label}</span>
+                          <span>{item.value}%</span>
+                        </div>
+                        <div className="mt-1 h-2 rounded-full bg-white/8 border border-white/8 overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full"
+                            initial={false}
+                            animate={{ width: `${Math.max(6, Math.min(100, item.value))}%` }}
+                            transition={{ duration: 0.45, ease: 'easeOut' }}
+                            style={{ background: `linear-gradient(90deg, ${item.color}, rgba(255,255,255,0.92))` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <div className="mt-4 grid grid-cols-2 gap-2 text-[10px] font-black text-white/75">
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
+                  <div className="text-white/45 uppercase tracking-[0.18em] text-[8px]">Zoom</div>
+                  <div className="mt-1 text-white">{Math.round(zoomNow * 100)}%</div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
+                  <div className="text-white/45 uppercase tracking-[0.18em] text-[8px]">Mode</div>
+                  <div className="mt-1 text-white">{focusActive ? 'Focus Lock' : 'Explore'}</div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {hoveredRegion && containerSize.w > 0 && containerSize.h > 0 && (
@@ -5214,7 +5953,7 @@ const InteractiveMap = memo(({
                       strokeDashoffset: [0, -48],
                     }}
                     transition={{ repeat: Infinity, duration: 1.25, ease: 'linear' }}
-                    stroke="rgba(56,189,248,0.32)"
+                    stroke="rgba(248,250,252,0.28)"
                     strokeWidth={2}
                     strokeLinecap="round"
                     strokeDasharray="10 14"
@@ -5226,7 +5965,7 @@ const InteractiveMap = memo(({
                     initial={false}
                     animate={{ r: [6, 16, 6], opacity: [0.10, 0.22, 0.10] }}
                     transition={{ repeat: Infinity, duration: 1.35, ease: 'easeInOut' }}
-                    fill="rgba(16,185,129,0.10)"
+                    fill="rgba(56,189,248,0.10)"
                     stroke="rgba(255,255,255,0.14)"
                     strokeWidth={1}
                   />
@@ -5280,14 +6019,14 @@ const InteractiveMap = memo(({
             className="w-10 h-10 rounded-2xl bg-white/8 border border-white/14 backdrop-blur-xl shadow-[0_20px_46px_rgba(0,0,0,0.55)] hover:bg-white/10 transition-all overflow-hidden"
             style={{
               backgroundImage:
-                'radial-gradient(circle at 25% 30%, rgba(34,197,94,0.22) 0 16px, transparent 34px), radial-gradient(circle at 72% 42%, rgba(245,158,11,0.22) 0 16px, transparent 34px), radial-gradient(circle at 60% 78%, rgba(239,68,68,0.18) 0 18px, transparent 40px), linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.18) 100%)',
+                'radial-gradient(circle at 25% 30%, rgba(255,255,255,0.14) 0 16px, transparent 34px), radial-gradient(circle at 72% 42%, rgba(148,163,184,0.12) 0 16px, transparent 34px), radial-gradient(circle at 60% 78%, rgba(255,255,255,0.10) 0 18px, transparent 40px), linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.18) 100%)',
             }}
           >
             <div className="absolute inset-0 opacity-60" style={{ backgroundImage: 'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.14) 0 12px, transparent 34px)' }} />
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1">
-              <span className="w-[7px] h-[7px] rounded-full bg-gradient-to-br from-[#34d399] to-[#059669] shadow-[0_0_10px_rgba(16,185,129,0.55)]" />
-              <span className="w-[7px] h-[7px] rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] shadow-[0_0_10px_rgba(245,158,11,0.55)]" />
-              <span className="w-[7px] h-[7px] rounded-full bg-gradient-to-br from-[#f87171] to-[#dc2626] shadow-[0_0_10px_rgba(239,68,68,0.55)]" />
+              <span className="w-[7px] h-[7px] rounded-full bg-gradient-to-br from-[#f8fafc] to-[#94a3b8] shadow-[0_0_10px_rgba(255,255,255,0.22)]" />
+              <span className="w-[7px] h-[7px] rounded-full bg-gradient-to-br from-[#e2e8f0] to-[#64748b] shadow-[0_0_10px_rgba(255,255,255,0.18)]" />
+              <span className="w-[7px] h-[7px] rounded-full bg-gradient-to-br from-[#cbd5e1] to-[#334155] shadow-[0_0_10px_rgba(255,255,255,0.14)]" />
             </div>
           </motion.button>
 
@@ -5301,10 +6040,10 @@ const InteractiveMap = memo(({
                 className="absolute left-0 mt-2 w-[248px] bg-white/6 p-3 rounded-2xl border border-white/12 backdrop-blur-2xl text-[10px] font-black uppercase text-slate-100 shadow-[0_26px_60px_rgba(0,0,0,0.55)] overflow-hidden"
                 style={{
                   backgroundImage:
-                    'radial-gradient(circle at 18% 22%, rgba(34,197,94,0.10) 0 70px, rgba(0,0,0,0.0) 150px), radial-gradient(circle at 80% 35%, rgba(245,158,11,0.10) 0 80px, rgba(0,0,0,0.0) 170px), radial-gradient(circle at 78% 78%, rgba(239,68,68,0.08) 0 90px, rgba(0,0,0,0.0) 190px), linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 55%, rgba(0,0,0,0.26) 100%)',
+                    'radial-gradient(circle at 18% 22%, rgba(255,255,255,0.09) 0 70px, rgba(0,0,0,0.0) 150px), radial-gradient(circle at 80% 35%, rgba(148,163,184,0.08) 0 80px, rgba(0,0,0,0.0) 170px), radial-gradient(circle at 78% 78%, rgba(255,255,255,0.06) 0 90px, rgba(0,0,0,0.0) 190px), linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 55%, rgba(0,0,0,0.26) 100%)',
                 }}
               >
-                <div className="absolute inset-0 pointer-events-none opacity-70" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.14) 0 70px, rgba(255,255,255,0.02) 160px), radial-gradient(circle at 12% 70%, rgba(16,185,129,0.10) 0 90px, transparent 220px)' }} />
+                <div className="absolute inset-0 pointer-events-none opacity-70" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.14) 0 70px, rgba(255,255,255,0.02) 160px), radial-gradient(circle at 12% 70%, rgba(255,255,255,0.06) 0 90px, transparent 220px)' }} />
                 <div className="flex items-center justify-between gap-2">
                   <div className="tracking-widest text-slate-200/80">Legenda</div>
                   <button
@@ -5318,23 +6057,23 @@ const InteractiveMap = memo(({
 
                 <div className="mt-2 grid grid-cols-1 gap-2 text-[9px] font-extrabold tracking-wider normal-case">
                   <div className="flex items-start gap-2">
-                    <span className="mt-[3px] w-3 h-3 rounded-full bg-gradient-to-br from-[#34d399] to-[#059669] shadow-[0_0_10px_rgba(16,185,129,0.55)]" />
+                    <span className="mt-[3px] w-3 h-3 rounded-full bg-gradient-to-br from-[#f8fafc] to-[#94a3b8] shadow-[0_0_10px_rgba(255,255,255,0.22)]" />
                     <div>
-                      <div className="uppercase tracking-widest text-slate-100">Hijau • Lestari</div>
+                      <div className="uppercase tracking-widest text-slate-100">Lestari</div>
                       <div className="text-slate-200/70">Vegetasi baik, kondisi stabil.</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="mt-[3px] w-3 h-3 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] shadow-[0_0_10px_rgba(245,158,11,0.55)]" />
+                    <span className="mt-[3px] w-3 h-3 rounded-full bg-gradient-to-br from-[#e2e8f0] to-[#64748b] shadow-[0_0_10px_rgba(255,255,255,0.18)]" />
                     <div>
-                      <div className="uppercase tracking-widest text-slate-100">Kuning • Kritis</div>
+                      <div className="uppercase tracking-widest text-slate-100">Kritis</div>
                       <div className="text-slate-200/70">Perlu perhatian & aksi.</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="mt-[3px] w-3 h-3 rounded-full bg-gradient-to-br from-[#f87171] to-[#dc2626] shadow-[0_0_10px_rgba(239,68,68,0.55)]" />
+                    <span className="mt-[3px] w-3 h-3 rounded-full bg-gradient-to-br from-[#cbd5e1] to-[#334155] shadow-[0_0_10px_rgba(255,255,255,0.14)]" />
                     <div>
-                      <div className="uppercase tracking-widest text-slate-100">Merah • Gersang</div>
+                      <div className="uppercase tracking-widest text-slate-100">Gersang</div>
                       <div className="text-slate-200/70">Butuh penanganan cepat.</div>
                     </div>
                   </div>
@@ -5350,7 +6089,7 @@ const InteractiveMap = memo(({
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#34d399] to-[#059669] shadow-[0_0_10px_rgba(16,185,129,0.55)]" />
+                      <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#f8fafc] to-[#94a3b8] shadow-[0_0_10px_rgba(255,255,255,0.22)]" />
                       Lestari
                     </span>
                     <span className="text-[9px] tracking-widest text-slate-200/70">{filters.hijau ? 'ON' : 'OFF'}</span>
@@ -5364,7 +6103,7 @@ const InteractiveMap = memo(({
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#d97706] shadow-[0_0_10px_rgba(245,158,11,0.55)]" />
+                      <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#e2e8f0] to-[#64748b] shadow-[0_0_10px_rgba(255,255,255,0.18)]" />
                       Kritis
                     </span>
                     <span className="text-[9px] tracking-widest text-slate-200/70">{filters.kritis ? 'ON' : 'OFF'}</span>
@@ -5378,7 +6117,7 @@ const InteractiveMap = memo(({
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#f87171] to-[#dc2626] shadow-[0_0_10px_rgba(239,68,68,0.55)]" />
+                      <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#cbd5e1] to-[#334155] shadow-[0_0_10px_rgba(255,255,255,0.14)]" />
                       Gersang
                     </span>
                     <span className="text-[9px] tracking-widest text-slate-200/70">{filters.gersang ? 'ON' : 'OFF'}</span>
@@ -5496,7 +6235,7 @@ const InteractiveMap = memo(({
               >
                 {/* Holding something small */}
                 <div className="absolute -bottom-2 -right-1 w-5 h-5 rounded-lg bg-white border border-black/10 shadow-sm flex items-center justify-center">
-                  <Sprout size={12} className="text-emerald-600" />
+                  <Sprout size={12} className="text-slate-300" />
                 </div>
               </motion.div>
 
@@ -5524,22 +6263,33 @@ const InteractiveMap = memo(({
         </motion.button>
       )}
 
-      <svg viewBox="0 0 120 100" preserveAspectRatio="xMidYMid meet" className="w-full h-full drop-shadow-2xl">
-        <defs>
+      <motion.div
+        className="absolute inset-0 z-[10]"
+        style={{
+          rotateX: tiltRotX,
+          rotateY: tiltRotY,
+          rotateZ: tiltRotZ,
+          transformStyle: 'preserve-3d',
+        }}
+        animate={{ y: cursorInside ? -1.5 : 0 }}
+        transition={{ duration: 0.28, ease: 'easeOut' }}
+      >
+        <svg viewBox="0 0 120 100" preserveAspectRatio="xMidYMid meet" className="w-full h-full drop-shadow-2xl">
+          <defs>
           <linearGradient id="grad-hijau" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#4ade80" stopOpacity="0.95" />
-            <stop offset="52%" stopColor="#166534" stopOpacity="0.98" />
-            <stop offset="100%" stopColor="#064e3b" stopOpacity="1" />
+            <stop offset="0%" stopColor="#bbf7d0" stopOpacity="0.96" />
+            <stop offset="46%" stopColor="#22c55e" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#064e3b" stopOpacity="0.98" />
           </linearGradient>
           <linearGradient id="grad-kritis" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#fef3c7" stopOpacity="0.95" />
-            <stop offset="55%" stopColor="#d97706" stopOpacity="0.98" />
-            <stop offset="100%" stopColor="#92400e" stopOpacity="1" />
+            <stop offset="0%" stopColor="#fde68a" stopOpacity="0.92" />
+            <stop offset="52%" stopColor="#f59e0b" stopOpacity="0.93" />
+            <stop offset="100%" stopColor="#78350f" stopOpacity="0.98" />
           </linearGradient>
           <linearGradient id="grad-gersang" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#fecaca" stopOpacity="0.9" />
-            <stop offset="55%" stopColor="#b91c1c" stopOpacity="0.98" />
-            <stop offset="100%" stopColor="#450a0a" stopOpacity="1" />
+            <stop offset="0%" stopColor="#fecaca" stopOpacity="0.90" />
+            <stop offset="52%" stopColor="#ef4444" stopOpacity="0.93" />
+            <stop offset="100%" stopColor="#7f1d1d" stopOpacity="0.98" />
           </linearGradient>
 
           <filter id="texNoiseFine" x="-20%" y="-20%" width="140%" height="140%">
@@ -5562,18 +6312,16 @@ const InteractiveMap = memo(({
               <circle cx="4" cy="16" r="1.2" fill="rgba(255,255,255,0.10)" />
               <circle cx="18" cy="4" r="1.0" fill="rgba(255,255,255,0.10)" />
             </g>
-            <path
-              d="M -2 6 C 3 3 7 6 12 4 C 16 2 18 6 24 4"
-              stroke="rgba(56,189,248,0.26)"
+              <path d="M -2 6 C 3 3 7 6 12 4 C 16 2 18 6 24 4"
+              stroke="rgba(167,243,208,0.18)"
               strokeWidth="1.5"
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
               opacity="0.85"
             />
-            <path
-              d="M -1 14 C 4 12 6 16 10 14 C 15 12 16 16 24 14"
-              stroke="rgba(56,189,248,0.20)"
+              <path d="M -1 14 C 4 12 6 16 10 14 C 15 12 16 16 24 14"
+              stroke="rgba(110,231,183,0.12)"
               strokeWidth="1.2"
               fill="none"
               strokeLinecap="round"
@@ -5586,8 +6334,8 @@ const InteractiveMap = memo(({
             <rect width="24" height="24" fill="rgba(2,6,23,0.0)" />
             <path d="M 1 10 L 6 6 L 10 9 L 14 5 L 22 12" stroke="rgba(0,0,0,0.20)" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M 2 18 L 8 14 L 12 16 L 18 13 L 23 16" stroke="rgba(255,255,255,0.10)" strokeWidth="1.0" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M 6 3 C 7 5 7 7 6 9" stroke="rgba(34,197,94,0.12)" strokeWidth="1.0" strokeLinecap="round" />
-            <path d="M 19 6 C 20 8 20 10 19 12" stroke="rgba(34,197,94,0.10)" strokeWidth="0.9" strokeLinecap="round" />
+            <path d="M 6 3 C 7 5 7 7 6 9" stroke="rgba(253,224,71,0.12)" strokeWidth="1.0" strokeLinecap="round" />
+            <path d="M 19 6 C 20 8 20 10 19 12" stroke="rgba(251,191,36,0.10)" strokeWidth="0.9" strokeLinecap="round" />
             <circle cx="5" cy="21" r="1.0" fill="rgba(0,0,0,0.14)" />
             <circle cx="21" cy="4" r="0.9" fill="rgba(255,255,255,0.10)" />
             <rect width="24" height="24" filter="url(#texNoiseFine)" opacity="0.7" />
@@ -5597,9 +6345,9 @@ const InteractiveMap = memo(({
             <path d="M 2 12 L 8 6 L 12 10 L 16 5 L 22 9 L 28 4" stroke="rgba(0,0,0,0.26)" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M 3 24 L 10 18 L 14 21 L 18 16 L 24 20 L 28 17" stroke="rgba(0,0,0,0.22)" strokeWidth="1.35" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M 9 30 L 9 22" stroke="rgba(0,0,0,0.22)" strokeWidth="1.2" strokeLinecap="round" />
-            <path d="M 18 30 L 18 23" stroke="rgba(255,255,255,0.09)" strokeWidth="0.9" strokeLinecap="round" />
-            <path d="M 24 13 L 29 10" stroke="rgba(255,255,255,0.08)" strokeWidth="1.0" strokeLinecap="round" />
-            <path d="M 0 9 C 6 6 10 10 16 7 C 20 5 24 8 30 6" stroke="rgba(255,255,255,0.07)" strokeWidth="1.0" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M 18 30 L 18 23" stroke="rgba(254,202,202,0.10)" strokeWidth="0.9" strokeLinecap="round" />
+            <path d="M 24 13 L 29 10" stroke="rgba(252,165,165,0.10)" strokeWidth="1.0" strokeLinecap="round" />
+            <path d="M 0 9 C 6 6 10 10 16 7 C 20 5 24 8 30 6" stroke="rgba(254,202,202,0.09)" strokeWidth="1.0" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M 0 19 C 7 16 12 20 18 17 C 22 15 24 18 30 16" stroke="rgba(0,0,0,0.12)" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             <circle cx="7" cy="15" r="1.1" fill="rgba(0,0,0,0.14)" />
             <circle cx="23" cy="26" r="1.0" fill="rgba(0,0,0,0.12)" />
@@ -5607,40 +6355,40 @@ const InteractiveMap = memo(({
           </pattern>
           <pattern id="tex-outside" x="0" y="0" width="36" height="36" patternUnits="userSpaceOnUse">
             <rect width="36" height="36" fill="rgba(2,6,23,0.0)" />
-            <path d="M 0 12 C 8 7 14 14 22 10 C 28 7 30 11 36 8" stroke="rgba(34,197,94,0.10)" strokeWidth="1.3" fill="none" strokeLinecap="round" />
-            <path d="M 0 26 C 9 22 14 28 22 24 C 28 21 30 25 36 22" stroke="rgba(245,158,11,0.08)" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+            <path d="M 0 12 C 8 7 14 14 22 10 C 28 7 30 11 36 8" stroke="rgba(226,232,240,0.08)" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+            <path d="M 0 26 C 9 22 14 28 22 24 C 28 21 30 25 36 22" stroke="rgba(226,232,240,0.06)" strokeWidth="1.2" fill="none" strokeLinecap="round" />
             <rect width="36" height="36" filter="url(#texNoiseMed)" opacity="0.55" />
           </pattern>
           <pattern id="micro-neutral" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
             <rect width="28" height="28" fill="rgba(0,0,0,0)" />
             <path d="M -2 9 C 4 5 10 13 16 9 C 20 6 24 10 30 7" stroke="rgba(255,255,255,0.09)" strokeWidth="0.9" fill="none" strokeLinecap="round" />
-            <path d="M -1 17 C 5 14 11 20 16 17 C 20 14 24 18 29 15" stroke="rgba(16,185,129,0.12)" strokeWidth="1.0" fill="none" strokeLinecap="round" />
+            <path d="M -1 17 C 5 14 11 20 16 17 C 20 14 24 18 29 15" stroke="rgba(226,232,240,0.10)" strokeWidth="1.0" fill="none" strokeLinecap="round" />
             <path d="M 3 25 C 8 22 13 27 19 24 C 22 22 25 24 29 22" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" fill="none" strokeLinecap="round" />
             <circle cx="7" cy="8" r="0.9" fill="rgba(255,255,255,0.10)" />
             <circle cx="20" cy="20" r="0.8" fill="rgba(0,0,0,0.12)" />
           </pattern>
           <pattern id="micro-cold" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
             <rect width="30" height="30" fill="rgba(0,0,0,0)" />
-            <path d="M -2 8 C 4 4 10 12 16 8 C 21 5 26 10 32 6" stroke="rgba(191,219,254,0.16)" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+            <path d="M -2 8 C 4 4 10 12 16 8 C 21 5 26 10 32 6" stroke="rgba(226,232,240,0.14)" strokeWidth="1.1" fill="none" strokeLinecap="round" />
             <path d="M 1 16 C 7 12 12 18 18 15 C 23 13 27 16 31 13" stroke="rgba(255,255,255,0.11)" strokeWidth="0.9" fill="none" strokeLinecap="round" />
-            <path d="M 3 24 C 8 21 14 27 19 24 C 23 22 27 24 31 21" stroke="rgba(125,211,252,0.12)" strokeWidth="0.9" fill="none" strokeLinecap="round" />
+            <path d="M 3 24 C 8 21 14 27 19 24 C 23 22 27 24 31 21" stroke="rgba(148,163,184,0.12)" strokeWidth="0.9" fill="none" strokeLinecap="round" />
             <circle cx="8" cy="11" r="1.0" fill="rgba(255,255,255,0.12)" />
-            <circle cx="22" cy="6" r="0.9" fill="rgba(186,230,253,0.10)" />
+            <circle cx="22" cy="6" r="0.9" fill="rgba(226,232,240,0.10)" />
           </pattern>
           <pattern id="micro-industry" x="0" y="0" width="26" height="26" patternUnits="userSpaceOnUse">
             <rect width="26" height="26" fill="rgba(0,0,0,0)" />
             <path d="M 0 7 H 26 M 0 16 H 26" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" />
             <path d="M 8 0 V 26 M 18 0 V 26" stroke="rgba(148,163,184,0.12)" strokeWidth="0.9" />
             <rect x="4" y="4" width="5" height="5" rx="1.2" fill="rgba(255,255,255,0.06)" />
-            <rect x="15" y="11" width="6" height="6" rx="1.3" fill="rgba(251,191,36,0.06)" />
+            <rect x="15" y="11" width="6" height="6" rx="1.3" fill="rgba(226,232,240,0.06)" />
             <rect x="6" y="18" width="4" height="4" rx="1" fill="rgba(255,255,255,0.04)" />
           </pattern>
           <pattern id="micro-flood" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
             <rect width="30" height="30" fill="rgba(0,0,0,0)" />
-            <path d="M -2 9 C 4 5 10 12 16 9 C 22 6 26 12 32 9" stroke="rgba(125,211,252,0.16)" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+            <path d="M -2 9 C 4 5 10 12 16 9 C 22 6 26 12 32 9" stroke="rgba(226,232,240,0.14)" strokeWidth="1.2" fill="none" strokeLinecap="round" />
             <path d="M -1 17 C 5 13 10 20 16 17 C 22 14 27 20 31 17" stroke="rgba(255,255,255,0.10)" strokeWidth="1.0" fill="none" strokeLinecap="round" />
-            <path d="M 2 25 C 8 22 12 28 18 25 C 23 22 27 27 31 24" stroke="rgba(56,189,248,0.14)" strokeWidth="1.05" fill="none" strokeLinecap="round" />
-            <circle cx="9" cy="10" r="0.95" fill="rgba(191,219,254,0.14)" />
+            <path d="M 2 25 C 8 22 12 28 18 25 C 23 22 27 27 31 24" stroke="rgba(226,232,240,0.08)" strokeWidth="1.05" fill="none" strokeLinecap="round" />
+            <circle cx="9" cy="10" r="0.95" fill="rgba(226,232,240,0.12)" />
             <circle cx="22" cy="19" r="0.85" fill="rgba(255,255,255,0.10)" />
           </pattern>
 
@@ -5686,7 +6434,7 @@ const InteractiveMap = memo(({
             <feOffset in="b" dx="0" dy="1.1" result="o" />
             <feComposite in="o" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="is" />
             <feColorMatrix in="is" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.40 0" result="shadow" />
-            <feColorMatrix in="b" type="matrix" values="0 0 0 0 0.0627  0 0 0 0 0.7255  0 0 0 0 0.5059  0 0 0 0.75 0" result="c" />
+            <feColorMatrix in="b" type="matrix" values="0 0 0 0.85 0  0 0 0 0.88 0  0 0 0 0.92 0  0 0 0 0.75 0" result="c" />
             <feComposite in="c" in2="SourceAlpha" operator="in" result="g" />
             <feMerge>
               <feMergeNode in="SourceGraphic" />
@@ -5699,7 +6447,7 @@ const InteractiveMap = memo(({
             <feOffset in="b" dx="0" dy="1.1" result="o" />
             <feComposite in="o" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="is" />
             <feColorMatrix in="is" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.42 0" result="shadow" />
-            <feColorMatrix in="b" type="matrix" values="0 0 0 0 0.9569  0 0 0 0 0.6196  0 0 0 0 0.0431  0 0 0 0.78 0" result="c" />
+            <feColorMatrix in="b" type="matrix" values="0 0 0 0.78 0  0 0 0 0.82 0  0 0 0 0.88 0  0 0 0 0.78 0" result="c" />
             <feComposite in="c" in2="SourceAlpha" operator="in" result="g" />
             <feMerge>
               <feMergeNode in="SourceGraphic" />
@@ -5712,7 +6460,7 @@ const InteractiveMap = memo(({
             <feOffset in="b" dx="0" dy="1.1" result="o" />
             <feComposite in="o" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="is" />
             <feColorMatrix in="is" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.45 0" result="shadow" />
-            <feColorMatrix in="b" type="matrix" values="0 0 0 0 0.9373  0 0 0 0 0.2667  0 0 0 0 0.2667  0 0 0 0.82 0" result="c" />
+            <feColorMatrix in="b" type="matrix" values="0 0 0 0.68 0  0 0 0 0.72 0  0 0 0 0.78 0  0 0 0 0.82 0" result="c" />
             <feComposite in="c" in2="SourceAlpha" operator="in" result="g" />
             <feMerge>
               <feMergeNode in="SourceGraphic" />
@@ -5720,311 +6468,312 @@ const InteractiveMap = memo(({
               <feMergeNode in="g" />
             </feMerge>
           </filter>
-        </defs>
+          </defs>
 
-        <motion.g
-          initial={false}
-          animate={{ transform: viewTransform }}
-          transition={{ duration: 0.36, ease: 'easeOut' }}
-        >
           <motion.g
             initial={false}
-            animate={{ transform: focusTransform }}
-            transition={{ duration: 0.42, ease: 'easeInOut' }}
+            animate={{ transform: viewTransform }}
+            transition={{ duration: 0.36, ease: 'easeOut' }}
           >
-          <g opacity="0.85">
-            <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="rgba(2,6,23,0.55)" transform="translate(0 4.2)" />
-            <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="rgba(2,6,23,0.35)" transform="translate(0 3.2)" />
-            <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="rgba(2,6,23,0.22)" transform="translate(0 2.2)" />
-          </g>
-          <g filter="url(#softShadow)">
-            <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="url(#tex-outside)" opacity="0.95" />
-          </g>
-          {visibleRegions.map(r => (
-            <RegionItem
-              key={r.id}
-              region={r}
-              statusAnim={statusAnimByRegionId[r.id] ?? null}
-              fxAt={regionFxAt[r.id]}
-              isHovered={hoveredRegion?.id === r.id}
-              isFocused={focusedRegionId === r.id}
-              focusActive={focusActive}
-              onHover={onHover}
-              onClick={onSelect}
-            />
-          ))}
-          {visibleRegions.map(r => {
-            const w = weatherByRegionId[r.id] ?? 'sun';
-            const isHover = hoveredRegion?.id === r.id;
-            const isFocus = focusedRegionId === r.id;
-            const show = isHover || isFocus || (r.status !== 'hijau' && (liveTick % 6 === 0));
-            if (!show) return null;
-            const baseOpacity = isHover || isFocus ? 0.9 : 0.55;
-            const scale = isHover || isFocus ? 1 : 0.9;
-            if (w === 'rain') {
-              return (
-                <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} style={{ transformOrigin: `${r.x}px ${r.y}px` }} initial={false} animate={{ opacity: baseOpacity, scale }}>
-                  <motion.g animate={{ y: [0, 1.6, 0] }} transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}>
-                    {[...Array(8)].map((_, i) => (
-                      <motion.line
-                        key={i}
-                        x1={-6 + i * 1.6}
-                        y1={-10}
-                        x2={-4 + i * 1.6}
-                        y2={-4}
-                        stroke="rgba(147,197,253,0.55)"
-                        strokeWidth={0.65}
-                        strokeLinecap="round"
-                        initial={false}
-                        animate={{ y1: [-12, 6], y2: [-6, 12], opacity: [0.0, 0.55, 0.0] }}
-                        transition={{ repeat: Infinity, duration: 0.95 + i * 0.03, ease: 'linear', delay: i * 0.08 }}
-                      />
-                    ))}
-                  </motion.g>
-                </motion.g>
-              );
-            }
-            if (w === 'fog') {
-              return (
-                <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: baseOpacity, scale }}>
-                  <motion.circle
-                    r={10}
-                    fill="rgba(255,255,255,0.06)"
-                    filter="url(#softFog)"
-                    animate={{ r: [9.5, 12.5, 9.5], opacity: [0.10, 0.22, 0.10] }}
-                    transition={{ repeat: Infinity, duration: 3.6, ease: 'easeInOut' }}
-                  />
-                  <motion.circle
-                    r={6}
-                    fill="rgba(56,189,248,0.06)"
-                    animate={{ r: [6, 8.5, 6], opacity: [0.06, 0.14, 0.06] }}
-                    transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut', delay: 0.15 }}
-                  />
-                </motion.g>
-              );
-            }
-            if (w === 'heat') {
-              return (
-                <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: baseOpacity, scale }}>
-                  <motion.path
-                    d="M -10 -4 C -6 -10, -2 -2, 2 -8 C 6 -14, 10 -6, 12 -12"
-                    fill="none"
-                    stroke="rgba(251,191,36,0.30)"
-                    strokeWidth={1.0}
-                    strokeLinecap="round"
-                    animate={{ opacity: [0.12, 0.34, 0.12], y: [0, -1.2, 0] }}
-                    transition={{ repeat: Infinity, duration: 1.9, ease: 'easeInOut' }}
-                  />
-                  <motion.path
-                    d="M -12 3 C -7 -3, -3 5, 1 -1 C 5 -7, 9 1, 12 -4"
-                    fill="none"
-                    stroke="rgba(239,68,68,0.22)"
-                    strokeWidth={0.9}
-                    strokeLinecap="round"
-                    animate={{ opacity: [0.10, 0.28, 0.10], y: [0, 1.1, 0] }}
-                    transition={{ repeat: Infinity, duration: 1.7, ease: 'easeInOut', delay: 0.12 }}
-                  />
-                </motion.g>
-              );
-            }
-            if (w === 'storm') {
-              return (
-                <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: baseOpacity, scale }}>
-                  <motion.path
-                    d="M -2 -12 L 6 -12 L 1 -2 L 8 -2 L -4 12 L 0 2 L -7 2 Z"
-                    fill="rgba(248,250,252,0.12)"
-                    stroke="rgba(56,189,248,0.30)"
-                    strokeWidth={0.7}
-                    strokeLinejoin="round"
-                    animate={{ opacity: [0.05, 0.65, 0.08, 0.55, 0.05] }}
-                    transition={{ repeat: Infinity, duration: 2.6, ease: 'easeInOut' }}
-                  />
-                </motion.g>
-              );
-            }
-            return (
-              <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: baseOpacity, scale }}>
-                <motion.circle
-                  r={7.5}
-                  fill="rgba(16,185,129,0.06)"
-                  animate={{ opacity: [0.06, 0.18, 0.06], r: [7, 9.2, 7] }}
-                  transition={{ repeat: Infinity, duration: 3.2, ease: 'easeInOut' }}
-                />
-                <motion.circle
-                  r={4.5}
-                  fill="rgba(255,255,255,0.05)"
-                  animate={{ opacity: [0.05, 0.14, 0.05], r: [4.2, 5.3, 4.2] }}
-                  transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut', delay: 0.1 }}
-                />
-              </motion.g>
-            );
-          })}
-          <AnimatePresence>
-            {rippleTarget && (
-              <motion.g
-                key={ripple?.key}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <motion.circle
-                  cx={rippleTarget.x}
-                  cy={rippleTarget.y}
-                  r={4}
-                  fill="transparent"
-                  stroke="rgba(255,255,255,0.75)"
-                  strokeWidth={0.8}
-                  initial={{ r: 4, opacity: 0.0 }}
-                  animate={{ r: [4, 12, 22], opacity: [0.0, 0.35, 0.0] }}
-                  transition={{ duration: 0.48, ease: 'easeOut' }}
-                />
-                <motion.circle
-                  cx={rippleTarget.x}
-                  cy={rippleTarget.y}
-                  r={5}
-                  fill="transparent"
-                  stroke={
-                    rippleTarget.status === 'hijau'
-                      ? 'rgba(16,185,129,0.65)'
-                      : rippleTarget.status === 'kritis'
-                        ? 'rgba(245,158,11,0.70)'
-                        : 'rgba(239,68,68,0.70)'
-                  }
-                  strokeWidth={1.2}
-                  initial={{ r: 6, opacity: 0.0 }}
-                  animate={{ r: [6, 14, 26], opacity: [0.0, 0.55, 0.0] }}
-                  transition={{ duration: 0.48, ease: 'easeOut' }}
-                />
-              </motion.g>
-            )}
-          </AnimatePresence>
-          <AnimatePresence>
-            {restorationWave && restorationWave.regionId && (
-              <motion.g
-                key={`restore-${restorationWave.id}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                {(() => {
-                  const target = regions.find(r => r.id === restorationWave.regionId);
-                  if (!target) return null;
-                  return (
-                    <motion.g>
-                      <motion.circle
-                        cx={target.x}
-                        cy={target.y}
-                        r={4}
-                        fill="rgba(16,185,129,0.12)"
-                        initial={{ r: 2, opacity: 0.0 }}
-                        animate={{ r: [2, 18, 36], opacity: [0.0, 0.28, 0.0] }}
-                        transition={{ duration: 0.9, ease: 'easeOut' }}
-                      />
-                      <motion.circle
-                        cx={target.x}
-                        cy={target.y}
-                        r={6}
-                        fill="transparent"
-                        stroke="rgba(16,185,129,0.75)"
-                        strokeWidth={1.4}
-                        initial={{ r: 6, opacity: 0.0 }}
-                        animate={{ r: [6, 22, 44], opacity: [0.0, 0.65, 0.0] }}
-                        transition={{ duration: 0.95, ease: 'easeOut' }}
-                      />
+            <motion.g
+              initial={false}
+              animate={{ transform: focusTransform }}
+              transition={{ duration: 0.42, ease: 'easeInOut' }}
+            >
+            <g opacity="0.85">
+              <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="rgba(2,6,23,0.55)" transform="translate(0 4.2)" />
+              <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="rgba(2,6,23,0.35)" transform="translate(0 3.2)" />
+              <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="rgba(2,6,23,0.22)" transform="translate(0 2.2)" />
+            </g>
+            <g filter="url(#softShadow)">
+              <path d="M 10,35 L 15,20 L 25,10 L 35,5 L 45,10 L 50,15 L 60,15 L 70,25 L 80,45 L 95,42 L 110,40 L 115,50 L 110,65 L 100,85 L 85,90 L 70,88 L 60,80 L 50,78 L 45,70 L 25,80 L 15,75 L 5,60 L 5,50 Z" fill="url(#tex-outside)" opacity="0.95" />
+            </g>
+            {visibleRegions.map(r => (
+              <RegionItem
+                key={r.id}
+                region={r}
+                statusAnim={statusAnimByRegionId[r.id] ?? null}
+                fxAt={regionFxAt[r.id]}
+                isHovered={hoveredRegion?.id === r.id}
+                isFocused={focusedRegionId === r.id}
+                focusActive={focusActive}
+                onHover={onHover}
+                onClick={onSelect}
+              />
+            ))}
+            {visibleRegions.map(r => {
+              const w = weatherByRegionId[r.id] ?? 'sun';
+              const isHover = hoveredRegion?.id === r.id;
+              const isFocus = focusedRegionId === r.id;
+              const show = isHover || isFocus || (r.status !== 'hijau' && (liveTick % 6 === 0));
+              if (!show) return null;
+              const baseOpacity = isHover || isFocus ? 0.9 : 0.55;
+              const scale = isHover || isFocus ? 1 : 0.9;
+              if (w === 'rain') {
+                return (
+                  <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} style={{ transformOrigin: `${r.x}px ${r.y}px` }} initial={false} animate={{ opacity: baseOpacity, scale }}>
+                    <motion.g animate={{ y: [0, 1.6, 0] }} transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}>
+                      {[...Array(8)].map((_, i) => (
+                        <motion.line
+                          key={i}
+                          x1={-6 + i * 1.6}
+                          y1={-10}
+                          x2={-4 + i * 1.6}
+                          y2={-4}
+                        stroke="rgba(226,232,240,0.40)"
+                          strokeWidth={0.65}
+                          strokeLinecap="round"
+                          initial={false}
+                          animate={{ y1: [-12, 6], y2: [-6, 12], opacity: [0.0, 0.55, 0.0] }}
+                          transition={{ repeat: Infinity, duration: 0.95 + i * 0.03, ease: 'linear', delay: i * 0.08 }}
+                        />
+                      ))}
                     </motion.g>
-                  );
-                })()}
-              </motion.g>
-            )}
-          </AnimatePresence>
-          {visibleRegions.map((r) => {
-            const base = stableHash(r.id);
-            const w = weatherByRegionId[r.id] ?? 'sun';
-            const isOn = (hoveredRegion?.id === r.id) || (focusedRegionId === r.id) || (r.status !== 'hijau' && (liveTick % 5 === 0));
-            if (!isOn) return null;
-
-            if (r.status === 'hijau') {
-              const speed = 3.8 + base * 1.8;
-              const y0 = -6 - (base * 6);
-              return (
-                <motion.g key={`bird-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: 0.55 }}>
-                  {[...Array(3)].map((_, i) => (
-                    <motion.path
-                      key={i}
-                      d="M -2 0 Q 0 -2 2 0 Q 0 -1 -2 0 Z"
-                      fill="rgba(255,255,255,0.18)"
-                      stroke="rgba(16,185,129,0.35)"
-                      strokeWidth={0.35}
-                      initial={false}
-                      animate={{
-                        x: [-10 - i * 4, 12 + i * 5],
-                        y: [y0 - i * 3, y0 - 2 - i * 2],
-                        opacity: [0.0, 0.55, 0.0],
-                      }}
-                      transition={{ repeat: Infinity, duration: speed + i * 0.6, ease: 'linear', delay: i * 0.7 + base * 0.6 }}
+                  </motion.g>
+                );
+              }
+              if (w === 'fog') {
+                return (
+                  <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: baseOpacity, scale }}>
+                    <motion.circle
+                      r={10}
+                      fill="rgba(255,255,255,0.06)"
+                      filter="url(#softFog)"
+                      animate={{ r: [9.5, 12.5, 9.5], opacity: [0.10, 0.22, 0.10] }}
+                      transition={{ repeat: Infinity, duration: 3.6, ease: 'easeInOut' }}
                     />
-                  ))}
+                    <motion.circle
+                      r={6}
+                      fill="rgba(226,232,240,0.06)"
+                      animate={{ r: [6, 8.5, 6], opacity: [0.06, 0.14, 0.06] }}
+                      transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut', delay: 0.15 }}
+                    />
+                  </motion.g>
+                );
+              }
+              if (w === 'heat') {
+                return (
+                  <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: baseOpacity, scale }}>
+                    <motion.path
+                      d="M -10 -4 C -6 -10, -2 -2, 2 -8 C 6 -14, 10 -6, 12 -12"
+                      fill="none"
+                    stroke="rgba(226,232,240,0.22)"
+                      strokeWidth={1.0}
+                      strokeLinecap="round"
+                      animate={{ opacity: [0.12, 0.34, 0.12], y: [0, -1.2, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.9, ease: 'easeInOut' }}
+                    />
+                    <motion.path
+                      d="M -12 3 C -7 -3, -3 5, 1 -1 C 5 -7, 9 1, 12 -4"
+                      fill="none"
+                    stroke="rgba(148,163,184,0.18)"
+                      strokeWidth={0.9}
+                      strokeLinecap="round"
+                      animate={{ opacity: [0.10, 0.28, 0.10], y: [0, 1.1, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.7, ease: 'easeInOut', delay: 0.12 }}
+                    />
+                  </motion.g>
+                );
+              }
+              if (w === 'storm') {
+                return (
+                  <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: baseOpacity, scale }}>
+                    <motion.path
+                      d="M -2 -12 L 6 -12 L 1 -2 L 8 -2 L -4 12 L 0 2 L -7 2 Z"
+                      fill="rgba(248,250,252,0.12)"
+                    stroke="rgba(226,232,240,0.22)"
+                      strokeWidth={0.7}
+                      strokeLinejoin="round"
+                      animate={{ opacity: [0.05, 0.65, 0.08, 0.55, 0.05] }}
+                      transition={{ repeat: Infinity, duration: 2.6, ease: 'easeInOut' }}
+                    />
+                  </motion.g>
+                );
+              }
+              return (
+                <motion.g key={`wx-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: baseOpacity, scale }}>
+                  <motion.circle
+                    r={7.5}
+                  fill="rgba(148,163,184,0.06)"
+                    animate={{ opacity: [0.06, 0.18, 0.06], r: [7, 9.2, 7] }}
+                    transition={{ repeat: Infinity, duration: 3.2, ease: 'easeInOut' }}
+                  />
+                  <motion.circle
+                    r={4.5}
+                    fill="rgba(255,255,255,0.05)"
+                    animate={{ opacity: [0.05, 0.14, 0.05], r: [4.2, 5.3, 4.2] }}
+                    transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut', delay: 0.1 }}
+                  />
                 </motion.g>
               );
-            }
+            })}
+            <AnimatePresence>
+              {rippleTarget && (
+                <motion.g
+                  key={ripple?.key}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <motion.circle
+                    cx={rippleTarget.x}
+                    cy={rippleTarget.y}
+                    r={4}
+                    fill="transparent"
+                    stroke="rgba(255,255,255,0.75)"
+                    strokeWidth={0.8}
+                    initial={{ r: 4, opacity: 0.0 }}
+                    animate={{ r: [4, 12, 22], opacity: [0.0, 0.35, 0.0] }}
+                    transition={{ duration: 0.48, ease: 'easeOut' }}
+                  />
+                  <motion.circle
+                    cx={rippleTarget.x}
+                    cy={rippleTarget.y}
+                    r={5}
+                    fill="transparent"
+                    stroke={
+                      rippleTarget.status === 'hijau'
+                      ? 'rgba(248,250,252,0.58)'
+                      : rippleTarget.status === 'kritis'
+                        ? 'rgba(248,250,252,0.62)'
+                        : 'rgba(248,250,252,0.68)'
+                    }
+                    strokeWidth={1.2}
+                    initial={{ r: 6, opacity: 0.0 }}
+                    animate={{ r: [6, 14, 26], opacity: [0.0, 0.55, 0.0] }}
+                    transition={{ duration: 0.48, ease: 'easeOut' }}
+                  />
+                </motion.g>
+              )}
+            </AnimatePresence>
+            <AnimatePresence>
+              {restorationWave && restorationWave.regionId && (
+                <motion.g
+                  key={`restore-${restorationWave.id}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  {(() => {
+                    const target = regions.find(r => r.id === restorationWave.regionId);
+                    if (!target) return null;
+                    return (
+                      <motion.g>
+                        <motion.circle
+                          cx={target.x}
+                          cy={target.y}
+                          r={4}
+                        fill="rgba(248,250,252,0.08)"
+                          initial={{ r: 2, opacity: 0.0 }}
+                          animate={{ r: [2, 18, 36], opacity: [0.0, 0.28, 0.0] }}
+                          transition={{ duration: 0.9, ease: 'easeOut' }}
+                        />
+                        <motion.circle
+                          cx={target.x}
+                          cy={target.y}
+                          r={6}
+                          fill="transparent"
+                        stroke="rgba(248,250,252,0.62)"
+                          strokeWidth={1.4}
+                          initial={{ r: 6, opacity: 0.0 }}
+                          animate={{ r: [6, 22, 44], opacity: [0.0, 0.65, 0.0] }}
+                          transition={{ duration: 0.95, ease: 'easeOut' }}
+                        />
+                      </motion.g>
+                    );
+                  })()}
+                </motion.g>
+              )}
+            </AnimatePresence>
+            {visibleRegions.map((r) => {
+              const base = stableHash(r.id);
+              const w = weatherByRegionId[r.id] ?? 'sun';
+              const isOn = (hoveredRegion?.id === r.id) || (focusedRegionId === r.id) || (r.status !== 'hijau' && (liveTick % 5 === 0));
+              if (!isOn) return null;
 
-            if (r.status === 'kritis') {
-              return (
-                <motion.g key={`smoke-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: 0.65 }}>
-                  <motion.g animate={{ y: [0, -1.8, 0] }} transition={{ repeat: Infinity, duration: 2.6 + base, ease: 'easeInOut' }}>
-                    {[...Array(4)].map((_, i) => (
-                      <motion.circle
+              if (r.status === 'hijau') {
+                const speed = 3.8 + base * 1.8;
+                const y0 = -6 - (base * 6);
+                return (
+                  <motion.g key={`bird-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: 0.55 }}>
+                    {[...Array(3)].map((_, i) => (
+                      <motion.path
                         key={i}
-                        cx={-3 + i * 3}
-                        cy={-4 - i * 2}
-                        r={2.2 + i * 0.5}
-                        fill="rgba(148,163,184,0.14)"
-                        stroke="rgba(255,255,255,0.06)"
+                        d="M -2 0 Q 0 -2 2 0 Q 0 -1 -2 0 Z"
+                        fill="rgba(255,255,255,0.18)"
+                      stroke="rgba(226,232,240,0.22)"
                         strokeWidth={0.35}
                         initial={false}
-                        animate={{ cy: [-2, -12], opacity: [0.0, 0.22, 0.0], r: [2.0 + i * 0.4, 3.8 + i * 0.55] }}
-                        transition={{ repeat: Infinity, duration: 2.2 + i * 0.35 + base, ease: 'easeOut', delay: i * 0.18 }}
+                        animate={{
+                          x: [-10 - i * 4, 12 + i * 5],
+                          y: [y0 - i * 3, y0 - 2 - i * 2],
+                          opacity: [0.0, 0.55, 0.0],
+                        }}
+                        transition={{ repeat: Infinity, duration: speed + i * 0.6, ease: 'linear', delay: i * 0.7 + base * 0.6 }}
                       />
                     ))}
                   </motion.g>
-                  <motion.path
-                    d="M -10 4 L 10 4"
-                    stroke="rgba(245,158,11,0.22)"
-                    strokeWidth={0.9}
-                    strokeLinecap="round"
-                    strokeDasharray="3 6"
-                    animate={{ strokeDashoffset: [0, -18], opacity: [0.10, 0.26, 0.10] }}
-                    transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
-                  />
-                </motion.g>
-              );
-            }
+                );
+              }
 
-            if (r.status === 'gersang') {
-              const dust = w === 'heat' ? 0.22 : 0.16;
-              return (
-                <motion.g key={`dust-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: 0.75 }}>
-                  {[...Array(6)].map((_, i) => (
-                    <motion.circle
-                      key={i}
-                      cx={-12 + i * 4}
-                      cy={6 - (i % 2) * 2}
-                      r={1.2 + (i % 3) * 0.6}
-                      fill={`rgba(251,191,36,${dust})`}
-                      initial={false}
-                      animate={{ cx: [-14 + i * 2, 14 - i * 2], opacity: [0.0, dust, 0.0] }}
-                      transition={{ repeat: Infinity, duration: 1.8 + i * 0.12 + base, ease: 'linear', delay: i * 0.1 }}
+              if (r.status === 'kritis') {
+                return (
+                  <motion.g key={`smoke-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: 0.65 }}>
+                    <motion.g animate={{ y: [0, -1.8, 0] }} transition={{ repeat: Infinity, duration: 2.6 + base, ease: 'easeInOut' }}>
+                      {[...Array(4)].map((_, i) => (
+                        <motion.circle
+                          key={i}
+                          cx={-3 + i * 3}
+                          cy={-4 - i * 2}
+                          r={2.2 + i * 0.5}
+                          fill="rgba(148,163,184,0.14)"
+                          stroke="rgba(255,255,255,0.06)"
+                          strokeWidth={0.35}
+                          initial={false}
+                          animate={{ cy: [-2, -12], opacity: [0.0, 0.22, 0.0], r: [2.0 + i * 0.4, 3.8 + i * 0.55] }}
+                          transition={{ repeat: Infinity, duration: 2.2 + i * 0.35 + base, ease: 'easeOut', delay: i * 0.18 }}
+                        />
+                      ))}
+                    </motion.g>
+                    <motion.path
+                      d="M -10 4 L 10 4"
+                    stroke="rgba(226,232,240,0.16)"
+                      strokeWidth={0.9}
+                      strokeLinecap="round"
+                      strokeDasharray="3 6"
+                      animate={{ strokeDashoffset: [0, -18], opacity: [0.10, 0.26, 0.10] }}
+                      transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
                     />
-                  ))}
-                </motion.g>
-              );
-            }
+                  </motion.g>
+                );
+              }
 
-            return null;
-          })}
+              if (r.status === 'gersang') {
+                const dust = w === 'heat' ? 0.22 : 0.16;
+                return (
+                  <motion.g key={`dust-${r.id}`} transform={`translate(${r.x}, ${r.y})`} initial={false} animate={{ opacity: 0.75 }}>
+                    {[...Array(6)].map((_, i) => (
+                      <motion.circle
+                        key={i}
+                        cx={-12 + i * 4}
+                        cy={6 - (i % 2) * 2}
+                        r={1.2 + (i % 3) * 0.6}
+                        fill={`rgba(226,232,240,${dust})`}
+                        initial={false}
+                        animate={{ cx: [-14 + i * 2, 14 - i * 2], opacity: [0.0, dust, 0.0] }}
+                        transition={{ repeat: Infinity, duration: 1.8 + i * 0.12 + base, ease: 'linear', delay: i * 0.1 }}
+                      />
+                    ))}
+                  </motion.g>
+                );
+              }
+
+              return null;
+            })}
+            </motion.g>
           </motion.g>
-        </motion.g>
-      </svg>
+        </svg>
+      </motion.div>
 
       <AnimatePresence>
         {hoveredRegion && (
@@ -6047,49 +6796,40 @@ const InteractiveMap = memo(({
             className="absolute z-50 bg-slate-900/95 text-white p-4 rounded-2xl shadow-2xl pointer-events-none min-w-[200px] border border-white/10 backdrop-blur-md"
           >
             <div className="flex justify-between items-center mb-2">
-              <span className="font-black text-sm text-emerald-400 uppercase tracking-wide inline-flex items-center gap-2">
+              <span className="font-black text-sm text-slate-100 uppercase tracking-wide inline-flex items-center gap-2">
                 <span
-                  className={`w-2.5 h-2.5 rounded-full ${
-                    hoveredRegion.status === 'hijau'
-                      ? 'bg-emerald-400'
-                      : hoveredRegion.status === 'kritis'
-                        ? 'bg-orange-400'
-                        : 'bg-red-400'
-                  }`}
+                  className="w-2.5 h-2.5 rounded-full bg-slate-200"
                   style={{ boxShadow: '0 0 12px rgba(255,255,255,0.18)' }}
                 />
                 {hoveredRegion.name}
               </span>
-              <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${
-                hoveredRegion.status === 'hijau' ? 'bg-emerald-500' : 
-                hoveredRegion.status === 'kritis' ? 'bg-orange-500' : 'bg-red-500'
-              }`}>{hoveredRegion.status}</span>
+              <span className="text-[9px] px-2 py-0.5 rounded-full font-black uppercase bg-white/10 border border-white/12 text-white/85">{hoveredRegion.status}</span>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed font-medium">{hoveredRegion.description}</p>
             {hoveredVitals && (
               <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-black text-white/80">
                 <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-2 py-1.5">
-                  <Thermometer size={14} className="text-orange-200" />
+                  <Thermometer size={14} className="text-slate-200" />
                   <span className="text-white/70">Suhu</span>
                   <span className="ml-auto text-white">{hoveredVitals.tempC}°C</span>
                 </div>
                 <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-2 py-1.5">
-                  <Droplets size={14} className="text-blue-200" />
+                  <Droplets size={14} className="text-slate-200" />
                   <span className="text-white/70">Lembab</span>
                   <span className="ml-auto text-white">{hoveredVitals.humidity}%</span>
                 </div>
                 <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-2 py-1.5">
-                  <Droplets size={14} className="text-sky-200" />
+                  <Droplets size={14} className="text-slate-200" />
                   <span className="text-white/70">Air</span>
                   <span className="ml-auto text-white">{hoveredVitals.waterIndex}</span>
                 </div>
                 <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-2 py-1.5">
-                  <Activity size={14} className="text-red-200" />
+                  <Activity size={14} className="text-slate-200" />
                   <span className="text-white/70">CO2</span>
                   <span className="ml-auto text-white">{hoveredVitals.co2Index}</span>
                 </div>
                 <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-2 py-1.5">
-                  <Trees size={14} className="text-emerald-200" />
+                  <Trees size={14} className="text-slate-200" />
                   <span className="text-white/70">Pohon</span>
                   <span className="ml-auto text-white">{hoveredVitals.trees}</span>
                 </div>
@@ -6097,7 +6837,7 @@ const InteractiveMap = memo(({
             )}
             {hoveredWeather && (
               <div className="mt-2 flex items-center gap-2 text-[10px] font-black text-white/70 uppercase tracking-widest">
-                {hoveredWeather === 'rain' ? <CloudRain size={14} className="text-blue-200" /> : hoveredWeather === 'fog' ? <Wind size={14} className="text-slate-200" /> : hoveredWeather === 'heat' ? <Sun size={14} className="text-orange-200" /> : hoveredWeather === 'storm' ? <AlertTriangle size={14} className="text-blue-200" /> : <Sparkles size={14} className="text-emerald-200" />}
+                {hoveredWeather === 'rain' ? <CloudRain size={14} className="text-slate-200" /> : hoveredWeather === 'fog' ? <Wind size={14} className="text-slate-200" /> : hoveredWeather === 'heat' ? <Sun size={14} className="text-slate-200" /> : hoveredWeather === 'storm' ? <AlertTriangle size={14} className="text-slate-200" /> : <Sparkles size={14} className="text-slate-200" />}
                 <span>
                   {hoveredWeather === 'rain' ? 'Hujan Lokal' : hoveredWeather === 'fog' ? 'Kabut' : hoveredWeather === 'heat' ? 'Panas' : hoveredWeather === 'storm' ? 'Badai Jauh' : 'Cerah'}
                 </span>
@@ -6152,16 +6892,35 @@ const GAME_ENTRY_LOADING_MS = 560;
 
 const TreeGame: React.FC = () => {
   const navigate = useNavigate();
+  // #region debug-point A:report-helper
+  const reportLevel2FinishDebug = useCallback((hypothesisId: 'A' | 'B' | 'C' | 'D' | 'E', location: string, msg: string, data: Record<string, unknown>) => {
+    fetch('http://127.0.0.1:7778/event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: 'level2-finish-error',
+        runId: 'pre-fix',
+        hypothesisId,
+        location,
+        msg: `[DEBUG] ${msg}`,
+        data,
+        ts: Date.now(),
+      }),
+    }).catch(() => {});
+  }, []);
+  // #endregion
   const [phase, setPhase] = useState<'selection' | 'seedling' | 'planting' | 'finished' | 'gameover'>('selection');
   const [currentMission, setCurrentMission] = useState<Mission | null>(missions[0]);
   
   // Resources
   const [water, setWater] = useState(100);
+  const [lakeWaterLevel, setLakeWaterLevel] = useState(0);
   const [energy, setEnergy] = useState(100);
   const [co2Level, setCo2Level] = useState(100);
   const [temperature, setTemperature] = useState(32);
   const [timer, setTimer] = useState(120);
   const [weather, setWeather] = useState<'sunny' | 'rainy' | 'drought' | 'polluted'>('sunny');
+  const lakeWaterReady = lakeWaterLevel >= 25;
   
   // Free Coordinate Trees
   const [activeTrees, setActiveTrees] = useState<ActiveTree[]>([]);
@@ -6190,6 +6949,13 @@ const TreeGame: React.FC = () => {
   const [mapFocusLock, setMapFocusLock] = useState(false);
   const [showAnalysisMascot, setShowAnalysisMascot] = useState(true);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [guideSeen, setGuideSeen] = useState<boolean>(() => {
+    try {
+      return window.localStorage.getItem('treegame:guide-seen') === '1';
+    } catch {
+      return false;
+    }
+  });
   const [visualOpen, setVisualOpen] = useState(false);
   const [gfxPreset, setGfxPreset] = useState<'clean' | 'cinematic' | 'performance'>(() => {
     try {
@@ -6229,6 +6995,7 @@ const TreeGame: React.FC = () => {
   });
   const [claimError, setClaimError] = useState<string | null>(null);
   const lastClaimAutoOpenAtRef = useRef<number>(0);
+  const claimFormScrollRef = useRef<HTMLDivElement | null>(null);
   const mapProgressStorageVersion = '2026-06-map-balance-1';
   const [restoredRegionIds, setRestoredRegionIds] = useState<string[]>(() => {
     try {
@@ -6272,7 +7039,6 @@ const TreeGame: React.FC = () => {
   const selectionWelcomeVoicePlayedRef = useRef(false);
   const regionSelectTimerRef = useRef<number | null>(null);
   const [plantingStep, setPlantingStep] = useState(0);
-  const level1Target = 2;
   const level2ComboWindowMs = 14000;
   const [isDragging, setIsDragging] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
@@ -6310,6 +7076,7 @@ const TreeGame: React.FC = () => {
   const [tutorialActive, setTutorialActive] = useState(true);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [tutorialDockCollapsed, setTutorialDockCollapsed] = useState(false);
+  const [missionTrackerCollapsed, setMissionTrackerCollapsed] = useState(true);
   const [unlockedRadius, setUnlockedRadius] = useState(450); // Initial area radius (larger for better visibility)
   const tutorialSpot = { x: 400, y: 400 }; // The only spot allowed initially
 
@@ -6353,17 +7120,17 @@ const TreeGame: React.FC = () => {
       };
     }
     return {
-      dustCount: 14,
-      birdCount: 4,
-      leafLitterCount: 16,
-      decorCount: 14,
+      dustCount: 8,
+      birdCount: 2,
+      leafLitterCount: 10,
+      decorCount: 8,
       gridOpacity: 0.02,
       vignette: 0.34,
-      scanlines: 0.008,
-      fogAlpha: 0.66,
-      worldTexture: 0.60,
-      haze: 0.26,
-      sunBloom: 0.32,
+      scanlines: 0.006,
+      fogAlpha: 0.6,
+      worldTexture: 0.5,
+      haze: 0.22,
+      sunBloom: 0.26,
     };
   }, [gfxPreset]);
 
@@ -6447,6 +7214,20 @@ const TreeGame: React.FC = () => {
     } catch {}
   }, [characterSkin]);
 
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('treegame:guide-seen', guideSeen ? '1' : '0');
+    } catch {}
+  }, [guideSeen]);
+
+  useEffect(() => {
+    if (phase !== 'planting') return;
+    if (guideSeen) return;
+    if (guideOpen || levelIntroOpen || pauseOpen || visualOpen) return;
+    setGuideOpen(true);
+    setGuideSeen(true);
+  }, [guideOpen, guideSeen, levelIntroOpen, pauseOpen, phase, visualOpen]);
+
   const requestCharacterSkinFile = useCallback(() => {
     characterFileInputRef.current?.click();
   }, [characterFileInputRef]);
@@ -6516,6 +7297,15 @@ const TreeGame: React.FC = () => {
     setClaimEducationOpen(true);
   }, [phase, selectedRegion, selectedSeedling]);
 
+  const revealClaimError = useCallback((message: string) => {
+    setClaimError(message);
+    if (typeof window !== 'undefined') {
+      window.requestAnimationFrame(() => {
+        claimFormScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+  }, []);
+
   const submitClaim = useCallback(() => {
     if (!selectedRegion || !selectedSeedling) return;
     const name = claimForm.name.trim();
@@ -6526,12 +7316,12 @@ const TreeGame: React.FC = () => {
     const kelurahan = claimForm.kelurahan.trim();
     const qty = Math.max(1, Math.min(5, Number.isFinite(claimForm.quantity) ? claimForm.quantity : 1));
 
-    if (!name) { setClaimError('Nama lengkap wajib diisi.'); return; }
-    if (phoneDigits.length < 10) { setClaimError('Nomor HP minimal 10 digit.'); return; }
-    if (!address) { setClaimError('Alamat wajib diisi.'); return; }
-    if (!kecamatan) { setClaimError('Kecamatan wajib diisi.'); return; }
-    if (!kelurahan) { setClaimError('Kelurahan/Desa wajib diisi.'); return; }
-    if (!claimForm.consent) { setClaimError('Centang persetujuan untuk melanjutkan.'); return; }
+    if (!name) { revealClaimError('Nama lengkap wajib diisi.'); return; }
+    if (phoneDigits.length < 10) { revealClaimError('Nomor HP minimal 10 digit.'); return; }
+    if (!address) { revealClaimError('Alamat wajib diisi.'); return; }
+    if (!kecamatan) { revealClaimError('Kecamatan wajib diisi.'); return; }
+    if (!kelurahan) { revealClaimError('Kelurahan/Desa wajib diisi.'); return; }
+    if (!claimForm.consent) { revealClaimError('Centang persetujuan untuk melanjutkan.'); return; }
 
     const prefix = claimMode === 'success' ? 'KLAIM' : 'MINAT';
     const id = `${prefix}-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(16).slice(2, 8).toUpperCase()}`;
@@ -6577,22 +7367,55 @@ const TreeGame: React.FC = () => {
     window.setTimeout(() => {
       setToast({ id: Date.now() + 1, title: 'Untuk klaim bibit gratis', subtitle: 'Selesaikan game sampai berhasil agar dapat kode klaim pengambilan', tone: 'info' });
     }, 900);
-  }, [claimForm, claimMode, selectedRegion, selectedSeedling, setToast]);
+  }, [claimForm, claimMode, revealClaimError, selectedRegion, selectedSeedling, setToast]);
+
+  const handleClaimSubmit = useCallback((e?: React.FormEvent<HTMLFormElement>) => {
+    e?.preventDefault();
+    submitClaim();
+  }, [submitClaim]);
 
   const returnToRegionMap = useCallback(() => {
+    // #region debug-point E:return-to-map
+    reportLevel2FinishDebug('E', 'TreeGame.tsx:returnToRegionMap', 'return to region map requested', {
+      phase,
+      level,
+      selectedRegionName: selectedRegion?.name ?? null,
+      selectedSeedlingName: selectedSeedling?.name ?? null,
+      activeTrees: activeTrees.length,
+      level2Stages,
+      claimOpen,
+      claimEducationOpen,
+    });
+    // #endregion
     setClaimOpen(false);
     setClaimEducationOpen(false);
     setClaimError(null);
+    setClaimSubmitted(null);
+    setClaimMode('success');
+    lastClaimAutoOpenAtRef.current = 0;
 
     const resetToMap = () => {
       setPhase('selection');
       setPlantingStep(0);
       setSelectedRegion(null);
       setSelectedSeedling(null);
+      setClaimForm({
+        name: '',
+        phone: '',
+        email: '',
+        nik: '',
+        address: '',
+        kecamatan: '',
+        kelurahan: '',
+        plantingLocation: '',
+        quantity: 1,
+        consent: true,
+      });
       setHoveredRegion(null);
       setMapFocusRegionId(null);
       setMapTransition(null);
-      setLevel(1);
+        setLevel(1);
+        setLakeWaterLevel(0);
       setLevelIntroOpen(false);
       setActionId(null);
       setActionPlotId(null);
@@ -6603,6 +7426,19 @@ const TreeGame: React.FC = () => {
       setLevel2ComboExpiresAt(null);
       setLevel2LastCompletedAt(null);
       setPauseOpen(false);
+      setActiveTrees([]);
+      setEnvScore({ co2: 0, water: 0, temp: 0, bio: 0 });
+      setPlotMoisture({ p1: 45, p2: 45, p3: 45, p4: 45 });
+      setPlotHealth({ p1: 75, p2: 75, p3: 75, p4: 75 });
+      setDayPhase(0);
+      setCurrentMission(missions[0]);
+      setWater(missions[0].initialWater);
+      setEnergy(missions[0].initialEnergy);
+      setTimer(missions[0].timeLimit);
+      setCo2Level(100);
+      setTemperature(32);
+      setWeather('sunny');
+      setMapRestorationWave(null);
     };
 
     if (typeof window !== 'undefined') {
@@ -6611,7 +7447,7 @@ const TreeGame: React.FC = () => {
     }
 
     resetToMap();
-  }, []);
+  }, [activeTrees.length, claimEducationOpen, claimOpen, level, level2Stages, phase, reportLevel2FinishDebug, selectedRegion?.name, selectedSeedling?.name]);
 
   useEffect(() => {
     if (phase !== 'finished') return;
@@ -6688,75 +7524,6 @@ const TreeGame: React.FC = () => {
     };
   }, [phase]);
 
-  // #region debug-point A:init
-  const dbgRunIdRef = useRef<'pre' | 'post'>('pre');
-  const dbgLastSigRef = useRef<string>('');
-  const dbg = useCallback((hypothesisId: string, location: string, msg: string, data?: Record<string, unknown>) => {
-    try {
-      fetch('http://127.0.0.1:7777/event', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'game-blank-screen',
-          runId: dbgRunIdRef.current,
-          hypothesisId,
-          location,
-          msg: `[DEBUG] ${msg}`,
-          data: data ?? {},
-          ts: Date.now(),
-        }),
-      }).catch(() => {});
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    dbg('A', 'TreeGame.tsx:dbg-init', 'mounted', { ua: navigator.userAgent });
-
-    const onErr = (ev: ErrorEvent) => {
-      dbg('A', 'window.onerror', 'runtime-error', {
-        message: ev.message,
-        filename: ev.filename,
-        lineno: ev.lineno,
-        colno: ev.colno,
-        error: (ev.error && typeof ev.error === 'object' && 'stack' in ev.error) ? (ev.error as any).stack : String(ev.error ?? ''),
-      });
-    };
-
-    const onRej = (ev: PromiseRejectionEvent) => {
-      dbg('A', 'window.onunhandledrejection', 'unhandled-rejection', {
-        reason: (ev.reason && typeof ev.reason === 'object' && 'stack' in ev.reason) ? (ev.reason as any).stack : String(ev.reason ?? ''),
-      });
-    };
-
-    window.addEventListener('error', onErr);
-    window.addEventListener('unhandledrejection', onRej);
-    return () => {
-      window.removeEventListener('error', onErr);
-      window.removeEventListener('unhandledrejection', onRej);
-    };
-  }, [dbg]);
-
-  useEffect(() => {
-    const sig = JSON.stringify({
-      phase,
-      level,
-      tutorialActive,
-      tutorialStep,
-      activeEvent: activeEvent?.type ?? null,
-      pestTreeId,
-      pollutionSources: pollutionSources.length,
-      co2Level: Math.round(co2Level * 10) / 10,
-      water: Math.round(water * 10) / 10,
-      energy: Math.round(energy * 10) / 10,
-      timer,
-      trees: activeTrees.length,
-    });
-    if (sig === dbgLastSigRef.current) return;
-    dbgLastSigRef.current = sig;
-    dbg('B', 'TreeGame.tsx:state-sig', 'state-change', JSON.parse(sig));
-  }, [activeEvent?.type, activeTrees.length, co2Level, dbg, energy, level, pestTreeId, phase, pollutionSources.length, timer, tutorialActive, tutorialStep, water]);
-  // #endregion
-
   // --- 1. CORE PHYSICS & STATE ---
   const [charPos, setCharPos] = useState({ x: 500, y: 500 });
   const charPosRef = useRef({ x: 500, y: 500 });
@@ -6782,6 +7549,85 @@ const TreeGame: React.FC = () => {
   const idleReminderAtRef = useRef<number>(0);
   const timeWarnedRef = useRef<{ s60: boolean; s30: boolean; s10: boolean }>({ s60: false, s30: false, s10: false });
   const lastTreesCountRef = useRef<number>(0);
+  const level1PlotAnchor = useMemo(() => ({ id: 'p1', cx: 640, cy: 360, size: 176 }), []);
+  const level1LakeAnchor = useMemo(() => ({
+    id: 'lake-l1',
+    x: 250,
+    y: 635,
+    label: 'Danau Kecil',
+  }), []);
+  const plots = useMemo(() => {
+    if (phase !== 'planting') return [];
+
+    const width = Math.max(1, gameAreaSize.width);
+    const height = Math.max(1, gameAreaSize.height);
+    const baseSize = Math.max(150, Math.min(190, Math.min(width, height) * 0.34));
+
+    if (level === 1) {
+      return [level1PlotAnchor];
+    }
+
+    const centerX = width / 2;
+    const centerY = height * 0.56;
+    const gapX = Math.max(baseSize * 0.56, Math.min(width * 0.145, 190));
+    const gapY = Math.max(baseSize * 0.48, Math.min(height * 0.12, 118));
+    const cxLeft = Math.max(220, centerX - gapX);
+    const cxRight = Math.min(width - 220, centerX + gapX);
+    const cyTop = Math.max(210, centerY - gapY);
+    const cyBottom = Math.min(height - 150, centerY + gapY);
+
+    return [
+      { id: 'p1', cx: cxLeft, cy: cyTop, size: baseSize },
+      { id: 'p2', cx: cxRight, cy: cyTop, size: baseSize },
+      { id: 'p3', cx: cxLeft, cy: cyBottom, size: baseSize },
+      { id: 'p4', cx: cxRight, cy: cyBottom, size: baseSize },
+    ];
+  }, [phase, level, gameAreaSize.height, gameAreaSize.width, level1PlotAnchor]);
+  const waterWell = useMemo(() => {
+    if (phase !== 'planting') return null;
+
+    const width = Math.max(1, gameAreaSize.width);
+    const height = Math.max(1, gameAreaSize.height);
+    const baseSize = Math.max(150, Math.min(190, Math.min(width, height) * 0.34));
+
+    if (level === 1) {
+      return level1LakeAnchor;
+    }
+
+    return {
+      id: 'lake-l2',
+      x: Math.min(width - 170, width * 0.82),
+      y: Math.max(105, height * 0.18),
+      label: 'Danau Irigasi',
+    };
+  }, [gameAreaSize.height, gameAreaSize.width, level, phase, level1LakeAnchor]);
+  const requiredPlotId = useMemo(() => {
+    if (level === 1) return 'p1';
+    return activePlotId;
+  }, [activePlotId, level]);
+  const requiredPlot = useMemo(() => plots.find(p => p.id === requiredPlotId) ?? null, [plots, requiredPlotId]);
+  const nearWaterWell = useMemo(() => {
+    if (!waterWell) return false;
+    const dx = charPos.x - waterWell.x;
+    const dy = charPos.y - waterWell.y;
+    return Math.sqrt(dx * dx + dy * dy) < 145;
+  }, [charPos.x, charPos.y, waterWell]);
+  const level1Steps = [
+    { id: 'hole', title: 'Gali Lubang Tanam', icon: Shovel, text: 'Datangi titik tanam lalu gali tanah hingga terbentuk lubang yang siap diisi bibit pertama.', edu: 'Lubang tanam yang cukup memberi ruang awal bagi akar agar mudah masuk ke tanah dan beradaptasi dengan lingkungan sekitarnya.', impact: { co2: 1, water: 1, temp: 0, bio: 1 } satisfies EnvImpact },
+    { id: 'plant', title: 'Tanam Bibit Pertama', icon: Trees, text: 'Letakkan bibit ke dalam lubang yang sudah dibuat sampai bibit terlihat siap untuk disiram.', edu: 'Bibit yang diletakkan dengan benar punya peluang hidup lebih tinggi karena akar dan batang awalnya tidak mudah terganggu.', impact: { co2: 2, water: 2, temp: 1, bio: 2 } satisfies EnvImpact },
+    { id: 'water', title: 'Siram Bibit Pertama', icon: Droplets, text: 'Ambil air dari danau lalu siram bibit sampai tanah tampak lembab agar siap masuk ke tahap berikutnya.', edu: 'Penyiraman awal membantu akar muda tetap lembab, mengurangi stres tanam, dan meningkatkan peluang hidup bibit.', impact: { co2: 1, water: 4, temp: 0, bio: 1 } satisfies EnvImpact },
+  ];
+  const level2Steps = [
+    { id: 'hole', title: 'Gali Lubang (Lahan Luas)', icon: Shovel, text: 'Sekarang lahannya lebih luas. Gali lubang untuk pohon berikutnya di area target yang menyala.', edu: 'Menanam banyak pohon di lokasi yang tepat membantu mengurangi risiko erosi dan meningkatkan resapan air.', impact: { co2: 1, water: 3, temp: 1, bio: 1 } satisfies EnvImpact },
+    { id: 'fertilizer', title: 'Pupuk Dasar', icon: Thermometer, text: 'Taburkan pupuk organik agar tanah siap menumbuhkan akar yang kuat.', edu: 'Tanah yang kaya bahan organik menyimpan air lebih lama dan mendukung jamur/mikroba baik di tanah.', impact: { co2: 1, water: 2, temp: 0, bio: 2 } satisfies EnvImpact },
+    { id: 'plant', title: 'Letakkan Bibit', icon: Trees, text: 'Letakkan bibit ke dalam lubang dengan hati-hati. Pastikan posisinya tegak lurus.', edu: 'Bibit yang sehat dan tertanam benar punya peluang hidup lebih tinggi, sehingga restorasi lebih efektif.', impact: { co2: 2, water: 1, temp: 1, bio: 1 } satisfies EnvImpact },
+    { id: 'cover', title: 'Tutup Tanah', icon: Sprout, text: 'Tutup kembali lubang dengan tanah dan tekan perlahan agar bibit tertanam kokoh.', edu: 'Penutupan tanah membantu mengurangi penguapan dan melindungi akar dari hujan deras yang bisa menggeser bibit.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
+    { id: 'water', title: 'Penyiraman', icon: Droplets, text: 'Siram dengan air yang cukup agar tanah lembab dan merangsang pertumbuhan tunas baru.', edu: 'Penyiraman awal sangat penting. Terlalu sedikit membuat bibit layu, terlalu banyak membuat akar kekurangan oksigen.', impact: { co2: 1, water: 4, temp: 0, bio: 1 } satisfies EnvImpact },
+    { id: 'sun', title: 'Perawatan Matahari', icon: Sun, text: 'Pastikan tanaman mendapat sinar matahari yang cukup untuk proses fotosintesis.', edu: 'Pohon yang tumbuh akan membentuk kanopi yang meneduhkan. Ini menurunkan suhu sekitar dan membantu keanekaragaman hayati.', impact: { co2: 4, water: 1, temp: 3, bio: 2 } satisfies EnvImpact },
+  ];
+  const currentSteps = level === 1 ? level1Steps : level2Steps;
+  const activeStep = useMemo(() => currentSteps[Math.min(currentSteps.length - 1, plantingStep)], [currentSteps, plantingStep]);
+  const activeStepId = activeStep?.id ?? '';
 
   const teleportPlayer = (x: number, y: number) => {
     const nx = Math.max(50, Math.min(2950, x));
@@ -6859,7 +7705,7 @@ const TreeGame: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [activeEvent, activeTrees, energy, pauseOpen, pestTreeId, phase, pollutionSources, selectedSeedling, tutorialActive, tutorialStep, water]);
+  }, [actionId, actionPlotId, activeEvent, activeStepId, activeTrees, energy, lakeWaterLevel, lakeWaterReady, level, levelIntroOpen, pauseOpen, pestTreeId, phase, plots, pollutionSources, requiredPlotId, selectedSeedling, tutorialActive, tutorialStep, water, waterWell]);
 
   useEffect(() => {
     if (phase === 'planting') return;
@@ -7035,20 +7881,6 @@ const TreeGame: React.FC = () => {
     if (phase !== 'planting') return;
     if (levelIntroOpen) return;
     const currentPos = charPosRef.current;
-    // #region debug-point D:interaction
-    dbg('D', 'TreeGame.tsx:handleInteraction', 'press-e', {
-      phase,
-      level,
-      actionId,
-      tutorialActive,
-      tutorialStep,
-      activeEvent: activeEvent?.type ?? null,
-      pestTreeId,
-      pollutionSources: pollutionSources.length,
-      x: Math.round(currentPos.x),
-      y: Math.round(currentPos.y),
-    });
-    // #endregion
 
     if (tutorialActive) {
       if (tutorialStep === 2) {
@@ -7191,6 +8023,18 @@ const TreeGame: React.FC = () => {
       }
     }
 
+    if (waterWell) {
+      const dx = currentPos.x - waterWell.x;
+      const dy = currentPos.y - waterWell.y;
+      const distToWell = Math.sqrt(dx * dx + dy * dy);
+      if (distToWell < 135) {
+        if ((level === 1 && activeStepId === 'water') || lakeWaterLevel <= 88 || !lakeWaterReady || nearWaterWell) {
+          collectWaterFromWell(waterWell.x, waterWell.y);
+          return;
+        }
+      }
+    }
+
     const nearestPlot = plots.find(p => {
       const dist = Math.sqrt(Math.pow(currentPos.x - p.cx, 2) + Math.pow(currentPos.y - p.cy, 2));
       return dist < 120;
@@ -7222,6 +8066,28 @@ const TreeGame: React.FC = () => {
           spawnFloatText(currentPos.x, currentPos.y, 'Energi Habis!', 'warn');
         }
       } else {
+        if (existingTree.stage <= 1) {
+          setActionId('plant');
+          setActionProgress(0);
+          const interval = window.setInterval(() => {
+            setActionProgress(prev => {
+              if (prev >= 100) {
+                window.clearInterval(interval);
+                setActionId(null);
+                handlePlantSeedling(existingTree.id);
+                return 0;
+              }
+              if (prev % 20 === 0) spawnActionParticles(nearestPlot.cx, nearestPlot.cy - 10, '#10b981', 4);
+              return prev + 6;
+            });
+          }, 45);
+          return;
+        }
+        if (!lakeWaterReady) {
+          spawnFloatText(existingTree.x, existingTree.y - 42, 'Ambil air dari danau!', 'warn');
+          setToast({ id: Date.now(), title: 'Air belum diambil', subtitle: 'Datangi danau dulu sebelum menyiram tanaman', tone: 'warn' });
+          return;
+        }
         spawnActionParticles(nearestPlot.cx, nearestPlot.cy, '#3b82f6', 10);
         handleWaterTree(existingTree.id);
       }
@@ -7241,18 +8107,61 @@ const TreeGame: React.FC = () => {
       type: selectedSeedling?.name || 'Mahoni',
       stage: 1,
       health: 100,
-      moisture: 100,
-      growth: 0,
+      moisture: 42,
+      growth: 14,
       lastTicked: Date.now()
     }]);
     lastPlantAtRef.current = Date.now();
     idleReminderAtRef.current = 0;
-    spawnActionParticles(x, y, '#10b981', 15);
-    spawnFloatText(x, y - 40, '-20 Energi', 'warn');
+    spawnActionParticles(x, y, '#5d4037', 15);
+    spawnFloatText(x, y - 40, 'Lubang siap ditanami', 'info');
+    spawnFloatText(x, y - 68, '-20 Energi', 'warn');
+    const plotId = plots.find(p => p.cx === x && p.cy === y)?.id ?? requiredPlotId;
+    if (level === 1 && activeStepId === 'hole') {
+      handleActionComplete(plotId);
+      return;
+    }
+    playReward();
+  };
+
+  const handlePlantSeedling = (id: number) => {
+    const planted = activeTrees.find(t => t.id === id) ?? null;
+    if (!planted) return;
+    setActiveTrees(prev => prev.map(t => (
+      t.id === id
+        ? {
+            ...t,
+            stage: Math.max(t.stage, 2),
+            moisture: Math.max(t.moisture, 54),
+            growth: Math.max(t.growth, 34),
+            lastTicked: Date.now(),
+          }
+        : t
+    )));
+    spawnActionParticles(planted.x, planted.y - 16, '#10b981', 16);
+    spawnRipple(planted.x, planted.y, 'good');
+    spawnFloatText(planted.x, planted.y - 46, 'Bibit ditanam', 'good');
+    const plotId = plots.find(p => p.cx === planted.x && p.cy === planted.y)?.id ?? requiredPlotId;
+    if (level === 1 && activeStepId === 'plant') {
+      handleActionComplete(plotId);
+      return;
+    }
     playReward();
   };
 
   const handleWaterTree = (id: number) => {
+    if (!lakeWaterReady) {
+      const tree = activeTrees.find(t => t.id === id);
+      if (tree) spawnFloatText(tree.x, tree.y, 'Ambil air dulu!', 'warn');
+      setToast({ id: Date.now(), title: 'Ambil air dulu', subtitle: 'Kamu harus mengisi air dari danau sebelum menyiram', tone: 'warn' });
+      return;
+    }
+    if (lakeWaterLevel < 25) {
+      const tree = activeTrees.find(t => t.id === id);
+      if (tree) spawnFloatText(tree.x, tree.y, 'Air siram kurang!', 'warn');
+      setToast({ id: Date.now(), title: 'Air siram kurang', subtitle: 'Isi ulang kapasitas air di danau', tone: 'warn' });
+      return;
+    }
     if (water < 10) {
       const tree = activeTrees.find(t => t.id === id);
       if (tree) spawnFloatText(tree.x, tree.y, 'Air Habis!', 'warn');
@@ -7264,12 +8173,13 @@ const TreeGame: React.FC = () => {
     setActionId('water');
     window.setTimeout(() => setActionId(null), 260);
     setWater(prev => Math.max(0, prev - 10));
+    setLakeWaterLevel(prev => Math.max(0, prev - 34));
     setActiveTrees(prev => {
       const next = prev.map(t => {
         if (t.id !== id) return t;
         const nextMoisture = Math.min(100, t.moisture + 30);
         const nextStage = t.stage < 3 ? 3 : t.stage;
-        const nextGrowth = nextStage >= 3 ? Math.max(t.growth, 48) : t.growth;
+        const nextGrowth = nextStage >= 3 ? Math.max(t.growth, 56) : t.growth;
         return { ...t, moisture: nextMoisture, stage: nextStage, growth: nextGrowth };
       });
 
@@ -7277,7 +8187,7 @@ const TreeGame: React.FC = () => {
         const watered = next.find(t => t.id === id) ?? null;
         const plotId = watered ? (plots.find(p => p.cx === watered.x && p.cy === watered.y)?.id ?? null) : null;
         const alreadyCompleted = plotId ? (level2Stages[plotId] ?? 0) >= 1 : false;
-        if (plotId && watered && watered.stage >= 3 && !alreadyCompleted) {
+        if (plotId && watered && !alreadyCompleted) {
           setLevel2Stages(s => ({ ...s, [plotId]: 1 }));
           const comboActive = Boolean(level2LastCompletedAt && Date.now() - level2LastCompletedAt <= level2ComboWindowMs);
           const nextCombo = comboActive ? Math.min(5, level2Combo + 1) : 1;
@@ -7296,12 +8206,7 @@ const TreeGame: React.FC = () => {
             subtitle: `Bonus +${waterBonus} air, +${energyBonus} energi. Kejar target berikutnya sebelum 14 detik habis!`,
             tone: 'good',
           });
-          const nextPlot = plotOrder.find(pid => {
-            const p = plots.find(pp => pp.id === pid);
-            if (!p) return false;
-            const t = next.find(tt => tt.x === p.cx && tt.y === p.cy);
-            return !(t && t.stage >= 3);
-          });
+          const nextPlot = plotOrder.find(pid => pid !== plotId && (level2Stages[pid] ?? 0) < 1);
           if (nextPlot) setActivePlotId(nextPlot);
         }
       }
@@ -7310,7 +8215,58 @@ const TreeGame: React.FC = () => {
     });
     if (shouldRestore && before) spawnRestoration(before.x, before.y, 1.1);
     spawnFloatText(charPosRef.current.x, charPosRef.current.y - 40, '-10 Air', 'warn');
+    if (level === 1 && activeStepId === 'water') {
+      handleActionComplete(requiredPlotId);
+      return;
+    }
     playReward();
+  };
+
+  const collectWaterFromWell = (sourceX: number, sourceY: number) => {
+    if (actionPlotId) return;
+    if (lakeWaterLevel >= 96 && !(level === 1 && activeStepId === 'water')) {
+      spawnFloatText(sourceX, sourceY - 40, 'Tangki air penuh', 'good');
+      setToast({ id: Date.now(), title: 'Air siram penuh', subtitle: 'Kapasitas air dari danau sudah penuh', tone: 'info' });
+      return;
+    }
+
+    playUiClick();
+    setActionId('collect-water');
+    setActionProgress(0);
+    spawnRipple(sourceX, sourceY + 10, 'water');
+
+    const durationMs = 1100;
+    const startAt = Date.now();
+    const waterGain = level === 1 ? 42 : 34;
+
+    if (actionTimerRef.current.intervalId) window.clearInterval(actionTimerRef.current.intervalId);
+    if (actionTimerRef.current.timeoutId) window.clearTimeout(actionTimerRef.current.timeoutId);
+
+    actionTimerRef.current.intervalId = window.setInterval(() => {
+      const p = Math.min(1, (Date.now() - startAt) / durationMs);
+      setActionProgress(p * 100);
+      if (p > 0.45) {
+        spawnActionParticles(sourceX + (-8 + Math.random() * 16), sourceY - 12 + Math.random() * 12, '#60a5fa', 2);
+      }
+    }, 60);
+
+    actionTimerRef.current.timeoutId = window.setTimeout(() => {
+      if (actionTimerRef.current.intervalId) window.clearInterval(actionTimerRef.current.intervalId);
+      actionTimerRef.current.intervalId = null;
+      setActionProgress(100);
+      setWater(prev => Math.min(100, prev + waterGain));
+      setLakeWaterLevel(100);
+      spawnActionParticles(sourceX, sourceY - 8, '#38bdf8', 16);
+      spawnRipple(sourceX, sourceY + 8, 'water');
+      spawnFloatText(sourceX, sourceY - 42, `+${waterGain}% Air`, 'good');
+      setToast({ id: Date.now(), title: 'Air terisi', subtitle: 'Kapasitas air siram sudah penuh dari danau', tone: 'good' });
+
+      window.setTimeout(() => {
+        setActionProgress(0);
+        setActionId(null);
+        playReward();
+      }, 120);
+    }, durationMs);
   };
 
   // --- Real-time Game Loop ---
@@ -7348,7 +8304,6 @@ const TreeGame: React.FC = () => {
       }
 
       setTimer(prev => {
-        if (level === 1) return prev;
         if (prev <= 0) {
           setPhase('gameover');
           return 0;
@@ -7407,9 +8362,6 @@ const TreeGame: React.FC = () => {
               setPestTreeId(target.id);
               setToast({ id: now, title: 'HAMA MENYERANG', subtitle: 'Cari pohon yang diserang dan tekan [E] untuk bersihkan!', tone: 'warn' });
               spawnActionParticles(target.x, target.y - 20, '#ef4444', 10);
-              // #region debug-point C:event-start
-              dbg('C', 'TreeGame.tsx:event', 'event-start', { type: picked, targetTreeId: target.id, endsInMs: duration });
-              // #endregion
             }
           }
           if (picked === 'POLLUTION_SPIKE') {
@@ -7427,14 +8379,8 @@ const TreeGame: React.FC = () => {
               };
             });
             setPollutionSources(sources);
-            // #region debug-point C:event-start
-            dbg('C', 'TreeGame.tsx:event', 'event-start', { type: picked, sources: sources.map(s => ({ id: s.id, x: Math.round(s.x), y: Math.round(s.y), strength: s.strength })), endsInMs: duration });
-            // #endregion
           }
           if (picked === 'HEATWAVE' || picked === 'RAINSTORM') {
-            // #region debug-point C:event-start
-            dbg('C', 'TreeGame.tsx:event', 'event-start', { type: picked, endsInMs: duration });
-            // #endregion
           }
         }
       }
@@ -7498,9 +8444,12 @@ const TreeGame: React.FC = () => {
             }
 
             const nextGrowth = Math.min(100, tree.growth + growthAdd);
-            const nextStage = Math.floor(nextGrowth / 16);
+            const nextStage =
+              tree.stage >= 4
+                ? Math.max(tree.stage, Math.floor(nextGrowth / 16))
+                : tree.stage;
 
-            if (tree.stage < 3 && nextStage >= 3 && !restoredTreeIdsRef.current.has(tree.id)) {
+            if (tree.stage < 4 && nextStage >= 4 && !restoredTreeIdsRef.current.has(tree.id)) {
               restoredTreeIdsRef.current.add(tree.id);
               newlyRestored.push({ x: tree.x, y: tree.y });
             }
@@ -7526,6 +8475,18 @@ const TreeGame: React.FC = () => {
         }
 
         if (co2Level <= (currentMission?.targetCO2 ?? 40)) {
+          // #region debug-point C:co2-finish-trigger
+          reportLevel2FinishDebug('C', 'TreeGame.tsx:game-loop-finish', 'co2 finish trigger', {
+            phase,
+            level,
+            co2Level,
+            targetCO2: currentMission?.targetCO2 ?? 40,
+            activePlotId,
+            level2CompletedCount,
+            level2Stages,
+            treeCount: activeTrees.length,
+          });
+          // #endregion
           setToast({ id: Date.now(), title: 'Berhasil!', subtitle: 'Target CO2 tercapai', tone: 'good' });
           setPhase('finished');
         }
@@ -7557,29 +8518,6 @@ const TreeGame: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [activeEvent, activeTrees, clampWorld, co2Level, currentMission, effectiveWeather, level, level2Stages, levelIntroOpen, pauseOpen, pestTreeId, phase, plantingStep, pollutionSources, spawnRestoration, tutorialActive, weather]);
-
-
-  const level1Steps = [
-    { id: 'hole', title: 'Ambil Bibit', icon: Trees, text: 'Ambil bibit utama dari pos distribusi dan pastikan jenisnya sesuai dengan wilayah yang akan dipulihkan.', edu: 'Pemilihan bibit yang tepat sejak awal membuat proses restorasi lebih efektif dan peluang hidup tanaman lebih tinggi.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
-    { id: 'fertilizer', title: 'Siapkan Pupuk', icon: Thermometer, text: 'Siapkan pupuk organik dasar agar perlengkapan tanam sudah lengkap sebelum masuk ke area kerja.', edu: 'Pupuk organik memperbaiki struktur tanah dan membantu akar muda beradaptasi setelah bibit ditanam.', impact: { co2: 1, water: 2, temp: 0, bio: 2 } satisfies EnvImpact },
-    { id: 'plant', title: 'Cek Sekop & Sarung Tangan', icon: Shovel, text: 'Periksa sekop, sarung tangan, dan perlengkapan inti agar penanaman berjalan aman dan cepat.', edu: 'Peralatan yang siap pakai mengurangi kesalahan saat tanam dan membantu pekerjaan lapangan lebih efisien.', impact: { co2: 2, water: 1, temp: 1, bio: 1 } satisfies EnvImpact },
-    { id: 'cover', title: 'Rapikan Area Kerja', icon: Sprout, text: 'Susun area kerja dan tandai titik tanam supaya proses penanaman nanti lebih terarah.', edu: 'Penataan area tanam yang rapi membuat tim lebih mudah bergerak dan mencegah bibit tertukar lokasi.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
-    { id: 'water', title: 'Isi Cadangan Air', icon: Droplets, text: 'Isi cadangan air untuk penyiraman awal agar bibit tidak kekurangan kelembaban setelah ditanam.', edu: 'Cadangan air penting untuk fase awal tanam karena akar muda masih sangat sensitif terhadap kekeringan.', impact: { co2: 1, water: 4, temp: 0, bio: 1 } satisfies EnvImpact },
-    { id: 'sun', title: 'Briefing Lokasi Tanam', icon: Sun, text: 'Tinjau pencahayaan dan kondisi lapangan sebagai briefing terakhir sebelum masuk ke Level 2.', edu: 'Mengenali kondisi cahaya, arah angin, dan lokasi tanam membuat keputusan penanaman jauh lebih tepat.', impact: { co2: 4, water: 1, temp: 3, bio: 2 } satisfies EnvImpact },
-  ];
-
-  const level2Steps = [
-    { id: 'hole', title: 'Gali Lubang (Lahan Luas)', icon: Shovel, text: 'Sekarang lahannya lebih luas. Gali lubang untuk pohon berikutnya di area target yang menyala.', edu: 'Menanam banyak pohon di lokasi yang tepat membantu mengurangi risiko erosi dan meningkatkan resapan air.', impact: { co2: 1, water: 3, temp: 1, bio: 1 } satisfies EnvImpact },
-    { id: 'fertilizer', title: 'Pupuk Dasar', icon: Thermometer, text: 'Taburkan pupuk organik agar tanah siap menumbuhkan akar yang kuat.', edu: 'Tanah yang kaya bahan organik menyimpan air lebih lama dan mendukung jamur/mikroba baik di tanah.', impact: { co2: 1, water: 2, temp: 0, bio: 2 } satisfies EnvImpact },
-    { id: 'plant', title: 'Letakkan Bibit', icon: Trees, text: 'Letakkan bibit ke dalam lubang dengan hati-hati. Pastikan posisinya tegak lurus.', edu: 'Bibit yang sehat dan tertanam benar punya peluang hidup lebih tinggi, sehingga restorasi lebih efektif.', impact: { co2: 2, water: 1, temp: 1, bio: 1 } satisfies EnvImpact },
-    { id: 'cover', title: 'Tutup Tanah', icon: Sprout, text: 'Tutup kembali lubang dengan tanah dan tekan perlahan agar bibit tertanam kokoh.', edu: 'Penutupan tanah membantu mengurangi penguapan dan melindungi akar dari hujan deras yang bisa menggeser bibit.', impact: { co2: 1, water: 2, temp: 1, bio: 1 } satisfies EnvImpact },
-    { id: 'water', title: 'Penyiraman', icon: Droplets, text: 'Siram dengan air yang cukup agar tanah lembab dan merangsang pertumbuhan tunas baru.', edu: 'Penyiraman awal sangat penting. Terlalu sedikit membuat bibit layu, terlalu banyak membuat akar kekurangan oksigen.', impact: { co2: 1, water: 4, temp: 0, bio: 1 } satisfies EnvImpact },
-    { id: 'sun', title: 'Perawatan Matahari', icon: Sun, text: 'Pastikan tanaman mendapat sinar matahari yang cukup untuk proses fotosintesis.', edu: 'Pohon yang tumbuh akan membentuk kanopi yang meneduhkan. Ini menurunkan suhu sekitar dan membantu keanekaragaman hayati.', impact: { co2: 4, water: 1, temp: 3, bio: 2 } satisfies EnvImpact },
-  ];
-
-  const currentSteps = level === 1 ? level1Steps : level2Steps;
-  const activeStep = useMemo(() => currentSteps[Math.min(currentSteps.length - 1, plantingStep)], [currentSteps, plantingStep]);
-  const activeStepId = activeStep?.id ?? '';
 
   const spotlight = useMemo(() => {
     const c =
@@ -7629,11 +8567,11 @@ const TreeGame: React.FC = () => {
 
   const getActionHint = (stepId: string) => {
     if (level === 1) {
-      if (stepId === 'hole') return 'Klik untuk ambil bibit';
+      if (stepId === 'hole') return 'Klik untuk menggali';
       if (stepId === 'fertilizer') return 'Klik untuk siapkan pupuk';
-      if (stepId === 'plant') return 'Klik untuk cek alat';
+      if (stepId === 'plant') return 'Klik untuk tanam bibit';
       if (stepId === 'cover') return 'Klik untuk rapikan area';
-      if (stepId === 'water') return 'Klik untuk isi air';
+      if (stepId === 'water') return 'Klik untuk siram bibit';
       if (stepId === 'sun') return 'Klik untuk briefing';
     }
     if (stepId === 'hole') return 'Klik untuk menggali';
@@ -7661,38 +8599,8 @@ const TreeGame: React.FC = () => {
     const bio = clamp01(envScore.bio / 80);
     return { co2, water, temp, bio };
   }, [envScore.bio, envScore.co2, envScore.temp, envScore.water]);
-
-  const plots = useMemo(() => {
-    if (phase !== 'planting') return [];
-
-    const width = Math.max(1, gameAreaSize.width);
-    const height = Math.max(1, gameAreaSize.height);
-    const baseSize = Math.max(150, Math.min(190, Math.min(width, height) * 0.34));
-
-    if (level === 1) {
-      return [{ id: 'p1', cx: width / 2, cy: height / 2, size: baseSize }];
-    }
-
-    const cxLeft = width * 0.32;
-    const cxRight = width * 0.68;
-    const cyTop = height * 0.36;
-    const cyBottom = height * 0.7;
-
-    return [
-      { id: 'p1', cx: cxLeft, cy: cyTop, size: baseSize },
-      { id: 'p2', cx: cxRight, cy: cyTop, size: baseSize },
-      { id: 'p3', cx: cxLeft, cy: cyBottom, size: baseSize },
-      { id: 'p4', cx: cxRight, cy: cyBottom, size: baseSize },
-    ];
-  }, [phase, level, gameAreaSize.height, gameAreaSize.width]);
-
-  const requiredPlotId = useMemo(() => {
-    if (level === 1) return 'p1';
-    return activePlotId;
-  }, [activePlotId, level]);
-
-  const requiredPlot = useMemo(() => plots.find(p => p.id === requiredPlotId) ?? null, [plots, requiredPlotId]);
   const guide = useMemo(() => {
+    if (phase !== 'planting') return null;
     if (phase !== 'planting') return null;
     if (!requiredPlot) return null;
     const from = { x: charPos.x + 30, y: charPos.y + 40 };
@@ -7713,21 +8621,47 @@ const TreeGame: React.FC = () => {
 
   const level2CompletedCount = useMemo(() => {
     if (level !== 2) return 0;
-    let done = 0;
-    for (const id of plotOrder) {
-      const t = plotTreeById.get(id);
-      if (t && t.stage >= 3) done += 1;
-    }
-    return done;
-  }, [level, plotOrder, plotTreeById]);
+    return plotOrder.reduce((done, id) => done + ((level2Stages[id] ?? 0) >= 1 ? 1 : 0), 0);
+  }, [level, level2Stages, plotOrder]);
 
   useEffect(() => {
     if (phase !== 'planting') return;
     if (tutorialActive) return;
     if (level !== 2) return;
     if (level2CompletedCount < 4) return;
+    // #region debug-point A:level2-count-finish
+    reportLevel2FinishDebug('A', 'TreeGame.tsx:level2CompletedCount-effect', 'level2 completed count reached finish threshold', {
+      phase,
+      level,
+      tutorialActive,
+      level2CompletedCount,
+      activePlotId,
+      level2Stages,
+      treeStages: activeTrees.map(t => ({ id: t.id, type: t.type, stage: t.stage, growth: Math.round(t.growth) })),
+    });
+    // #endregion
     setPhase('finished');
-  }, [level, level2CompletedCount, phase, tutorialActive]);
+  }, [activePlotId, activeTrees, level, level2CompletedCount, level2Stages, phase, reportLevel2FinishDebug, tutorialActive]);
+
+  useEffect(() => {
+    if (phase !== 'finished') return;
+    // #region debug-point B:finished-render-state
+    reportLevel2FinishDebug('B', 'TreeGame.tsx:finished-phase-effect', 'entered finished phase', {
+      level,
+      selectedRegionName: selectedRegion?.name ?? null,
+      selectedSeedlingName: selectedSeedling?.name ?? null,
+      activePlotId,
+      plantingStep,
+      level2CompletedCount,
+      level2Stages,
+      claimOpen,
+      claimEducationOpen,
+      claimMode,
+      claimSubmittedMode: claimSubmitted?.mode ?? null,
+      treeCount: activeTrees.length,
+    });
+    // #endregion
+  }, [activePlotId, activeTrees.length, claimEducationOpen, claimMode, claimOpen, claimSubmitted?.mode, level, level2CompletedCount, level2Stages, phase, plantingStep, reportLevel2FinishDebug, selectedRegion?.name, selectedSeedling?.name]);
 
   useEffect(() => {
     if (!level2ComboExpiresAt) return;
@@ -7956,7 +8890,7 @@ const TreeGame: React.FC = () => {
       if (tutorialStep === 3 && d < 160) return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Tanam bibit' };
       if (tutorialStep === 4) {
         const nearTree = activeTrees.some(t => dist(currentX, currentY, t.x, t.y) < 160);
-        if (nearTree) return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Siram pohon' };
+        if (nearTree) return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Siram bibit' };
       }
       return null;
     }
@@ -7971,6 +8905,19 @@ const TreeGame: React.FC = () => {
       if (t && dist(currentX, currentY, t.x, t.y) < 160) return { key: 'E', tone: 'warn' as const, title: 'Tekan E', subtitle: 'Basmi hama' };
     }
 
+    if (waterWell) {
+      const dWell = dist(currentX, currentY, waterWell.x, waterWell.y);
+      if (dWell < 155) {
+        if (level === 1 && activeStepId === 'water') {
+          return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Ambil air dari danau' };
+        }
+        if (lakeWaterLevel <= 88 || !lakeWaterReady) {
+          return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Ambil air dari danau' };
+        }
+        return { key: 'E', tone: 'info' as const, title: 'Danau Air', subtitle: `Kapasitas air ${Math.round(lakeWaterLevel)}%` };
+      }
+    }
+
     const nearestPlot = plots.find(p => dist(currentX, currentY, p.cx, p.cy) < 160) ?? null;
     if (!nearestPlot) return null;
 
@@ -7978,12 +8925,17 @@ const TreeGame: React.FC = () => {
     if (!existingTree) {
       if (level === 2 && nearestPlot.id !== activePlotId) return { key: 'E', tone: 'warn' as const, title: 'Target Salah', subtitle: 'Ikuti titik yang menyala' };
       if (energy < 20) return { key: 'E', tone: 'warn' as const, title: 'Energi Kurang', subtitle: 'Butuh 20 energi untuk gali' };
-      return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Gali & tanam' };
+      return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Gali lubang' };
     }
 
-    if (water < 10) return { key: 'E', tone: 'warn' as const, title: 'Air Habis', subtitle: 'Cari hujan / tunggu regen' };
-    return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Siram pohon' };
-  }, [activeEvent?.type, activePlotId, activeTrees, charPos.x, charPos.y, energy, level, levelIntroOpen, pauseOpen, pestTreeId, plots, pollutionSources, phase, tutorialActive, tutorialSpot.x, tutorialSpot.y, tutorialStep, water]);
+    if (existingTree.stage <= 1) {
+      return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Tanam bibit' };
+    }
+    if (!lakeWaterReady) return { key: 'E', tone: 'warn' as const, title: 'Air Belum Siap', subtitle: 'Ambil air dari danau dulu' };
+    if (lakeWaterLevel < 25) return { key: 'E', tone: 'warn' as const, title: 'Air Kurang', subtitle: 'Isi ulang kapasitas air' };
+    if (water < 10) return { key: 'E', tone: 'warn' as const, title: 'Air Habis', subtitle: 'Isi ulang di danau' };
+    return { key: 'E', tone: 'info' as const, title: 'Tekan E', subtitle: 'Siram bibit' };
+  }, [activeEvent?.type, activePlotId, activeStepId, activeTrees, charPos.x, charPos.y, energy, lakeWaterLevel, lakeWaterReady, level, levelIntroOpen, pauseOpen, pestTreeId, plots, pollutionSources, phase, tutorialActive, tutorialSpot.x, tutorialSpot.y, tutorialStep, water, waterWell]);
 
   useEffect(() => {
     if (phase !== 'planting') return;
@@ -8079,6 +9031,7 @@ const TreeGame: React.FC = () => {
     
     setCurrentMission(mission);
     setWater(mission.initialWater);
+    setLakeWaterLevel(0);
     setEnergy(mission.initialEnergy);
     setTimer(mission.timeLimit);
     setCo2Level(100);
@@ -8100,6 +9053,7 @@ const TreeGame: React.FC = () => {
         setPhase('planting');
         setLevel(1);
         setPlantingStep(0);
+        setLakeWaterLevel(0);
         setActionProgress(0);
         setActionPlotId(null);
         setLevelIntroOpen(true);
@@ -8364,10 +9318,12 @@ const TreeGame: React.FC = () => {
       fxY + 18,
       level === 1
         ? stepId === 'hole'
-          ? 'Bibit siap dibawa'
+          ? 'Lubang siap'
           : stepId === 'plant'
-            ? 'Alat tanam siap'
-            : 'Persiapan selesai'
+            ? 'Bibit tertanam'
+            : stepId === 'water'
+              ? 'Tanah mulai basah'
+              : 'Persiapan selesai'
         : stepId === 'hole'
           ? 'Berhasil menggali'
           : 'Aksi berhasil',
@@ -8422,6 +9378,20 @@ const TreeGame: React.FC = () => {
       return { ...prev, [healthId]: next };
     });
 
+    if (stepId === 'sun' && plot) {
+      setActiveTrees(prev => prev.map(tree => {
+        if (tree.x !== plot.cx || tree.y !== plot.cy) return tree;
+        return {
+          ...tree,
+          stage: Math.max(tree.stage, 4),
+          growth: Math.max(tree.growth, 72),
+          moisture: Math.max(tree.moisture, 58),
+          health: Math.max(tree.health, 82),
+          lastTicked: Date.now(),
+        };
+      }));
+    }
+
     playReward();
     setPlayerXP(prevXP => {
       const threshold = 60 + playerRank * 20;
@@ -8448,8 +9418,10 @@ const TreeGame: React.FC = () => {
       setActionProgress(0);
       setActionPlotId(null);
       setLevelIntroOpen(true);
+      setActiveTrees([]);
       setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 });
       setActivePlotId('p1');
+      setLakeWaterLevel(0);
       setCharPos({ x: 80, y: 80 });
       setToast({ id: Date.now(), title: 'Level 1 selesai!', subtitle: 'Masuk ke Level 2', tone: 'info' });
       return;
@@ -8470,6 +9442,17 @@ const TreeGame: React.FC = () => {
       const order = ['p1', 'p2', 'p3', 'p4'];
       const nextPlot = order.find(id => (nextStages[id] ?? 0) < currentSteps.length);
       if (!nextPlot) {
+        // #region debug-point D:level2-stage-finish
+        reportLevel2FinishDebug('D', 'TreeGame.tsx:handleActionComplete', 'all level2 plots completed', {
+          phase,
+          level,
+          activePlotId,
+          plantingStep,
+          nextStages,
+          currentStepsLength: currentSteps.length,
+          treeCount: activeTrees.length,
+        });
+        // #endregion
         setPhase('finished');
         return nextStages;
       }
@@ -8513,11 +9496,11 @@ const TreeGame: React.FC = () => {
         className="absolute inset-0 -z-10"
         style={{
           backgroundImage: [
-            'radial-gradient(circle at 18% 12%, rgba(16,185,129,0.22) 0 280px, transparent 420px)',
-            'radial-gradient(circle at 82% 18%, rgba(59,130,246,0.14) 0 260px, transparent 420px)',
+            'radial-gradient(circle at 18% 12%, rgba(34,197,94,0.18) 0 280px, transparent 420px)',
+            'radial-gradient(circle at 82% 18%, rgba(56,189,248,0.12) 0 260px, transparent 420px)',
             'radial-gradient(circle at 70% 86%, rgba(245,158,11,0.16) 0 320px, transparent 520px)',
             'repeating-linear-gradient(135deg, rgba(2,6,23,0.04) 0 2px, transparent 2px 18px)',
-            'linear-gradient(180deg, #ecfeff 0%, #ecfdf5 45%, #f0fdf4 100%)',
+            'linear-gradient(180deg, #eff6ff 0%, #eefbf3 45%, #fff7ed 100%)',
           ].join(','),
         }}
       />
@@ -8551,12 +9534,12 @@ const TreeGame: React.FC = () => {
               exit={{ opacity: 0, y: -10 }}
               className="bg-slate-950/70 backdrop-blur-2xl p-6 sm:p-8 rounded-[2.5rem] shadow-[0_40px_120px_rgba(0,0,0,0.55)] border border-white/10 flex-1 flex flex-col overflow-hidden relative"
             >
-              <div className="absolute inset-0 pointer-events-none opacity-80" style={{ backgroundImage: 'radial-gradient(circle at 12% 10%, rgba(16,185,129,0.18) 0 260px, transparent 520px), radial-gradient(circle at 88% 24%, rgba(56,189,248,0.14) 0 260px, transparent 560px), radial-gradient(circle at 60% 90%, rgba(245,158,11,0.10) 0 320px, transparent 620px), linear-gradient(180deg, rgba(2,6,23,0.35) 0%, rgba(2,6,23,0.55) 100%)' }} />
+              <div className="absolute inset-0 pointer-events-none opacity-80" style={{ backgroundImage: 'radial-gradient(circle at 12% 10%, rgba(34,197,94,0.16) 0 260px, transparent 520px), radial-gradient(circle at 88% 24%, rgba(56,189,248,0.12) 0 260px, transparent 560px), radial-gradient(circle at 60% 90%, rgba(245,158,11,0.12) 0 320px, transparent 620px), linear-gradient(180deg, rgba(2,6,23,0.35) 0%, rgba(2,6,23,0.55) 100%)' }} />
               <div className="mb-6 text-center">
                 <h1 className="text-2xl sm:text-3xl font-black text-white mb-1 flex items-center justify-center gap-3">
-                  <MapPin className="text-emerald-400" /> Eksplorasi Bandung Raya
+                  <MapPin className="text-emerald-300" /> Eksplorasi Bandung Raya
                 </h1>
-                <p className="text-white/70 text-sm font-bold">Pilih wilayah Merah/Oranye untuk mulai restorasi. Hover untuk lihat data live.</p>
+                <p className="text-white/70 text-sm font-bold">Pilih wilayah yang butuh perhatian (Kritis/Gersang) untuk mulai restorasi. Hover untuk lihat data live.</p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-stretch">
@@ -8595,7 +9578,7 @@ const TreeGame: React.FC = () => {
                             transition={{ duration: 0.76, ease: 'easeInOut' }}
                             style={{
                               backgroundImage:
-                                'radial-gradient(circle at 50% 45%, rgba(56,189,248,0.20) 0 240px, rgba(2,6,23,0.0) 560px), radial-gradient(circle at 50% 55%, rgba(16,185,129,0.14) 0 220px, rgba(2,6,23,0.0) 520px)',
+                                'radial-gradient(circle at 50% 45%, rgba(56,189,248,0.16) 0 240px, rgba(2,6,23,0.0) 560px), radial-gradient(circle at 50% 55%, rgba(34,197,94,0.12) 0 220px, rgba(2,6,23,0.0) 520px)',
                             }}
                           />
                           <motion.div
@@ -8614,7 +9597,7 @@ const TreeGame: React.FC = () => {
                             transition={{ duration: 0.72, ease: 'easeInOut' }}
                             style={{
                               backgroundImage:
-                                'linear-gradient(90deg, rgba(255,255,255,0.0) 0%, rgba(56,189,248,0.12) 25%, rgba(255,255,255,0.0) 55%, rgba(16,185,129,0.10) 75%, rgba(255,255,255,0.0) 100%)',
+                                'linear-gradient(90deg, rgba(255,255,255,0.0) 0%, rgba(226,232,240,0.10) 25%, rgba(255,255,255,0.0) 55%, rgba(56,189,248,0.10) 75%, rgba(255,255,255,0.0) 100%)',
                               filter: 'blur(0.5px)',
                             }}
                           />
@@ -8630,9 +9613,9 @@ const TreeGame: React.FC = () => {
                 </div>
 
                 <div className="lg:col-span-5 flex flex-col">
-                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 h-full flex flex-col shadow-[inset_0_0_90px_rgba(16,185,129,0.10)]">
+                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 h-full flex flex-col shadow-[inset_0_0_90px_rgba(255,255,255,0.06)]">
                     <h3 className="text-lg font-black text-white mb-4 uppercase flex items-center gap-2 border-b border-white/10 pb-3">
-                      <Info size={20} className="text-emerald-300" /> Analisis Lahan
+                      <Info size={20} className="text-slate-200" /> Analisis Lahan
                     </h3>
                     <div className="flex-1 min-h-0 flex flex-col">
                       <AnimatePresence mode="wait">
@@ -8646,8 +9629,8 @@ const TreeGame: React.FC = () => {
                             className="mb-4"
                           >
                             <div className={`p-4 rounded-2xl border-2 mb-3 bg-white ${
-                              (hoveredRegion || selectedRegion)?.status === 'hijau' ? 'border-emerald-400' :
-                              (hoveredRegion || selectedRegion)?.status === 'kritis' ? 'border-orange-400' : 'border-red-400'
+                              (hoveredRegion || selectedRegion)?.status === 'hijau' ? 'border-slate-300' :
+                              (hoveredRegion || selectedRegion)?.status === 'kritis' ? 'border-slate-400' : 'border-slate-500'
                             }`}>
                               <h4 className="text-xl font-black">{(hoveredRegion || selectedRegion)?.name}</h4>
                               <p className="text-[10px] font-black uppercase opacity-50">Status: {(hoveredRegion || selectedRegion)?.status}</p>
@@ -8657,7 +9640,7 @@ const TreeGame: React.FC = () => {
                             {(hoveredRegion || selectedRegion)?.status !== 'hijau' ? (
                               <button
                                 onClick={() => beginRegionSelect((hoveredRegion || selectedRegion)!)}
-                                className="w-full bg-emerald-500 text-slate-950 py-4 rounded-2xl font-black shadow-[0_20px_50px_rgba(16,185,129,0.25)] hover:shadow-[0_24px_70px_rgba(16,185,129,0.30)] transition-all flex items-center justify-center gap-2 active:scale-95 relative overflow-hidden"
+                                className="w-full bg-white text-slate-950 py-4 rounded-2xl font-black shadow-[0_20px_50px_rgba(0,0,0,0.28)] hover:shadow-[0_24px_70px_rgba(0,0,0,0.32)] transition-all flex items-center justify-center gap-2 active:scale-95 relative overflow-hidden"
                               >
                                 <motion.div
                                   aria-hidden
@@ -8669,7 +9652,7 @@ const TreeGame: React.FC = () => {
                                 MULAI RESTORASI <Zap size={18} />
                               </button>
                             ) : (
-                              <div className="flex flex-col items-center gap-2 text-emerald-200 font-black p-4 bg-white/5 rounded-2xl border border-emerald-500/25">
+                              <div className="flex flex-col items-center gap-2 text-slate-200 font-black p-4 bg-white/5 rounded-2xl border border-white/15">
                                 <ShieldCheck size={32} />
                                 <span className="text-[10px] uppercase">Wilayah Terproteksi</span>
                               </div>
@@ -8683,7 +9666,7 @@ const TreeGame: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => { setShowAnalysisMascot(true); requestCharacterSkinFile(); }}
-                            className="px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/20 shadow-sm text-[10px] font-black uppercase tracking-widest text-emerald-100 inline-flex items-center gap-2 active:scale-95 transition-transform"
+                            className="px-3 py-1.5 rounded-full bg-white/10 border border-white/15 shadow-sm text-[10px] font-black uppercase tracking-widest text-white/80 inline-flex items-center gap-2 active:scale-95 transition-transform"
                           >
                             <Sparkles size={14} />
                             Ganti Maskot
@@ -8739,14 +9722,12 @@ const TreeGame: React.FC = () => {
                         }
                       }}
                       className={`rounded-[2rem] border backdrop-blur-2xl p-5 shadow-[0_30px_90px_rgba(0,0,0,0.55)] cursor-pointer active:scale-[0.99] transition-transform ${
-                        mapAlert.tone === 'warn' ? 'bg-red-500/10 border-red-400/20' : mapAlert.tone === 'good' ? 'bg-emerald-500/10 border-emerald-400/20' : 'bg-blue-500/10 border-blue-400/20'
+                        'bg-white/6 border-white/12'
                       }`}
                     >
                       <div className="flex items-start gap-4">
                         <div
-                          className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                            mapAlert.tone === 'warn' ? 'bg-red-500/20 text-red-200' : mapAlert.tone === 'good' ? 'bg-emerald-500/20 text-emerald-200' : 'bg-blue-500/20 text-blue-200'
-                          }`}
+                          className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 bg-white/10 text-white/80"
                         >
                           <AlertTriangle size={22} />
                         </div>
@@ -9372,7 +10353,7 @@ const TreeGame: React.FC = () => {
               className="fixed inset-0 bg-slate-950 z-50 flex flex-col overflow-hidden"
             >
               {/* --- 1. HUD MODERN (UPPER) --- */}
-              <div className="h-24 bg-slate-900/90 backdrop-blur-2xl border-b border-white/10 flex items-center justify-between px-10 z-[100] shadow-2xl">
+              <div className="relative z-[140] shrink-0 pointer-events-auto h-24 bg-slate-900/90 backdrop-blur-2xl border-b border-white/10 flex items-center justify-between px-10 shadow-2xl">
                 <div className="flex items-center gap-8">
                   <div className="flex flex-col">
                     <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">Wilayah Aktif</span>
@@ -9385,11 +10366,21 @@ const TreeGame: React.FC = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Droplets size={14} className="text-blue-400" />
-                          <span className="text-[10px] font-black text-white/60 uppercase">Water</span>
+                          <span className="text-[10px] font-black text-white/60 uppercase">Cadangan</span>
                         </div>
                         <span className="text-xs font-black text-blue-400">{Math.round(water)}%</span>
                       </div>
                       <HDBar value01={water/100} from="#3b82f6" to="#60a5fa" height={8} className="w-24" />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Droplets size={14} className="text-cyan-300" />
+                          <span className="text-[10px] font-black text-white/60 uppercase">Air Siram</span>
+                        </div>
+                        <span className="text-xs font-black text-cyan-300">{Math.round(lakeWaterLevel)}%</span>
+                      </div>
+                      <HDBar value01={lakeWaterLevel/100} from="#06b6d4" to="#7dd3fc" height={8} className="w-24" />
                     </div>
                     {/* Energy Resource */}
                     <div className="flex flex-col gap-1">
@@ -9490,7 +10481,7 @@ const TreeGame: React.FC = () => {
               {/* --- 2. GAME WORLD (CHARACTER CENTRIC) --- */}
               <div 
                 ref={gameAreaRef} 
-                className="flex-1 relative overflow-hidden bg-slate-950 cursor-pointer"
+                className="z-0 flex-1 relative overflow-hidden bg-slate-950 cursor-pointer"
                 onClick={(e) => {
                   if (pauseOpen) return;
                   if (levelIntroOpen) return;
@@ -9540,6 +10531,8 @@ const TreeGame: React.FC = () => {
                         ? { x: [0, -8, 6, 0], y: [0, 5, -3, 0], rotate: [0, -0.8, 0.5, 0] }
                         : actionId === 'plant'
                           ? { x: [0, -4, 3, 0], y: [0, 2, -1, 0], rotate: [0, -0.35, 0.25, 0] }
+                          : actionId === 'collect-water'
+                            ? { x: [0, 2, -2, 0], y: [0, 3, -1, 0], rotate: [0, 0.45, -0.25, 0] }
                           : actionId === 'water'
                             ? { x: [0, -3, 2, 0], y: [0, 2, -1, 0] }
                             : { x: 0, y: 0, rotate: 0 }
@@ -9607,6 +10600,14 @@ const TreeGame: React.FC = () => {
                       highlight={!tutorialActive && level === 2 && p.id === activePlotId}
                     />
                   ))}
+                  {waterWell && (
+                    <LakeSprite
+                      x={waterWell.x}
+                      y={waterWell.y}
+                      highlight={nearWaterWell || activeStepId === 'water'}
+                      lowWater={water < 35}
+                    />
+                  )}
 
                   {FALLEN_TREE_SPOTS.map((s) => (
                     <FallenTree key={s.id} x={s.x} y={s.y} rot={s.rot} scale={s.scale} weather={effectiveWeather} />
@@ -9659,20 +10660,30 @@ const TreeGame: React.FC = () => {
                         {kind === 'grass' ? (
                           <div className="relative w-10 h-10">
                             <div className="absolute left-1/2 top-7 -translate-x-1/2 w-10 h-3 rounded-full blur-md" style={{ background: 'rgba(0,0,0,0.18)' }} />
-                            {Array.from({ length: 5 }, (_, j) => {
+                            {Array.from({ length: gfxPreset === 'cinematic' ? 5 : 4 }, (_, j) => {
                               const h = 10 + rand(10 + j) * 14;
                               const w = 1 + rand(20 + j) * 1.2;
                               const r = -18 + rand(30 + j) * 36;
+                              const bladeStyle = {
+                                width: w,
+                                height: h,
+                                background: `linear-gradient(180deg, ${tintA} 0%, ${tintB} 100%)`,
+                                rotate: `${r}deg`,
+                              } as const;
+                              if (gfxPreset !== 'cinematic') {
+                                return (
+                                  <div
+                                    key={j}
+                                    className="absolute left-1/2 top-4 origin-bottom rounded-full"
+                                    style={bladeStyle}
+                                  />
+                                );
+                              }
                               return (
                                 <motion.div
                                   key={j}
                                   className="absolute left-1/2 top-4 origin-bottom rounded-full"
-                                  style={{
-                                    width: w,
-                                    height: h,
-                                    background: `linear-gradient(180deg, ${tintA} 0%, ${tintB} 100%)`,
-                                    rotate: `${r}deg`,
-                                  }}
+                                  style={bladeStyle}
                                   animate={{ rotate: [`${r - 10}deg`, `${r + 10}deg`, `${r - 10}deg`] }}
                                   transition={{ repeat: Infinity, duration: 2.0 + rand(40 + j) * 2.2, ease: 'easeInOut', delay: i * 0.03 + j * 0.02 }}
                                 />
@@ -9757,7 +10768,7 @@ const TreeGame: React.FC = () => {
                             const s = seedlings.find(sd => sd.name === tree.type) || seedlings[0];
                             return (
                               <RealisticTree 
-                                size={120}
+                                size={tree.stage === 3 ? 148 : 120}
                                 color={s.color}
                                 stage={tree.stage}
                                 actionProgress={0}
@@ -9811,6 +10822,8 @@ const TreeGame: React.FC = () => {
                             ? level === 1 ? Trees : Shovel
                             : actionId === 'plant'
                               ? level === 1 ? Shovel : Trees
+                              : actionId === 'collect-water'
+                                ? Droplets
                               : actionId === 'clean'
                                 ? ShieldCheck
                                 : actionId === 'pest'
@@ -10069,23 +11082,62 @@ const TreeGame: React.FC = () => {
 
                 {/* --- 2.2 MISSION TRACKER --- */}
                 <motion.div 
-                  initial={{ x: 300, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  className="absolute top-28 right-10 z-[100] w-72 bg-slate-900/80 backdrop-blur-xl border border-white/10 p-5 rounded-3xl shadow-2xl"
+                  initial={{ x: 120, opacity: 0, scale: 0.96 }}
+                  animate={{ x: 0, opacity: 1, scale: 1 }}
+                  className="absolute top-28 right-6 z-[100] max-w-[min(92vw,320px)]"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <div className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Alur Misi</div>
-                      <div className="mt-1 text-sm font-black text-white tracking-tight">
-                        {tutorialActive ? 'TUTORIAL' : `LEVEL ${level}`}
+                  <div className={`bg-slate-900/84 backdrop-blur-xl border border-white/10 rounded-[1.9rem] shadow-2xl transition-all ${missionTrackerCollapsed ? 'p-3.5 w-[min(92vw,260px)]' : 'p-5 w-[min(92vw,320px)]'}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Alur Misi</div>
+                        <div className="mt-1 text-sm font-black text-white tracking-tight">
+                          {tutorialActive ? 'TUTORIAL' : `LEVEL ${level}`}
+                        </div>
+                        <div className="mt-1 text-[10px] font-bold text-white/65 leading-relaxed">
+                          {tutorialActive
+                            ? `Langkah ${Math.min(4, Math.max(1, tutorialStep))} dari 4`
+                            : level === 1
+                              ? (activeStep?.title ?? 'Lanjutkan misi')
+                              : `Target ${(['p1', 'p2', 'p3', 'p4'].indexOf(activePlotId) + 1) || 1} • ${level2CompletedCount}/4 selesai`}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
+                          <Trophy size={18} />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setMissionTrackerCollapsed(v => !v)}
+                          className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/80 active:scale-95 transition-transform"
+                          aria-label={missionTrackerCollapsed ? 'Tampilkan detail misi' : 'Sembunyikan detail misi'}
+                        >
+                          {missionTrackerCollapsed ? <Eye size={18} /> : <EyeOff size={18} />}
+                        </button>
                       </div>
                     </div>
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
-                      <Trophy size={18} />
-                    </div>
-                  </div>
 
-                  {tutorialActive ? (
+                    <div className="mt-3 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.45)]"
+                        animate={{
+                          width: `${tutorialActive
+                            ? Math.min(100, (Math.max(0, tutorialStep - 1) / 4) * 100)
+                            : level === 1
+                              ? Math.min(100, (Math.min(level1Steps.length, plantingStep) / Math.max(1, level1Steps.length)) * 100)
+                              : Math.min(100, (level2CompletedCount / 4) * 100)}%`
+                        }}
+                      />
+                    </div>
+
+                    {missionTrackerCollapsed ? (
+                      <div className="mt-3 px-3 py-2 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-bold text-white/75 leading-relaxed">
+                        {tutorialActive
+                          ? tutorialMessages[tutorialStep]
+                          : level === 1
+                            ? 'Ikuti alur singkat: tanam bibit lalu ambil air dan siram sampai siap masuk Level 2.'
+                            : 'Ikuti titik TARGET, tanam lalu siram sampai tumbuh. Buka panel ini jika ingin lihat detail penuh.'}
+                      </div>
+                    ) : (tutorialActive ? (
                     <div className="space-y-4">
                       <div>
                         <div className="flex justify-between text-[10px] font-black text-white/60 uppercase mb-2">
@@ -10138,30 +11190,40 @@ const TreeGame: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  ) : level === 1 ? (
+                    ) : level === 1 ? (
                     <div className="space-y-4">
                       <div>
+                        {(() => {
+                          const level1TotalSteps = level1Steps.length;
+                          const level1Progress = Math.min(level1TotalSteps, plantingStep);
+                          const level1ProgressWidth = level1TotalSteps > 0 ? (level1Progress / level1TotalSteps) * 100 : 0;
+
+                          return (
+                            <>
                         <div className="flex justify-between text-[10px] font-black text-white/60 uppercase mb-2">
                           <span>Persiapan Menanam</span>
-                          <span>{Math.min(level1Target, level1PlantedAfterTutorial)}/{level1Target}</span>
+                          <span>{level1Progress}/{level1TotalSteps}</span>
                         </div>
                         <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
                           <motion.div
                             className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
-                            animate={{ width: `${Math.min(100, (level1PlantedAfterTutorial / level1Target) * 100)}%` }}
+                            animate={{ width: `${Math.min(100, level1ProgressWidth)}%` }}
                           />
                         </div>
+                            </>
+                          );
+                        })()}
                       </div>
                       <div className="p-3 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-3">
                         <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-emerald-300">
                           <Trees size={16} />
                         </div>
                         <div className="text-[9px] font-bold text-white/80 leading-tight">
-                          Selesaikan 2 persiapan awal: ambil bibit lalu cek alat tanam agar Level 2 terasa siap dimainkan.
+                          Selesaikan seluruh persiapan Level 1: ambil bibit, siapkan perlengkapan, dan cek kebutuhan lapangan agar masuk ke Level 2 dengan siap.
                         </div>
                       </div>
                     </div>
-                  ) : (
+                    ) : (
                     <div className="space-y-4">
                       <div>
                         <div className="flex justify-between text-[10px] font-black text-white/60 uppercase mb-2">
@@ -10184,9 +11246,11 @@ const TreeGame: React.FC = () => {
                           const hint =
                             done
                               ? 'Selesai'
-                              : t
-                                ? 'Siram'
-                                : 'Tanam';
+                              : !t
+                                ? 'Gali lubang'
+                                : t.stage <= 1
+                                  ? 'Tanam bibit'
+                                  : 'Siram bibit';
                           return (
                             <div
                               key={pid}
@@ -10256,9 +11320,10 @@ const TreeGame: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  )}
+                    ))}
 
-                  <div className="mt-4 p-3 rounded-2xl bg-black/25 border border-white/10">
+                    {!missionTrackerCollapsed && (
+                      <div className="mt-4 p-3 rounded-2xl bg-black/25 border border-white/10">
                     <div className="flex items-center justify-between">
                       <div className="text-[9px] font-black text-white/60 uppercase tracking-widest">Mini Map</div>
                       <div className="text-[9px] font-black text-white/35 uppercase tracking-widest">
@@ -10318,6 +11383,8 @@ const TreeGame: React.FC = () => {
                         );
                       })()}
                     </div>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               </div>
@@ -10354,7 +11421,7 @@ const TreeGame: React.FC = () => {
               </AnimatePresence>
 
               {/* --- 3. CONTROLS & TIPS FOOTER --- */}
-              <div className="h-16 bg-slate-900/95 border-t border-white/10 flex items-center justify-center gap-12 px-10 z-[100]">
+              <div className="relative z-[140] shrink-0 pointer-events-auto h-16 bg-slate-900/95 border-t border-white/10 flex items-center justify-center gap-12 px-10">
                 <div className="flex items-center gap-3">
                   <div className="px-3 py-1 rounded-lg bg-white/10 border border-white/20 text-white font-black text-xs">WASD</div>
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gerak Karakter</span>
@@ -10407,7 +11474,7 @@ const TreeGame: React.FC = () => {
               <AnimatePresence>
                 {pauseOpen && (
                   <motion.div
-                    className="absolute inset-0 z-[220] bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-8"
+                    className="absolute inset-0 z-[220] pointer-events-auto bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-8"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -10460,27 +11527,7 @@ const TreeGame: React.FC = () => {
                           type="button"
                           onClick={() => {
                             setPauseOpen(false);
-                            setPhase('selection');
-                            setPlantingStep(0);
-                            setSelectedRegion(null);
-                            setSelectedSeedling(null);
-                            setLevel(1);
-                            setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 });
-                            setActivePlotId('p1');
-                            setLevelIntroOpen(false);
-                            setActionId(null);
-                            setActionPlotId(null);
-                            setActionProgress(0);
-                            setActiveTrees([]);
-                            setEnvScore({ co2: 0, water: 0, temp: 0, bio: 0 });
-                            setPlotMoisture({ p1: 45, p2: 45, p3: 45, p4: 45 });
-                            setPlotHealth({ p1: 75, p2: 75, p3: 75, p4: 75 });
-                            setDayPhase(0);
-                            setCurrentMission(missions[0]);
-                            setWater(missions[0].initialWater);
-                            setEnergy(missions[0].initialEnergy);
-                            setTimer(missions[0].timeLimit);
-                            setCo2Level(100);
+                            returnToRegionMap();
                           }}
                           className="w-full py-4 bg-white/5 hover:bg-white/10 text-white/90 rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95 border border-white/10"
                         >
@@ -10496,7 +11543,7 @@ const TreeGame: React.FC = () => {
               <AnimatePresence>
                 {phase === 'gameover' && (
                   <motion.div 
-                    className="absolute inset-0 z-[200] bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-8"
+                    className="absolute inset-0 z-[200] pointer-events-auto bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-8"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
@@ -10607,7 +11654,7 @@ const TreeGame: React.FC = () => {
                 >
                   Klaim Bibit Gratis
                 </button>
-                <button onClick={() => { setMapRestorationWave({ id: Date.now(), regionId: selectedRegion.id }); setPhase('selection'); setPlantingStep(0); setSelectedRegion(null); setSelectedSeedling(null); setLevel(1); setLevel2Stages({ p1: 0, p2: 0, p3: 0, p4: 0 }); setActivePlotId('p1'); setLevelIntroOpen(false); setActionPlotId(null); setActionProgress(0); }} className="bg-slate-100 px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-slate-200 transition-all shadow-md active:scale-95">Mulai Baru</button>
+                <button onClick={returnToRegionMap} className="bg-slate-100 px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-slate-200 transition-all shadow-md active:scale-95">Mulai Baru</button>
                 <button onClick={() => navigate('/')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-emerald-700 shadow-lg transition-all active:scale-95">Selesai</button>
               </div>
             </motion.div>
@@ -10757,11 +11804,12 @@ const TreeGame: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <motion.div
+              <motion.form
                 className="w-full max-w-4xl rounded-[3rem] shadow-[0_45px_140px_rgba(16,185,129,0.18)] overflow-hidden flex flex-col max-h-[88vh] relative border bg-white border-emerald-200"
                 initial={{ scale: 0.96, y: 10 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.98, y: 10 }}
+                onSubmit={handleClaimSubmit}
               >
                 <div
                   className="absolute inset-0 pointer-events-none opacity-100"
@@ -10801,7 +11849,7 @@ const TreeGame: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="relative flex-1 overflow-y-auto">
+                <div ref={claimFormScrollRef} className="relative flex-1 overflow-y-auto">
                   <div className="p-7 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <div className="lg:col-span-4">
                       <div className="rounded-[2.6rem] border p-6 bg-gradient-to-b from-emerald-50 via-white to-emerald-50 border-emerald-200 shadow-[inset_0_0_80px_rgba(16,185,129,0.06)]">
@@ -10837,7 +11885,7 @@ const TreeGame: React.FC = () => {
 
                     <div className="lg:col-span-8">
                       {claimError && (
-                        <div className="mb-4 p-4 rounded-[2rem] bg-white border border-emerald-200 text-emerald-800 text-[12px] font-bold">
+                        <div className="mb-4 p-4 rounded-[2rem] bg-white border border-emerald-200 text-emerald-800 text-[12px] font-bold" role="alert" aria-live="assertive">
                           {claimError}
                         </div>
                       )}
@@ -10998,15 +12046,14 @@ const TreeGame: React.FC = () => {
                     Tutup
                   </button>
                   <button
-                    type="button"
-                    onClick={submitClaim}
+                    type="submit"
                     className="px-6 py-3 rounded-2xl border text-white font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 border-emerald-600 shadow-lg shadow-emerald-900/15"
                   >
                     <Sprout size={16} />
                     {claimMode === 'success' ? 'Kirim Klaim' : 'Kirim Formulir'}
                   </button>
                 </div>
-              </motion.div>
+              </motion.form>
             </motion.div>
           )}
         </AnimatePresence>
@@ -11171,7 +12218,7 @@ const TreeGame: React.FC = () => {
               exit={{ opacity: 0 }}
             >
               <motion.div
-                className="w-full max-w-3xl bg-slate-900/95 border border-white/10 rounded-[3rem] shadow-2xl overflow-hidden"
+                className="w-full max-w-5xl max-h-[92vh] bg-slate-900/95 border border-white/10 rounded-[3rem] shadow-2xl overflow-hidden flex flex-col"
                 initial={{ scale: 0.96, y: 10 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.98, y: 10 }}
@@ -11179,9 +12226,9 @@ const TreeGame: React.FC = () => {
                 <div className="p-8 border-b border-white/10 flex items-start justify-between gap-6">
                   <div>
                     <div className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.25em]">Panduan Game</div>
-                    <div className="text-3xl font-black text-white tracking-tighter mt-1">Selamatkan Lingkungan</div>
+                    <div className="text-3xl font-black text-white tracking-tighter mt-1">Cara Bermain Selamatkan Lingkungan</div>
                     <div className="text-white/70 font-bold mt-2 leading-relaxed">
-                      Loop: eksplorasi → tanam → rawat → event muncul → selesaikan cepat → tanah berubah → ulang.
+                      Ikuti alur ini agar user tidak bingung saat mulai bermain, masuk Level 1, lanjut ke Level 2, hingga menyelesaikan misi restorasi.
                     </div>
                   </div>
                   <button
@@ -11193,65 +12240,191 @@ const TreeGame: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-5 rounded-[2rem] bg-white/5 border border-white/10">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-white/80">
-                        <Move size={18} />
-                      </div>
-                      <div className="text-white font-black tracking-tight">Kontrol</div>
+                <div className="flex-1 overflow-y-auto">
+                  <div className="p-8 space-y-5">
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                      {[
+                        {
+                          icon: MapPin,
+                          tone: 'text-emerald-300 bg-emerald-500/15 border-emerald-500/20',
+                          title: '1. Pilih Wilayah',
+                          text: 'Klik daerah di peta yang ingin dipulihkan. Setiap wilayah punya kondisi berbeda, jadi perhatikan status wilayah sebelum mulai.',
+                        },
+                        {
+                          icon: Trees,
+                          tone: 'text-lime-300 bg-lime-500/15 border-lime-500/20',
+                          title: '2. Pilih Bibit',
+                          text: 'Pilih bibit yang paling cocok. Bibit yang dipilih akan menentukan pohon yang tumbuh di game, misalnya pinus akan tumbuh menjadi pinus.',
+                        },
+                        {
+                          icon: Trophy,
+                          tone: 'text-yellow-200 bg-yellow-500/15 border-yellow-500/20',
+                          title: '3. Selesaikan Misi',
+                          text: 'Ikuti tutorial, tuntaskan persiapan Level 1, lalu aktifkan seluruh lahan di Level 2 sampai target CO2 tercapai.',
+                        },
+                      ].map((item) => (
+                        <div key={item.title} className="p-5 rounded-[2rem] bg-white/5 border border-white/10">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center ${item.tone}`}>
+                              <item.icon size={20} />
+                            </div>
+                            <div className="text-white font-black tracking-tight">{item.title}</div>
+                          </div>
+                          <div className="text-white/70 font-bold text-sm leading-relaxed">{item.text}</div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="text-white/70 font-bold text-sm leading-relaxed">
-                      WASD untuk bergerak. Klik di map untuk dorong lari ke arah klik. Tekan E saat dekat lahan/pohon untuk aksi.
-                    </div>
-                  </div>
 
-                  <div className="p-5 rounded-[2rem] bg-white/5 border border-white/10">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-emerald-300">
-                        <Trophy size={18} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-5 rounded-[2rem] bg-white/5 border border-white/10">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-white/80">
+                            <Move size={18} />
+                          </div>
+                          <div className="text-white font-black tracking-tight">Kontrol Dasar</div>
+                        </div>
+                        <div className="space-y-2 text-white/70 font-bold text-sm leading-relaxed">
+                          <div>WASD atau tombol panah: gerakkan karakter.</div>
+                          <div>Klik area tanah: karakter berlari ke arah titik klik.</div>
+                          <div>Tekan <span className="text-white">E</span> saat dekat titik aksi, pohon, atau sumber masalah.</div>
+                          <div>Tombol <span className="text-white">Panduan</span> dan <span className="text-white">Pause</span> bisa dibuka kapan saja selama bermain.</div>
+                        </div>
                       </div>
-                      <div className="text-white font-black tracking-tight">Tujuan</div>
-                    </div>
-                    <div className="text-white/70 font-bold text-sm leading-relaxed">
-                      Turunkan CO2 sampai target, jaga pohon tetap hidup, dan kejar waktu. Kalau CO2 terlalu tinggi atau semua pohon mati: misi gagal.
-                    </div>
-                  </div>
 
-                  <div className="p-5 rounded-[2rem] bg-white/5 border border-white/10 md:col-span-2">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-2xl bg-red-500/15 border border-red-500/20 flex items-center justify-center text-red-200">
-                        <Activity size={18} />
+                      <div className="p-5 rounded-[2rem] bg-white/5 border border-white/10">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center text-emerald-300">
+                            <Trophy size={18} />
+                          </div>
+                          <div className="text-white font-black tracking-tight">Target Utama</div>
+                        </div>
+                        <div className="space-y-2 text-white/70 font-bold text-sm leading-relaxed">
+                          <div>Turunkan CO2 hingga menyentuh target misi.</div>
+                          <div>Jaga kelembaban dan kesehatan pohon agar tidak mati.</div>
+                          <div>Gunakan waktu dengan efisien, terutama saat masuk Level 2.</div>
+                        </div>
                       </div>
-                      <div className="text-white font-black tracking-tight">Event Dinamis</div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                        <div className="flex items-center gap-2 text-orange-200 font-black uppercase text-[11px]">
-                          <Wind size={16} /> Heatwave
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="p-5 rounded-[2rem] bg-white/5 border border-white/10">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-2xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center text-blue-200">
+                            <Info size={18} />
+                          </div>
+                          <div className="text-white font-black tracking-tight">Alur Main Step-by-Step</div>
                         </div>
-                        <div className="text-white/70 font-bold text-sm mt-1">Air cepat habis, pohon cepat stres. Prioritaskan siram.</div>
+                        <div className="space-y-3">
+                          {[
+                            'Pilih wilayah di peta lalu lanjut ke pemilihan bibit.',
+                            'Pilih bibit yang paling sesuai dengan kondisi wilayah.',
+                            'Selesaikan tutorial: datangi titik, gali, tanam, lalu siram.',
+                            'Masuk Level 1 untuk persiapan alat, bibit, air, dan area kerja.',
+                            'Masuk Level 2 lalu aktifkan lahan yang menyala sampai semua target utama selesai.',
+                          ].map((step, index) => (
+                            <div key={step} className="flex items-start gap-3">
+                              <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/25 text-emerald-300 text-xs font-black flex items-center justify-center shrink-0">
+                                {index + 1}
+                              </div>
+                              <div className="text-white/75 font-bold text-sm leading-relaxed">{step}</div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                        <div className="flex items-center gap-2 text-blue-200 font-black uppercase text-[11px]">
-                          <CloudRain size={16} /> Hujan Deras
+
+                      <div className="p-5 rounded-[2rem] bg-white/5 border border-white/10">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-amber-200">
+                            <Shovel size={18} />
+                          </div>
+                          <div className="text-white font-black tracking-tight">Perbedaan Level</div>
                         </div>
-                        <div className="text-white/70 font-bold text-sm mt-1">Air naik, tapi banjir bisa merusak akar kalau terlalu basah.</div>
+                        <div className="space-y-3 text-white/70 font-bold text-sm leading-relaxed">
+                          <div><span className="text-white">Tutorial:</span> belajar gerakan dasar dan cara interaksi.</div>
+                          <div><span className="text-white">Level 1:</span> fase persiapan. User menyiapkan bibit, pupuk, alat, air, dan briefing lokasi.</div>
+                          <div><span className="text-white">Level 2:</span> fase aksi utama. User menanam di beberapa lahan, mengejar combo, dan menghadapi event lingkungan.</div>
+                        </div>
                       </div>
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                        <div className="flex items-center gap-2 text-red-200 font-black uppercase text-[11px]">
-                          <AlertTriangle size={16} /> Hama
+
+                      <div className="p-5 rounded-[2rem] bg-white/5 border border-white/10 lg:col-span-2">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-2xl bg-red-500/15 border border-red-500/20 flex items-center justify-center text-red-200">
+                            <Activity size={18} />
+                          </div>
+                          <div className="text-white font-black tracking-tight">Event Dinamis dan Cara Mengatasinya</div>
                         </div>
-                        <div className="text-white/70 font-bold text-sm mt-1">Cari pohon bertanda Hama, dekati lalu tekan E.</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                            <div className="flex items-center gap-2 text-orange-200 font-black uppercase text-[11px]">
+                              <Wind size={16} /> Heatwave
+                            </div>
+                            <div className="text-white/70 font-bold text-sm mt-1">Air cepat habis dan pohon mudah stres. Segera prioritaskan penyiraman.</div>
+                          </div>
+                          <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                            <div className="flex items-center gap-2 text-blue-200 font-black uppercase text-[11px]">
+                              <CloudRain size={16} /> Hujan Deras
+                            </div>
+                            <div className="text-white/70 font-bold text-sm mt-1">Air bertambah, tapi kondisi terlalu basah bisa mengganggu akar. Pantau kelembaban lahan.</div>
+                          </div>
+                          <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                            <div className="flex items-center gap-2 text-red-200 font-black uppercase text-[11px]">
+                              <AlertTriangle size={16} /> Hama
+                            </div>
+                            <div className="text-white/70 font-bold text-sm mt-1">Dekati pohon yang bermasalah lalu tekan E untuk menangani gangguan.</div>
+                          </div>
+                          <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                            <div className="flex items-center gap-2 text-slate-200 font-black uppercase text-[11px]">
+                              <AlertTriangle size={16} /> Polusi
+                            </div>
+                            <div className="text-white/70 font-bold text-sm mt-1">Cari sumber polusi yang ditandai, dekati, lalu tekan E untuk menormalkan area.</div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                        <div className="flex items-center gap-2 text-slate-200 font-black uppercase text-[11px]">
-                          <AlertTriangle size={16} /> Polusi
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-5 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/20 flex items-center justify-center text-emerald-200">
+                            <Leaf size={18} />
+                          </div>
+                          <div className="text-white font-black tracking-tight">Tips Biar Mudah Menang</div>
                         </div>
-                        <div className="text-white/70 font-bold text-sm mt-1">Kejar sumber polusi (ikon peringatan), tekan E untuk segel.</div>
+                        <div className="space-y-2 text-white/80 font-bold text-sm leading-relaxed">
+                          <div>Ikuti titik yang menyala agar tidak salah tujuan.</div>
+                          <div>Perhatikan timer, air, energi, dan indikator CO2 di HUD.</div>
+                          <div>Selesaikan aksi berurutan agar lahan cepat aktif dan combo tetap terjaga.</div>
+                        </div>
+                      </div>
+
+                      <div className="p-5 rounded-[2rem] bg-red-500/10 border border-red-500/20">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 rounded-2xl bg-red-500/20 border border-red-500/20 flex items-center justify-center text-red-200">
+                            <Heart size={18} />
+                          </div>
+                          <div className="text-white font-black tracking-tight">Kapan Misi Gagal</div>
+                        </div>
+                        <div className="space-y-2 text-white/80 font-bold text-sm leading-relaxed">
+                          <div>Waktu habis sebelum target utama tercapai.</div>
+                          <div>CO2 terlalu tinggi atau kondisi lapangan memburuk parah.</div>
+                          <div>Pohon yang aktif tidak terawat dan semuanya tumbang/mati.</div>
+                        </div>
                       </div>
                     </div>
                   </div>
+                </div>
+
+                <div className="p-6 border-t border-white/10 bg-slate-950/30 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                  <div className="text-white/65 font-bold text-sm leading-relaxed">
+                    Kalau lupa langkahnya, buka lagi tombol <span className="text-white">Panduan</span> di dalam game kapan saja.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setGuideOpen(false)}
+                    className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest active:scale-95 transition-transform"
+                  >
+                    Saya Paham, Mulai Main
+                  </button>
                 </div>
               </motion.div>
             </motion.div>
