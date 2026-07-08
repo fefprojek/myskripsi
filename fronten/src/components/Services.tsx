@@ -12,28 +12,28 @@ const services = [
 
 const Services: React.FC = () => {
   return (
-    <div className="bg-white py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Layanan Unggulan</h2>
-          <p className="text-gray-500 max-w-2xl mx-auto text-lg">
+    <section className="bg-white py-14 sm:py-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-10 text-center sm:mb-12">
+          <h2 className="mb-4 text-[clamp(1.6rem,5vw,2.4rem)] font-bold text-gray-900">Layanan Unggulan</h2>
+          <p className="mx-auto max-w-2xl text-[clamp(0.95rem,2.8vw,1.1rem)] text-gray-500">
             Akses berbagai layanan publik dan informasi terkait pengelolaan kehutanan di Jawa Barat secara digital.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-6">
           {services.map((service) => (
-            <div key={service.id} className="group flex flex-col items-center p-6 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:border-primary transition-all duration-300">
-              <div className={`p-4 rounded-xl mb-4 group-hover:scale-110 transition-transform ${service.color}`}>
+            <div key={service.id} className="group flex min-h-40 flex-col items-center rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-300 hover:border-primary hover:shadow-md sm:min-h-44 sm:p-6">
+              <div className={`mb-4 rounded-2xl p-4 transition-transform group-hover:scale-110 ${service.color}`}>
                 <service.icon className="h-8 w-8" />
               </div>
-              <h3 className="text-sm font-bold text-gray-900 text-center group-hover:text-primary transition-colors">
+              <h3 className="text-center text-sm font-bold leading-snug text-gray-900 transition-colors group-hover:text-primary sm:text-[0.95rem]">
                 {service.name}
               </h3>
             </div>
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

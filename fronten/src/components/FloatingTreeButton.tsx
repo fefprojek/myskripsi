@@ -7,14 +7,14 @@ const FloatingTreeButton: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="fixed bottom-10 right-10 z-[100]">
+    <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-[100] sm:bottom-8 sm:right-8">
       <motion.button
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => navigate('/game')}
-        className="relative bg-emerald-500 text-slate-950 p-5 rounded-full shadow-[0_0_30px_rgba(16,185,129,0.5)] flex items-center justify-center group border-2 border-emerald-400"
+        className="group relative flex h-16 w-16 items-center justify-center rounded-full border-2 border-emerald-400 bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.5)] sm:h-20 sm:w-20"
         aria-label="Tanam Pohon"
       >
         {/* Animated outer ring */}
@@ -25,11 +25,11 @@ const FloatingTreeButton: React.FC = () => {
         />
         
         {/* Tooltip/Label */}
-        <div className="absolute right-full mr-6 bg-slate-900 text-emerald-400 px-4 py-2 rounded-xl text-sm font-black shadow-2xl opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0 whitespace-nowrap border border-emerald-500/50 pointer-events-none flex items-center gap-2">
+        <div className="pointer-events-none absolute bottom-full right-0 mb-3 flex translate-y-2 items-center gap-2 rounded-xl border border-emerald-500/50 bg-slate-900 px-3 py-2 text-xs font-black text-emerald-400 opacity-100 shadow-2xl transition-all sm:bottom-auto sm:right-full sm:mb-0 sm:mr-6 sm:translate-x-4 sm:translate-y-0 sm:text-sm sm:opacity-0 sm:group-hover:translate-x-0 sm:group-hover:opacity-100 whitespace-nowrap">
           <Zap size={14} fill="currentColor" /> MISI REBOISASI: AKTIF
         </div>
         
-        <Trees className="w-8 h-8" />
+        <Trees className="h-7 w-7 sm:h-8 sm:w-8" />
         
         {/* Tech Corner Accents */}
         <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-white rounded-tr-sm opacity-50" />

@@ -9,8 +9,9 @@ import Footer from './components/Footer';
 import FloatingTreeButton from './components/FloatingTreeButton';
 import TreeGame from './components/TreeGame';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, Leaf, Sparkles } from 'lucide-react';
+import { Activity, Sparkles } from 'lucide-react';
 import heroImg from './assets/hero.png';
+import dishutLogo from './assets/dishut-logo.svg';
 
 class RouteErrorBoundary extends React.Component<
   { title: string; children: React.ReactNode },
@@ -184,7 +185,7 @@ const CinematicLoadingOverlay = ({
                   boxShadow: `0 0 0 1px rgba(${accentRgb},0.12), 0 22px 60px rgba(0,0,0,0.45)`,
                 }}
               >
-                <Leaf className="text-emerald-200" />
+                <img src={dishutLogo} alt="Logo Dinas Kehutanan" className="h-9 w-9 object-contain" />
               </motion.div>
               <motion.div
                 className="absolute -inset-4 rounded-[1.85rem] pointer-events-none"

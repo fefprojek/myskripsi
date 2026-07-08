@@ -30,28 +30,28 @@ const newsItems = [
 
 const News: React.FC = () => {
   return (
-    <div className="bg-gray-50 py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-end mb-10">
+    <section className="bg-gray-50 py-14 sm:py-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Berita Terkini</h2>
+            <h2 className="mb-2 text-[clamp(1.6rem,5vw,2.4rem)] font-bold text-gray-900">Berita Terkini</h2>
             <div className="w-20 h-1.5 bg-primary rounded-full"></div>
           </div>
-          <a href="#" className="flex items-center text-primary font-semibold hover:underline">
+          <a href="#" className="inline-flex min-h-12 items-center text-primary font-semibold hover:underline">
             Lihat Semua Berita <ArrowRight className="ml-2 h-5 w-5" />
           </a>
         </div>
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {newsItems.map((item) => (
-            <div key={item.id} className="bg-white overflow-hidden shadow-lg rounded-2xl group transition-transform hover:-translate-y-2 border border-gray-100">
-              <div className="relative h-56">
+            <article key={item.id} className="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-lg transition-transform hover:-translate-y-1.5">
+              <div className="relative aspect-[16/10]">
                 <img className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" src={item.image} alt={item.title} />
                 <div className="absolute top-4 left-4 bg-primary text-white px-3 py-1 rounded-full text-xs font-semibold">
                   {item.category}
                 </div>
               </div>
-              <div className="p-6">
-                <div className="flex items-center text-gray-500 text-sm mb-3 space-x-4">
+              <div className="p-5 sm:p-6">
+                <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
                   <div className="flex items-center">
                     <Calendar className="h-4 w-4 mr-1.5" />
                     {item.date}
@@ -61,23 +61,23 @@ const News: React.FC = () => {
                     {item.author}
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 group-hover:text-primary transition-colors leading-snug">
+                <h3 className="text-[clamp(1.1rem,3.6vw,1.35rem)] font-bold leading-snug text-gray-900 transition-colors group-hover:text-primary">
                   {item.title}
                 </h3>
                 <p className="mt-4 text-gray-600 line-clamp-3 leading-relaxed">
                   Pemerintah Provinsi Jawa Barat melalui Dinas Kehutanan terus berupaya meningkatkan koordinasi dalam pengelolaan sumber daya alam...
                 </p>
                 <div className="mt-6">
-                  <button className="text-primary font-bold inline-flex items-center group-hover:translate-x-1 transition-transform">
+                  <button className="inline-flex min-h-12 items-center text-primary font-bold transition-transform group-hover:translate-x-1">
                     Baca Selengkapnya <ArrowRight className="ml-1 h-4 w-4" />
                   </button>
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

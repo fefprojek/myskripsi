@@ -1,16 +1,17 @@
 import React from 'react';
-import { MapPin, Phone, Mail, Instagram, Facebook, Youtube, X, Leaf } from 'lucide-react';
+import { MapPin, Phone, Mail, Instagram, Facebook, Youtube, X } from 'lucide-react';
+import dishutLogo from '../assets/dishut-logo.svg';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-primary text-white pt-20 pb-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+    <footer className="bg-primary pb-10 pt-16 text-white sm:pt-20">
+      <div className="mx-auto mb-12 grid max-w-7xl grid-cols-1 gap-10 px-4 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div className="space-y-6">
-          <div className="flex items-center space-x-3 bg-white p-3 rounded-xl inline-flex">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-              <Leaf className="h-6 w-6" />
+          <div className="inline-flex items-center gap-3 rounded-2xl bg-white p-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/15 bg-white p-1 shadow-sm">
+              <img src={dishutLogo} alt="Logo Dinas Kehutanan" className="h-full w-full object-contain" />
             </div>
-            <div className="border-l border-gray-300 h-8 mx-2"></div>
+            <div className="h-8 w-px bg-gray-300" />
             <div className="flex flex-col">
               <span className="text-primary font-bold text-xs uppercase">Dinas Kehutanan</span>
               <span className="text-gray-500 text-[10px]">Provinsi Jawa Barat</span>
@@ -19,17 +20,17 @@ const Footer: React.FC = () => {
           <p className="text-gray-100 text-sm leading-relaxed opacity-90">
             Dinas Kehutanan Provinsi Jawa Barat berkomitmen untuk mewujudkan pengelolaan hutan yang lestari demi kelangsungan hidup generasi mendatang.
           </p>
-          <div className="flex space-x-4">
-            <a href="#" className="p-2 bg-white bg-opacity-20 hover:bg-opacity-40 rounded-full transition-all">
+          <div className="flex flex-wrap gap-3">
+            <a href="#" className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 transition-all hover:bg-white/40">
               <Facebook className="h-5 w-5" />
             </a>
-            <a href="#" className="p-2 bg-white bg-opacity-20 hover:bg-opacity-40 rounded-full transition-all">
+            <a href="#" className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 transition-all hover:bg-white/40">
               <X className="h-5 w-5" />
             </a>
-            <a href="#" className="p-2 bg-white bg-opacity-20 hover:bg-opacity-40 rounded-full transition-all">
+            <a href="#" className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 transition-all hover:bg-white/40">
               <Instagram className="h-5 w-5" />
             </a>
-            <a href="#" className="p-2 bg-white bg-opacity-20 hover:bg-opacity-40 rounded-full transition-all">
+            <a href="#" className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 transition-all hover:bg-white/40">
               <Youtube className="h-5 w-5" />
             </a>
           </div>
@@ -81,9 +82,9 @@ const Footer: React.FC = () => {
           </ul>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 border-t border-white border-opacity-20 flex flex-col md:flex-row justify-between items-center text-xs opacity-80">
+      <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 border-t border-white/20 px-4 pt-8 text-xs opacity-80 sm:px-6 md:flex-row md:items-center lg:px-8">
         <p>&copy; 2026 Dinas Kehutanan Provinsi Jawa Barat. Hak Cipta Dilindungi.</p>
-        <div className="flex space-x-6 mt-4 md:mt-0">
+        <div className="flex flex-wrap gap-x-6 gap-y-2">
           <a href="#" className="hover:text-white">Kebijakan Privasi</a>
           <a href="#" className="hover:text-white">Syarat & Ketentuan</a>
           <a href="#" className="hover:text-white">Peta Situs</a>
